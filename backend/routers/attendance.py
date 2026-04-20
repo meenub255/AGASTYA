@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from backend.services import attendance_service
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
@@ -9,6 +9,7 @@ def get_filters():
 
 @router.get("/data")
 def get_data(
+    request: Request,
     region: str | None = Query(None),
     area: str | None = Query(None),
     year: str | None = Query(None),
@@ -16,7 +17,15 @@ def get_data(
     limit: int = Query(15),
     offset: int = Query(0)
 ):
-    return attendance_service.get_attendance_data(region, area, year, month, limit, offset)
+    from backend.services.query_utils import parse_datatables_params
+    dt_params = parse_datatables_params(dict(request.query_params))
+    
+    # If DataTables is driving the request (start/length are present), override limit/offset
+    if "length" in request.query_params:
+        limit = dt_params["length"]
+        offset = dt_params["start"]
+        
+    return attendance_service.get_attendance_data(region, area, year, month, limit, offset, dt_params)
 
 @router.get("/export")
 def export_data(
