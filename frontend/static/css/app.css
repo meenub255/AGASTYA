@@ -99,8 +99,17 @@ h5,
 
 .filter-panel .card-header,
 .card .card-header {
-    background: transparent;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.15) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+    padding: 0.75rem 1.25rem;
+}
+
+.card .card-body {
+    padding: 1.25rem;
+}
+
+.card .card-body.p-0 {
+    padding: 0;
 }
 
 .filter-panel label,
@@ -577,24 +586,141 @@ h5,
 }
 
 /* Tables */
-.table th,
-.table td {
-    padding: 0.5rem 0.75rem !important;
-    font-size: 0.85rem;
+/* --- Improved DataTables & Table Styling --- */
+.table {
+    margin-bottom: 0 !important;
+    width: 100% !important; /* Force full width */
+    background: #ffffff;
 }
 
-.card.mt-3 .card-body {
-    padding: 0;
+.table thead th {
+    background: #ffffff !important; /* Clean white header */
+    color: #4b5563 !important;      /* Dark grey text for legibility */
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e5e7eb !important;
+    border-top: none !important;
+    vertical-align: middle;
+    padding: 12px 15px !important;
 }
 
-@media (max-width: 767.98px) {
-    .kpi-card {
-        min-height: auto;
-    }
+/* Hide DataTables default sorting sorting icons completely */
+table.dataTable thead .sorting:before,
+table.dataTable thead .sorting_asc:before,
+table.dataTable thead .sorting_desc:before,
+table.dataTable thead .sorting:after,
+table.dataTable thead .sorting_asc:after,
+table.dataTable thead .sorting_desc:after {
+    display: none !important;
+}
 
-    .chart-stage {
-        min-height: 210px;
-    }
+/* Ensure header text has room for custom icons */
+table.dataTable thead th.sorting,
+table.dataTable thead th.sorting_asc,
+table.dataTable thead th.sorting_desc {
+    padding-right: 30px !important;
+    cursor: pointer;
+}
+
+/* Custom Sorting Toggle Icon */
+.dt-sort-icon {
+    position: absolute;
+    right: 10px;
+    bottom: 50%;
+    transform: translateY(50%);
+    opacity: 0.4;
+    transition: opacity 0.2s;
+}
+table.dataTable thead th:hover .dt-sort-icon {
+    opacity: 1;
+}
+
+.high-contrast-table td {
+    vertical-align: middle;
+    color: #111827 !important; /* Force dark text for body cells */
+}
+
+/* DataTables controls alignment */
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter {
+    padding: 1rem;
+    color: #111827 !important; /* Force black text */
+}
+
+.dataTables_wrapper .dataTables_info {
+    padding: 1rem;
+    color: #4b5563 !important; /* Dark grey */
+    font-weight: 500;
+}
+
+.dataTables_wrapper .dataTables_paginate {
+    padding: 1rem;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px;
+    padding: 2px 5px;
+}
+
+.dataTables_filter input {
+    background: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    color: #111827 !important;
+    border-radius: 6px;
+    padding: 4px 10px;
+}
+
+.table-responsive {
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Pagination Fixes */
+.pagination .page-item .page-link {
+    background-color: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    color: #4b5563 !important;
+    padding: 8px 16px;
+    margin: 0 2px;
+    border-radius: 4px;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--brand-blue) !important;
+    border-color: var(--brand-blue) !important;
+    color: #ffffff !important;
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #9ca3af !important;
+    background-color: #f9fafb !important;
+    border-color: #e5e7eb !important;
+}
+
+.pagination .page-item:not(.active):not(.disabled) .page-link:hover {
+    background-color: #f3f4f6 !important;
+    color: #111827 !important;
+}
+
+/* Horizontal scroll indicator hint */
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+/* Fix table container background */
+.card .card-body.p-0 {
+    background: #ffffff !important;
+    border-radius: var(--radius-lg);
 }
 
 body[data-page="dashboard"] .overview-filter-panel,
@@ -1824,6 +1950,33 @@ body[data-page="programs"] .exposure-empty {
     }
 }
 
+/* DataTable Theme Overrides - End */
+
+/* Reset Filters Button Styling */
+.btn-reset-filters {
+    background-color: transparent;
+    border-color: #6c757d;
+    color: #6c757d;
+    transition: all 0.2s ease-in-out;
+}
+
+.dark-mode .btn-reset-filters {
+    border-color: #adb5bd;
+    color: #adb5bd;
+}
+
+.btn-reset-filters:hover {
+    background-color: #6c757d;
+    color: #ffffff;
+    border-color: #6c757d;
+}
+
+.dark-mode .btn-reset-filters:hover {
+    background-color: #adb5bd;
+    color: #1e293b;
+    border-color: #adb5bd;
+}
+
 /* --- High Contrast Table Overrides --- */
 .high-contrast-table {
     background-color: #ffffff !important;
@@ -1958,10 +2111,186 @@ body[data-page="programs"] .exposure-empty {
     border-radius: 6px !important;
 }
 
-@media (max-width: 600px) {
-    .pagination-container {
-        flex-direction: column !important;
-        align-items: center !important;
-        text-align: center !important;
     }
 }
+
+/* --- DataTables Stying --- */
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_processing,
+.dataTables_wrapper .dataTables_paginate {
+    color: var(--text-soft) !important;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    color: #fff;
+    padding: 0.25rem 0.75rem;
+    margin-left: 0.5rem;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+}
+
+.dataTables_wrapper .dataTables_paginate .page-link {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.dataTables_wrapper .dataTables_paginate .page-item.active .page-link {
+    background: var(--brand-blue);
+    border-color: var(--brand-blue);
+}
+
+.dataTables_wrapper .dataTables_paginate .page-item.disabled .page-link {
+    background: transparent !important;
+    color: var(--text-faint) !important;
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Light mode overrides for dashboard page */
+body[data-page="dashboard"] .dataTables_wrapper .dataTables_length,
+body[data-page="dashboard"] .dataTables_wrapper .dataTables_filter,
+body[data-page="dashboard"] .dataTables_wrapper .dataTables_info,
+body[data-page="dashboard"] .dataTables_wrapper .dataTables_paginate {
+    color: var(--text-dark) !important;
+}
+
+body[data-page="dashboard"] .dataTables_wrapper .dataTables_filter input,
+body[data-page="dashboard"] .dataTables_wrapper .dataTables_length select {
+    background: #fff;
+    border: 1px solid var(--border-mid);
+    color: var(--text-dark);
+}
+
+body[data-page="dashboard"] .dataTables_wrapper .dataTables_paginate .page-link {
+    background: #fff;
+    border-color: var(--border-mid);
+    color: var(--text-dark);
+}
+
+/* Sorting icons visibility */
+table.dataTable thead .sorting:before,
+table.dataTable thead .sorting:after,
+table.dataTable thead .sorting_asc:before,
+table.dataTable thead .sorting_asc:after,
+table.dataTable thead .sorting_desc:before,
+table.dataTable thead .sorting_desc:after {
+    opacity: 0.6 !important;
+}
+
+table.dataTable thead th {
+    position: relative;
+    padding-right: 30px !important;
+}
+
+.high-contrast-table.dataTable thead th {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+#summaryRows tr td {
+    color: #fff;
+}
+
+/* --- Sidebar Reorganization & Premium Styling --- */
+.main-sidebar .nav-sidebar .nav-item > .nav-link {
+    padding: 0.75rem 1rem;
+    transition: background 0.2s, color 0.2s;
+    border-radius: 8px;
+    margin: 2px 8px;
+}
+
+.main-sidebar .nav-sidebar .nav-item > .nav-link p {
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.main-sidebar .nav-sidebar .nav-header {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, 0.4);
+    padding: 1.5rem 1rem 0.5rem;
+}
+
+/* Treeview Sub-menu Styling */
+.main-sidebar .nav-treeview {
+    background: rgba(0, 0, 0, 0.1);
+    margin: 0 8px;
+    border-radius: 0 0 8px 8px;
+    padding-bottom: 5px;
+}
+
+.main-sidebar .nav-treeview > .nav-item > .nav-link {
+    padding: 0.5rem 1rem 0.5rem 2.5rem !important;
+    border-radius: 6px;
+    margin: 1px 0;
+}
+
+.main-sidebar .nav-treeview > .nav-item > .nav-link p {
+    font-size: 0.88rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.main-sidebar .nav-treeview > .nav-item > .nav-link:hover p,
+.main-sidebar .nav-treeview > .nav-item > .nav-link.active p {
+    color: #ffffff;
+}
+
+.main-sidebar .nav-treeview > .nav-item > .nav-link i {
+    font-size: 0.85rem;
+    width: 1.5rem;
+}
+
+/* Sidebar Active State Glow */
+.main-sidebar .nav-pills .nav-link.active {
+    box-shadow: 0 4px 12px rgba(64, 144, 240, 0.3);
+}
+
+/* Data Quality Report Special Card */
+.nav-card-placeholder {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    margin: 1rem 12px;
+    padding: 1rem;
+    transition: border-color 0.3s;
+}
+
+.nav-card-placeholder:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.nav-card-placeholder .card-icon {
+    font-size: 1.25rem;
+    color: var(--brand-blue);
+    margin-bottom: 0.5rem;
+}
+
+.nav-card-placeholder .card-title {
+    font-size: 0.85rem !important;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 2px;
+    color: #fff !important;
+}
+
+.nav-card-placeholder .card-status {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-faint);
+}
