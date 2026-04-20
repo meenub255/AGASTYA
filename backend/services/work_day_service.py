@@ -18,7 +18,9 @@ def get_work_day_filters():
     }
 
 
-def get_work_day_data(region=None, area=None, year=None, month=None, limit=15, offset=0):
+def get_work_day_data(region=None, area=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
+    
     where_clauses = ["TRUE"]
     params = []
     
@@ -37,7 +39,7 @@ def get_work_day_data(region=None, area=None, year=None, month=None, limit=15, o
     
     where_sql = " AND ".join(where_clauses)
     
-    # KPI Query
+    # 1. KPI Query (sidebar filters only)
     kpi_sql = f"""
         SELECT 
             COUNT(DISTINCT f.sk_user_id) as total_instructors,
@@ -62,19 +64,34 @@ def get_work_day_data(region=None, area=None, year=None, month=None, limit=15, o
         {"label": "Active Centers", "value": active_centers, "icon": "fas fa-map-marker-alt", "color": "bg-danger"}
     ]
 
-    # Get total count for pagination
+    # 2. DataTable Logic
+    search_sql = "TRUE"
+    search_params = []
+    sort_sql = "ORDER BY days_worked DESC, instructor_name ASC"
+    
+    if dt_params:
+        searchable_cols = ["u.user_name", "g.region_name", "g.area_name"]
+        sortable_cols = ["instructor_name", "region", "area", "days_worked"]
+        
+        inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+        search_sql = inner_search_sql
+        search_params = inner_search_params
+        if inner_sort_sql:
+            sort_sql = inner_sort_sql
+
+    # Get total count (Filtered by sidebar AND table search)
     count_sql = f"""
         SELECT COUNT(*) FROM (
-            SELECT f.sk_user_id
+            SELECT u.user_name
             FROM {DATAMART_SCHEMA_NAME}.fact_session f
             JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-            WHERE {where_sql}
-            GROUP BY f.sk_user_id, g.sk_geography_id
+            WHERE {where_sql} AND {search_sql}
+            GROUP BY u.user_name, g.region_name, g.area_name
         ) as sub
     """
-    total_count_row = fetch_one(count_sql, params)
+    total_count_row = fetch_one(count_sql, params + search_params)
     total_count = total_count_row.get("count", 0) if total_count_row else 0
 
     # Get paginated data
@@ -89,12 +106,12 @@ def get_work_day_data(region=None, area=None, year=None, month=None, limit=15, o
         JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-        WHERE {where_sql}
+        WHERE {where_sql} AND {search_sql}
         GROUP BY u.user_name, g.region_name, g.area_name
-        ORDER BY days_worked DESC, u.user_name
+        {sort_sql}
         LIMIT %s OFFSET %s
     """
-    rows = fetch_all(sql, params + [limit, offset])
+    rows = fetch_all(sql, params + search_params + [limit, offset])
     
     return {
         "kpis": kpi_list,

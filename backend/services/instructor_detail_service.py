@@ -17,7 +17,8 @@ def get_instructor_detail_filters():
     }
 
 
-def get_instructor_detail_data(instructor_name=None, year=None, month=None, limit=15, offset=0):
+def get_instructor_detail_data(instructor_name=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import get_datatables_sql
     try:
         where_clauses = ["TRUE"]
         params = []
@@ -34,8 +35,7 @@ def get_instructor_detail_data(instructor_name=None, year=None, month=None, limi
         
         where_sql = " AND ".join(where_clauses)
         
-        # 1. Aggregated KPIs for top cards (4 cards)
-        # Using a subquery for exposures to avoid over-counting sessions
+        # 1. Aggregated KPIs for top cards (sidebar filters only)
         kpi_sql = f"""
             SELECT 
                 COUNT(DISTINCT f.session_nk_id) as total_sessions,
@@ -49,26 +49,55 @@ def get_instructor_detail_data(instructor_name=None, year=None, month=None, limi
             WHERE {where_sql}
         """
         kpi_res = fetch_one(kpi_sql, params)
+
+        # 2. DataTable Logic
+        search_sql = "TRUE"
+        search_params = []
+        sort_sql = "ORDER BY d.full_date DESC"
         
-        # 2. Get total count of granular rows (Session + Class)
+        if dt_params:
+            searchable_cols = ["COALESCE(p.program_name, '')", "COALESCE(a.activity_name, '')", "COALESCE(s.school_name, '')", "COALESCE(e.class_name, '')"]
+            sortable_cols = ["program_name", "date", "activity_name", "school_name", "class_name", "boys", "girls", "teachers"]
+            
+            inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+            search_sql = inner_search_sql
+            search_params = inner_search_params
+            if inner_sort_sql:
+                mapping = {
+                    "date": "d.full_date",
+                    "activity_name": "a.activity_name",
+                    "school_name": "s.school_name",
+                    "class_name": "e.class_name",
+                    "boys": "e.boys_count",
+                    "girls": "e.girls_count",
+                    "teachers": "f.no_of_teachers_participated"
+                }
+                for alias, db_col in mapping.items():
+                    inner_sort_sql = inner_sort_sql.replace(alias, db_col)
+                sort_sql = inner_sort_sql
+
+        # 3. Get total count of granular rows (Session + Class)
         count_sql = f"""
             SELECT COUNT(*) as count
             FROM {DATAMART_SCHEMA_NAME}.fact_session f
             JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+            JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
+            JOIN {DATAMART_SCHEMA_NAME}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-            WHERE {where_sql}
+            WHERE {where_sql} AND {search_sql}
         """
-        count_res = fetch_one(count_sql, params)
-        total_count = int(count_res.get("count", 0))
+        count_res = fetch_one(count_sql, params + search_params)
+        total_count = int(count_res.get("count", 0)) if count_res else 0
 
-        # 3. Get paginated granular data (9 Columns)
+        # 4. Get paginated granular data (9 Columns)
         sql = f"""
             SELECT 
-                p.program_name,
+                COALESCE(p.program_name, 'N/A') as program_name,
                 d.full_date as date,
-                a.activity_name,
-                s.school_name,
+                COALESCE(a.activity_name, 'N/A') as activity_name,
+                COALESCE(s.school_name, 'N/A') as school_name,
                 COALESCE(e.class_name, 'N/A') as class_name,
                 'N/A' as topic_name,
                 COALESCE(e.boys_count, 0) as boys,
@@ -81,11 +110,11 @@ def get_instructor_detail_data(instructor_name=None, year=None, month=None, limi
             JOIN {DATAMART_SCHEMA_NAME}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-            WHERE {where_sql}
-            ORDER BY d.full_date DESC
+            WHERE {where_sql} AND {search_sql}
+            {sort_sql}
             LIMIT %s OFFSET %s
         """
-        rows = fetch_all(sql, params + [limit, offset])
+        rows = fetch_all(sql, params + search_params + [limit, offset])
         
         return {
             "kpis": [

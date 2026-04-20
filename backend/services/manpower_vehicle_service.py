@@ -23,7 +23,8 @@ def get_manpower_vehicle_filters():
         return {"regions": [], "years": [], "months": []}
 
 
-def get_manpower_vehicle_data(region=None, year=None, month=None, limit=15, offset=0):
+def get_manpower_vehicle_data(region=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
     try:
         where_clauses = ["TRUE"]
         params = []
@@ -38,6 +39,7 @@ def get_manpower_vehicle_data(region=None, year=None, month=None, limit=15, offs
             params.append(int(month))
         where_sql = " AND ".join(where_clauses)
 
+        # KPI Query (sidebar filters only)
         kpi_row = fetch_one(f"""
             SELECT
                 COALESCE(SUM(v.distance_travelled), 0)   AS total_kms,
@@ -57,18 +59,36 @@ def get_manpower_vehicle_data(region=None, year=None, month=None, limit=15, offs
             {"label": "Active Drivers",         "value": int(kpi_row.get("active_drivers", 0) or 0),    "icon": "fas fa-truck",         "color": "bg-danger"},
         ]
 
-        total_count = fetch_one(f"""
+        # DataTable Logic
+        search_sql = "TRUE"
+        search_params = []
+        sort_sql = "ORDER BY total_kms DESC"
+        
+        if dt_params:
+            searchable_cols = ["COALESCE(g.region_name, 'Unknown')", "COALESCE(p.program_name, 'Unknown')"]
+            sortable_cols = ["region_name", "program_name", "drivers", "total_kms", "total_fuel_l", "total_cost", "vehicles_used"]
+            
+            inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+            search_sql = inner_search_sql
+            search_params = inner_search_params
+            if inner_sort_sql:
+                sort_sql = inner_sort_sql
+
+        # Get total count (Filtered by sidebar AND table search)
+        count_sql = f"""
             SELECT COUNT(*) FROM (
-                SELECT g.region_name, p.program_name
+                SELECT g.region_name
                 FROM {DW}.fact_vehicle_operations v
                 LEFT JOIN {DW}.dim_geography g ON v.sk_geography_id = g.sk_geography_id
                 LEFT JOIN {DW}.dim_program p    ON v.sk_program_id = p.sk_program_id
                 LEFT JOIN {DW}.dim_date d       ON v.date_id = d.date_id
-                WHERE {where_sql}
+                WHERE {where_sql} AND {search_sql}
                 GROUP BY g.region_name, p.program_name
             ) AS sub
-        """, params).get("count", 0)
+        """
+        total_count = fetch_one(count_sql, params + search_params).get("count", 0)
 
+        # Get paginated data
         table = fetch_all(f"""
             SELECT
                 COALESCE(g.region_name, 'Unknown')          AS region_name,
@@ -82,11 +102,13 @@ def get_manpower_vehicle_data(region=None, year=None, month=None, limit=15, offs
             LEFT JOIN {DW}.dim_geography g ON v.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DW}.dim_program p    ON v.sk_program_id = p.sk_program_id
             LEFT JOIN {DW}.dim_date d       ON v.date_id = d.date_id
-            WHERE {where_sql}
+            WHERE {where_sql} AND {search_sql}
             GROUP BY g.region_name, p.program_name
-            ORDER BY total_kms DESC
+            {sort_sql}
             LIMIT %s OFFSET %s
-        """, params + [limit, offset])
+        """, params + search_params + [limit, offset])
+
+        return {"kpis": kpis, "table": table, "total_count": int(total_count)}
 
         return {"kpis": kpis, "table": table, "total_count": int(total_count)}
     except Exception as e:

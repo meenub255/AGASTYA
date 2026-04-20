@@ -25,7 +25,9 @@ def get_instructor_summary_filters():
     }
 
 
-def get_instructor_summary_data(region=None, area=None, year=None, month=None, limit=15, offset=0):
+def get_instructor_summary_data(region=None, area=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
+
     where_clauses = ["TRUE"]
     params = []
     
@@ -44,7 +46,7 @@ def get_instructor_summary_data(region=None, area=None, year=None, month=None, l
     
     where_sql = " AND ".join(where_clauses)
     
-    # Get KPIs
+    # Get KPIs (limited by sidebar filters only)
     kpi_sql = f"""
         SELECT 
             COUNT(DISTINCT d.full_date) as days_worked,
@@ -71,6 +73,21 @@ def get_instructor_summary_data(region=None, area=None, year=None, month=None, l
         "combined_exposures": comb_exp
     }
 
+    # DataTable Logic
+    search_sql = "TRUE"
+    search_params = []
+    sort_sql = "ORDER BY instructor_name ASC"
+    
+    if dt_params:
+        searchable_cols = ["u.user_name"]
+        sortable_cols = ["instructor_name", "days_worked", "school_sessions", "total_sessions", "total_exposures", "fair_count", "training_exposures", "sf_exposures", "yil_sessions", "yil_exposures", "cv_visits", "cv_exposures"]
+        
+        inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+        search_sql = inner_search_sql
+        search_params = inner_search_params
+        if inner_sort_sql:
+            sort_sql = inner_sort_sql
+
     # Get total count for pagination
     count_sql = f"""
         SELECT COUNT(*) FROM (
@@ -79,11 +96,11 @@ def get_instructor_summary_data(region=None, area=None, year=None, month=None, l
             JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON u.sk_user_id = f.sk_user_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-            WHERE {where_sql}
+            WHERE {where_sql} AND {search_sql}
             GROUP BY u.sk_user_id
         ) as sub
     """
-    total_count = fetch_one(count_sql, params).get("count", 0)
+    total_count = fetch_one(count_sql, params + search_params).get("count", 0)
 
     # Main query to aggregate instructor metrics
     main_sql = f"""
@@ -106,12 +123,12 @@ def get_instructor_summary_data(region=None, area=None, year=None, month=None, l
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
-        WHERE {where_sql}
+        WHERE {where_sql} AND {search_sql}
         GROUP BY u.sk_user_id, u.user_name
-        ORDER BY u.user_name
+        {sort_sql}
         LIMIT %s OFFSET %s
     """
-    table_data = fetch_all(main_sql, params + [limit, offset])
+    table_data = fetch_all(main_sql, params + search_params + [limit, offset])
     
     return {
         "table": table_data,

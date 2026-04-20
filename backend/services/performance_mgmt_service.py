@@ -23,7 +23,8 @@ def get_performance_mgmt_filters():
         return {"regions": [], "years": [], "months": []}
 
 
-def get_performance_mgmt_data(region=None, year=None, month=None, limit=15, offset=0):
+def get_performance_mgmt_data(region=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
     try:
         where_clauses = ["TRUE"]
         params = []
@@ -38,6 +39,7 @@ def get_performance_mgmt_data(region=None, year=None, month=None, limit=15, offs
             params.append(int(month))
         where_sql = " AND ".join(where_clauses)
 
+        # KPI Query (sidebar filters only)
         kpi_row = fetch_one(f"""
             SELECT
                 COUNT(DISTINCT f.sk_user_id)                   AS total_instructors,
@@ -61,20 +63,42 @@ def get_performance_mgmt_data(region=None, year=None, month=None, limit=15, offs
             {"label": "Total Students Impacted",   "value": int(kpi_row.get("total_students", 0) or 0),            "icon": "fas fa-user-graduate",      "color": "bg-danger"},
         ]
 
-        total_count = fetch_one(f"""
-            SELECT COUNT(DISTINCT f.sk_user_id) AS count
-            FROM {DW}.fact_session f
-            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-            LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
-            WHERE {where_sql}
-        """, params).get("count", 0)
+        # DataTable Logic
+        search_sql = "TRUE"
+        search_params = []
+        sort_sql = "ORDER BY sessions DESC"
+        
+        if dt_params:
+            searchable_cols = ["u.user_name", "u.role_name", "g.region_name"]
+            sortable_cols = ["instructor_name", "role", "region_name", "programs", "sessions", "schools", "students_impacted", "avg_duration_min"]
+            
+            inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+            search_sql = inner_search_sql
+            search_params = inner_search_params
+            if inner_sort_sql:
+                sort_sql = inner_sort_sql
 
+        # Get total count (Filtered by sidebar AND table search)
+        count_sql = f"""
+            SELECT COUNT(*) FROM (
+                SELECT u.user_name
+                FROM {DW}.fact_session f
+                LEFT JOIN {DW}.dim_user u       ON f.sk_user_id = u.sk_user_id
+                LEFT JOIN {DW}.dim_geography g  ON f.sk_geography_id = g.sk_geography_id
+                LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
+                WHERE {where_sql} AND {search_sql}
+                GROUP BY u.user_name, u.role_name, g.region_name
+            ) as sub
+        """
+        total_count = fetch_one(count_sql, params + search_params).get("count", 0)
+
+        # Get paginated data
         table = fetch_all(f"""
             SELECT
                 COALESCE(u.user_name, 'Unknown')                   AS instructor_name,
                 COALESCE(u.role_name, 'Unknown')                   AS role,
                 COALESCE(g.region_name, 'Unknown')                 AS region_name,
-                COUNT(DISTINCT p.program_name)                     AS programs,
+                COUNT(DISTINCT f.sk_program_id)                    AS programs,
                 COUNT(DISTINCT f.sk_fact_session_id)               AS sessions,
                 COUNT(DISTINCT f.sk_school_id)                     AS schools,
                 COALESCE(SUM(e.total_exposure_count), 0)           AS students_impacted,
@@ -83,13 +107,14 @@ def get_performance_mgmt_data(region=None, year=None, month=None, limit=15, offs
             LEFT JOIN {DW}.dim_user u       ON f.sk_user_id = u.sk_user_id
             LEFT JOIN {DW}.dim_geography g  ON f.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
-            LEFT JOIN {DW}.dim_program p    ON f.sk_program_id = p.sk_program_id
             LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-            WHERE {where_sql}
+            WHERE {where_sql} AND {search_sql}
             GROUP BY u.user_name, u.role_name, g.region_name
-            ORDER BY sessions DESC
+            {sort_sql}
             LIMIT %s OFFSET %s
-        """, params + [limit, offset])
+        """, params + search_params + [limit, offset])
+
+        return {"kpis": kpis, "table": table, "total_count": int(total_count)}
 
         return {"kpis": kpis, "table": table, "total_count": int(total_count)}
     except Exception as e:

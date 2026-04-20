@@ -86,7 +86,9 @@ def get_instructor_session_log(
     instructor: str | None = None,
     limit: int = 10,
     offset: int = 0,
+    dt_params: dict | None = None,
 ) -> dict:
+    from backend.services.query_utils import get_datatables_sql
     where_clause, params = build_dimension_filters(
         start=start,
         end=end,
@@ -99,6 +101,32 @@ def get_instructor_session_log(
         instructor_expression="u.role_name",
     )
 
+    # DataTable Logic
+    search_sql = "TRUE"
+    search_params = []
+    sort_sql = "ORDER BY sessions DESC, students DESC, name"
+    
+    if dt_params:
+        searchable_cols = ["COALESCE(u.user_name, 'Unknown')", "u.role_name", "g.region_name"]
+        sortable_cols = ["name", "type", "region", "sessions", "students", "last_session"]
+        
+        inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+        search_sql = inner_search_sql
+        search_params = inner_search_params
+        if inner_sort_sql:
+            # Map aliases to DB expressions for sorting
+            mapping = {
+                "name": "u.user_name",
+                "type": _type_expression(),
+                "region": _region_expression(),
+                "sessions": "COUNT(f.sk_fact_session_id)",
+                "students": "(SELECT COALESCE(SUM(total_exposure_count), 0) FROM dw.fact_attendance_exposure fae JOIN dw.fact_session fs ON fae.session_nk_id = fs.session_nk_id WHERE fs.sk_user_id = u.sk_user_id)",
+                "last_session": "MAX(d.full_date)"
+            }
+            for alias, db_col in mapping.items():
+                inner_sort_sql = inner_sort_sql.replace(alias, db_col)
+            sort_sql = inner_sort_sql
+
     rows = fetch_all(
         f"""
         SELECT
@@ -106,6 +134,7 @@ def get_instructor_session_log(
             {_type_expression()} AS instructor_type,
             {_region_expression()} AS region,
             COUNT(f.sk_fact_session_id) AS sessions,
+            STRING_AGG(DISTINCT COALESCE(act.activity_name, 'NA'), ', ') AS activity_types,
             (SELECT COALESCE(SUM(total_exposure_count), 0) FROM dw.fact_attendance_exposure fae 
              JOIN dw.fact_session fs ON fae.session_nk_id = fs.session_nk_id 
              WHERE fs.sk_user_id = u.sk_user_id) AS students,
@@ -114,27 +143,30 @@ def get_instructor_session_log(
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN dw.dim_user u ON u.sk_user_id = f.sk_user_id
-        {where_clause}
+        LEFT JOIN dw.dim_activity_type act ON f.sk_activity_type_id = act.sk_activity_type_id
+        {where_clause} AND {search_sql}
         GROUP BY u.sk_user_id, u.user_name, u.role_name, g.region_name
-        ORDER BY sessions DESC, students DESC, name
+        {sort_sql}
         LIMIT %s OFFSET %s
         """,
-        [*params, limit, offset],
+        [*params, *search_params, limit, offset],
     )
 
-    
     total_count = fetch_one(
         f"""
-        SELECT COUNT(DISTINCT f.sk_user_id) 
-        FROM dw.fact_session f
-        LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
-        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-        LEFT JOIN dw.dim_user u ON u.sk_user_id = f.sk_user_id
-        {where_clause}
+        SELECT COUNT(*) FROM (
+            SELECT u.sk_user_id
+            FROM dw.fact_session f
+            LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
+            LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+            LEFT JOIN dw.dim_user u ON u.sk_user_id = f.sk_user_id
+            LEFT JOIN dw.dim_activity_type act ON f.sk_activity_type_id = act.sk_activity_type_id
+            {where_clause} AND {search_sql}
+            GROUP BY u.sk_user_id
+        ) as sub
         """,
-        params,
-    )["count"]
-
+        params + search_params,
+    ).get("count", 0)
 
     return {
         "table": [
@@ -143,6 +175,7 @@ def get_instructor_session_log(
                 "type": row["instructor_type"],
                 "region": row["region"],
                 "sessions": int(row["sessions"] or 0),
+                "activity_types": row["activity_types"],
                 "students": int(row["students"] or 0),
                 "last_session": row.get("last_session") or "-",
             }

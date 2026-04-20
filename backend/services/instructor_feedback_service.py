@@ -20,7 +20,8 @@ def get_instructor_feedback_filters():
         return {"instructors": [], "years": []}
 
 
-def get_instructor_feedback_data(instructor_name=None, year=None, limit=15, offset=0):
+def get_instructor_feedback_data(instructor_name=None, year=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
     try:
         where_clauses = ["TRUE"]
         params = []
@@ -32,7 +33,7 @@ def get_instructor_feedback_data(instructor_name=None, year=None, limit=15, offs
             params.append(int(year))
         where_sql = " AND ".join(where_clauses)
 
-        # KPIs
+        # KPIs (sidebar filters only)
         kpi_row = fetch_one(f"""
             SELECT
                 COUNT(DISTINCT f.sk_user_id)             AS total_instructors,
@@ -52,13 +53,39 @@ def get_instructor_feedback_data(instructor_name=None, year=None, limit=15, offs
             {"label": "Hands-on Sessions",     "value": int(kpi_row.get("hands_on_sessions", 0) or 0),  "icon": "fas fa-hands",              "color": "bg-danger"},
         ]
 
+        # DataTable Logic
+        search_sql = "TRUE"
+        search_params = []
+        sort_sql = "ORDER BY d.full_date DESC"
+        
+        if dt_params:
+            searchable_cols = ["COALESCE(u.user_name, 'Unknown')", "COALESCE(sc.school_name, 'Unknown')", "COALESCE(a.activity_name, 'Unknown')"]
+            sortable_cols = ["instructor_name", "session_date", "school_name", "activity_name", "demo_sessions", "hands_on_sessions", "duration_minutes"]
+            
+            inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+            search_sql = inner_search_sql
+            search_params = inner_search_params
+            if inner_sort_sql:
+                # Map frontend aliases to DB columns if needed
+                mapping = {
+                    "instructor_name": "u.user_name",
+                    "session_date": "d.full_date",
+                    "school_name": "sc.school_name",
+                    "activity_name": "a.activity_name"
+                }
+                for alias, db_col in mapping.items():
+                    inner_sort_sql = inner_sort_sql.replace(alias, db_col)
+                sort_sql = inner_sort_sql
+
         total_count = fetch_one(f"""
             SELECT COUNT(DISTINCT f.sk_fact_session_id) AS count
             FROM {DW}.fact_session f
-            LEFT JOIN {DW}.dim_user u  ON f.sk_user_id = u.sk_user_id
-            LEFT JOIN {DW}.dim_date d  ON f.date_id = d.date_id
-            WHERE {where_sql}
-        """, params).get("count", 0)
+            LEFT JOIN {DW}.dim_user u          ON f.sk_user_id = u.sk_user_id
+            LEFT JOIN {DW}.dim_date d          ON f.date_id = d.date_id
+            LEFT JOIN {DW}.dim_school sc       ON f.sk_school_id = sc.sk_school_id
+            LEFT JOIN {DW}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
+            WHERE {where_sql} AND {search_sql}
+        """, params + search_params).get("count", 0)
 
         rows = fetch_all(f"""
             SELECT
@@ -74,10 +101,10 @@ def get_instructor_feedback_data(instructor_name=None, year=None, limit=15, offs
             LEFT JOIN {DW}.dim_date d          ON f.date_id = d.date_id
             LEFT JOIN {DW}.dim_school sc       ON f.sk_school_id = sc.sk_school_id
             LEFT JOIN {DW}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
-            WHERE {where_sql}
-            ORDER BY d.full_date DESC
+            WHERE {where_sql} AND {search_sql}
+            {sort_sql}
             LIMIT %s OFFSET %s
-        """, params + [limit, offset])
+        """, params + search_params + [limit, offset])
 
         formatted = []
         for r in rows:

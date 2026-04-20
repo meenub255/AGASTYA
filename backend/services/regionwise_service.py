@@ -29,7 +29,7 @@ def get_regionwise_filters(region_name=None):
         return {"regions": [], "areas": [], "years": [], "months": []}
 
 
-def get_regionwise_data(region=None, area=None, year=None, month=None, limit=15, offset=0):
+def get_regionwise_data(region=None, area=None, year=None, month=None, limit=15, offset=0, dt_params=None):
     try:
         where_clauses = ["TRUE"]
         params = []

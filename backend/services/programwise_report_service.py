@@ -16,7 +16,8 @@ def get_programwise_report_filters():
     }
 
 
-def get_programwise_report_data(category=None, year=None, month=None, limit=15, offset=0):
+def get_programwise_report_data(category=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
     where_clauses = ["TRUE"]
     params = []
     
@@ -32,7 +33,7 @@ def get_programwise_report_data(category=None, year=None, month=None, limit=15, 
     
     where_sql = " AND ".join(where_clauses)
     
-    # KPI Query
+    # 1. KPI Query (sidebar filters only)
     kpi_sql = f"""
         SELECT 
             COUNT(DISTINCT p.program_name) as total_programs,
@@ -54,22 +55,38 @@ def get_programwise_report_data(category=None, year=None, month=None, limit=15, 
         {"label": "Total Students Impacted", "value": kpis_raw.get('total_students', 0), "icon": "fas fa-user-graduate", "color": "bg-danger"}
     ]
 
-    # Get total count for pagination
+    # 2. DataTable Logic
+    search_sql = "TRUE"
+    search_params = []
+    sort_sql = 'ORDER BY "School Sessions" DESC'
+    
+    if dt_params:
+        searchable_cols = ["g.region_name", "g.area_name", "p.program_name", "p.donor_name"]
+        sortable_cols = ["Region Name", "Area Name", "Program Name", "Donor Name", "No of Schools visited", "Total Number of Days worked", "School Sessions", "Average Session Durat", "Total Exposure"]
+        # Map some columns to actual complex SQL if needed, but here simple aliases work for Postgres "ORDER BY"
+        
+        inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+        search_sql = inner_search_sql
+        search_params = inner_search_params
+        if inner_sort_sql:
+            sort_sql = inner_sort_sql
+
+    # Get total count (Filtered by sidebar AND table search)
     count_sql = f"""
         SELECT COUNT(*) FROM (
-            SELECT p.program_name, g.region_name, g.area_name
+            SELECT p.program_name
             FROM {DATAMART_SCHEMA_NAME}.fact_session f
             JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-            WHERE {where_sql}
+            WHERE {where_sql} AND {search_sql}
             GROUP BY p.program_name, g.region_name, g.area_name, p.donor_name
         ) as sub
     """
-    total_count_row = fetch_one(count_sql, params)
+    total_count_row = fetch_one(count_sql, params + search_params)
     total_count = total_count_row.get("count", 0) if total_count_row else 0
 
-    # Get paginated data with expanded columns
+    # Get paginated data
     sql = f"""
         SELECT 
             g.region_name as "Region Name",
@@ -86,12 +103,12 @@ def get_programwise_report_data(category=None, year=None, month=None, limit=15, 
         JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-        WHERE {where_sql}
+        WHERE {where_sql} AND {search_sql}
         GROUP BY g.region_name, g.area_name, p.program_name, p.donor_name
-        ORDER BY "School Sessions" DESC
+        {sort_sql}
         LIMIT %s OFFSET %s
     """
-    rows = fetch_all(sql, params + [limit, offset])
+    rows = fetch_all(sql, params + search_params + [limit, offset])
     
     return {
         "kpis": kpi_list,

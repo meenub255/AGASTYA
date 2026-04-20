@@ -41,12 +41,12 @@ def get_region_summary_filters(region_name: str | None = None):
         return {"regions": [], "programs": [], "years": [], "months": []}
 
 
-def get_region_summary_data(region=None, program_type=None, year=None, month=None, limit=15, offset=0):
+def get_region_summary_data(region=None, program_type=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
     try:
         where_clauses = ["TRUE"]
         params = []
         
-        # Clean inputs - frontend might send "null", "undefined", or empty strings
         if region and str(region).strip() not in ["", "null", "undefined", "Select Region"]:
             where_clauses.append("g.region_name = %s")
             params.append(region)
@@ -62,43 +62,7 @@ def get_region_summary_data(region=None, program_type=None, year=None, month=Non
         
         where_sql = " AND ".join(where_clauses)
         
-        # 1. Get total count of regions with data using LEFT JOIN for maximum coverage
-        count_sql = f"""
-            SELECT COUNT(DISTINCT COALESCE(g.region_name, 'Unknown')) as count
-            FROM {DATAMART_SCHEMA_NAME}.fact_session f
-            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
-            WHERE {where_sql}
-        """
-        count_res = fetch_one(count_sql, params)
-        total_count = int(count_res.get("count", 0))
-
-        # 2. Main data query with session-level aggregation subquery for exposure
-        main_sql = f"""
-            SELECT 
-                COALESCE(g.region_name, 'Unknown') as region,
-                COUNT(f.sk_fact_session_id) as sessions,
-                SUM(COALESCE(sess_agg.total_students, 0)) as students_reached,
-                SUM(COALESCE(f.no_of_teachers_participated, 0)) as teachers_trained,
-                COUNT(DISTINCT f.sk_school_id) as schools_covered
-            FROM {DATAMART_SCHEMA_NAME}.fact_session f
-            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
-            LEFT JOIN (
-                SELECT session_nk_id, SUM(total_exposure_count) as total_students
-                FROM {DATAMART_SCHEMA_NAME}.fact_attendance_exposure
-                GROUP BY session_nk_id
-            ) sess_agg ON f.session_nk_id = sess_agg.session_nk_id
-            WHERE {where_sql}
-            GROUP BY COALESCE(g.region_name, 'Unknown')
-            ORDER BY region
-            LIMIT %s OFFSET %s
-        """
-        table_data = fetch_all(main_sql, params + [limit, offset])
-        
-        # 3. Aggregated KPIs for top cards (Refactored for 4 cards)
+        # KPI Query (sidebar filters only)
         kpi_sql = f"""
             SELECT 
                 COUNT(f.sk_fact_session_id) as total_sessions,
@@ -118,6 +82,59 @@ def get_region_summary_data(region=None, program_type=None, year=None, month=Non
             WHERE {where_sql}
         """
         totals = fetch_one(kpi_sql, params)
+
+        # DataTable Logic
+        search_sql = "TRUE"
+        search_params = []
+        sort_sql = "ORDER BY region"
+        
+        if dt_params:
+            searchable_cols = ["COALESCE(g.region_name, 'Unknown')"]
+            sortable_cols = ["region", "sessions", "students_reached", "teachers_trained", "schools_covered"]
+            
+            inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+            search_sql = inner_search_sql
+            search_params = inner_search_params
+            if inner_sort_sql:
+                sort_sql = inner_sort_sql
+
+        # Get total count (Filtered by sidebar AND table search)
+        count_sql = f"""
+            SELECT COUNT(*) FROM (
+                SELECT COALESCE(g.region_name, 'Unknown') as region
+                FROM {DATAMART_SCHEMA_NAME}.fact_session f
+                LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+                LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+                LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+                WHERE {where_sql} AND {search_sql}
+                GROUP BY COALESCE(g.region_name, 'Unknown')
+            ) as sub
+        """
+        total_count = fetch_one(count_sql, params + search_params).get("count", 0)
+
+        # Main data query
+        main_sql = f"""
+            SELECT 
+                COALESCE(g.region_name, 'Unknown') as region,
+                COUNT(f.sk_fact_session_id) as sessions,
+                SUM(COALESCE(sess_agg.total_students, 0)) as students_reached,
+                SUM(COALESCE(f.no_of_teachers_participated, 0)) as teachers_trained,
+                COUNT(DISTINCT f.sk_school_id) as schools_covered
+            FROM {DATAMART_SCHEMA_NAME}.fact_session f
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+            LEFT JOIN (
+                SELECT session_nk_id, SUM(total_exposure_count) as total_students
+                FROM {DATAMART_SCHEMA_NAME}.fact_attendance_exposure
+                GROUP BY session_nk_id
+            ) sess_agg ON f.session_nk_id = sess_agg.session_nk_id
+            WHERE {where_sql} AND {search_sql}
+            GROUP BY COALESCE(g.region_name, 'Unknown')
+            {sort_sql}
+            LIMIT %s OFFSET %s
+        """
+        table_data = fetch_all(main_sql, params + search_params + [limit, offset])
         
         return {
             "kpis": [

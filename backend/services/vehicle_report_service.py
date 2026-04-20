@@ -30,17 +30,11 @@ def get_vehicle_report_filters(region_name=None):
         print(f"Error fetching vehicle filters: {e}")
         return {"regions": [], "areas": [], "years": [], "months": []}
 
-def get_vehicle_report_data(region=None, area=None, year=None, month=None, limit=15, offset=0):
+def get_vehicle_report_data(region=None, area=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
     try:
         where_clauses = ["TRUE"]
         params = []
-        
-        # Join logic: 
-        # TXN_VEHICLE_LOG (log) -> MST_VEHICLE (v) on vehicle_id
-        # MST_VEHICLE (v) -> dim_geography (g) on Center?? 
-        # Actually MST_VEHICLE has CENTER_ID (derived from MST_AREA)
-        # We need to join log -> v -> center (MST_AREA) -> region (MST_REGION)
-        # since MST_AREA is source and dim_geography is datamart.
         
         if region and str(region).strip() not in ["", "null", "undefined", "Select Region"]:
             where_clauses.append("r.NAME = %s")
@@ -75,6 +69,33 @@ def get_vehicle_report_data(region=None, area=None, year=None, month=None, limit
         used_days = int(kpi_res.get("used_days") or 1)
         avg_km_day = total_kms / used_days if used_days > 0 else 0
 
+        # DataTable Logic
+        search_sql = "TRUE"
+        search_params = []
+        sort_sql = "ORDER BY log.date DESC"
+        
+        if dt_params:
+            searchable_cols = ["v.vehicle_name", "v.vehicle_number", "a.name", "r.name", "dr.name"]
+            sortable_cols = ["vehicle_name", "date", "registration_no", "center_name", "region_name", "driver_name", "initial_km", "end_km", "total_kms"]
+            
+            inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+            search_sql = inner_search_sql
+            search_params = inner_search_params
+            if inner_sort_sql:
+                sort_sql = inner_sort_sql
+
+        # Count for pagination
+        count_sql = f"""
+            SELECT COUNT(*) as count
+            FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
+            JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON log.vehicle_id = v.id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_user dr ON log.driver_id = dr.id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON v.area_id = a.id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON a.region_id = r.id
+            WHERE {where_sql} AND {search_sql} AND log.is_deleted = 0
+        """
+        total_count = fetch_one(count_sql, params + search_params).get("count", 0)
+
         # 2. Granular Table
         sql = f"""
             SELECT 
@@ -86,29 +107,17 @@ def get_vehicle_report_data(region=None, area=None, year=None, month=None, limit
                 dr.name as driver_name,
                 log.open_reading as initial_km,
                 log.closed_reading as end_km,
-                (COALESCE(log.closed_reading, 0) - COALESCE(log.open_reading, 0)) as total_kms,
-                AVG(COALESCE(log.closed_reading, 0) - COALESCE(log.open_reading, 0)) OVER (PARTITION BY v.id ORDER BY log.date) as cumulative_avg
+                (COALESCE(log.closed_reading, 0) - COALESCE(log.open_reading, 0)) as total_kms
             FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
             JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON log.vehicle_id = v.id
             LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_user dr ON log.driver_id = dr.id
             LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON v.area_id = a.id
             LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON a.region_id = r.id
-            WHERE {where_sql} AND log.is_deleted = 0
-            ORDER BY log.date DESC
+            WHERE {where_sql} AND {search_sql} AND log.is_deleted = 0
+            {sort_sql}
             LIMIT %s OFFSET %s
         """
-        rows = fetch_all(sql, params + [limit, offset])
-        
-        # Count for pagination
-        count_sql = f"""
-            SELECT COUNT(*) as count
-            FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
-            JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON log.vehicle_id = v.id
-            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON v.area_id = a.id
-            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON a.region_id = r.id
-            WHERE {where_sql} AND log.is_deleted = 0
-        """
-        total_count = fetch_one(count_sql, params).get("count", 0)
+        rows = fetch_all(sql, params + search_params + [limit, offset])
 
         return {
             "kpis": [

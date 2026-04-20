@@ -21,7 +21,8 @@ def get_nationwide_filters():
         return {"regions": [], "years": []}
 
 
-def get_nationwide_data(start_year=None, end_year=None, region=None, limit=15, offset=0):
+def get_nationwide_data(start_year=None, end_year=None, region=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
     try:
         where_clauses = ["TRUE"]
         params = []
@@ -68,7 +69,7 @@ def get_nationwide_data(start_year=None, end_year=None, region=None, limit=15, o
             {"label": "Total Programs",       "value": int(kpi_row.get("total_programs", 0) or 0),    "icon": "fas fa-project-diagram",    "color": "bg-danger"},
         ]
 
-        # Charts
+        # Charts (sidebar filters only)
         sessions_by_region = fetch_all(f"""
             SELECT COALESCE(g.region_name, 'Unknown') AS label,
                    COUNT(DISTINCT f.sk_fact_session_id) AS value
@@ -90,16 +91,36 @@ def get_nationwide_data(start_year=None, end_year=None, region=None, limit=15, o
             GROUP BY g.region_name ORDER BY value DESC LIMIT 12
         """, params)
 
-        # Table — region rollup
-        total_count = fetch_one(f"""
-            SELECT COUNT(DISTINCT COALESCE(g.region_name,'Unknown')) AS count
-            FROM {DW}.fact_session f
-            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-            LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
-            WHERE {where_sql}
-        """, params).get("count", 0)
+        # DataTable Logic
+        search_sql = "TRUE"
+        search_params = []
+        sort_sql = "ORDER BY sessions DESC"
+        
+        if dt_params:
+            searchable_cols = ["COALESCE(g.region_name,'Unknown')"]
+            sortable_cols = ["region_name", "sessions", "schools_visited", "students_reached", "instructors", "programs", "drivers"]
+            
+            inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+            search_sql = inner_search_sql
+            search_params = inner_search_params
+            if inner_sort_sql:
+                sort_sql = inner_sort_sql
 
-        table_params = params + params + [limit, offset]
+        # Get total count (Filtered by sidebar AND table search)
+        count_sql = f"""
+            SELECT COUNT(*) FROM (
+                SELECT COALESCE(g.region_name,'Unknown')
+                FROM {DW}.fact_session f
+                LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+                LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
+                WHERE {where_sql} AND {search_sql}
+                GROUP BY COALESCE(g.region_name, 'Unknown')
+            ) as sub
+        """
+        total_count = fetch_one(count_sql, params + search_params).get("count", 0)
+
+        # Table — region rollup
+        table_params = params + search_params + params + [limit, offset]
         table = fetch_all(f"""
             SELECT
                 COALESCE(g.region_name,'Unknown')              AS region_name,
@@ -107,7 +128,7 @@ def get_nationwide_data(start_year=None, end_year=None, region=None, limit=15, o
                 COUNT(DISTINCT f.sk_school_id)                 AS schools_visited,
                 COALESCE(SUM(e.total_exposure_count), 0)       AS students_reached,
                 COUNT(DISTINCT f.sk_user_id)                   AS instructors,
-                COUNT(DISTINCT p.program_name)                 AS programs,
+                COUNT(DISTINCT f.sk_program_id)                AS programs,
                 (
                     SELECT COUNT(DISTINCT v.sk_driver_id)
                     FROM {DW}.fact_vehicle_operations v
@@ -119,12 +140,22 @@ def get_nationwide_data(start_year=None, end_year=None, region=None, limit=15, o
             FROM {DW}.fact_session f
             LEFT JOIN {DW}.dim_geography g   ON f.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DW}.dim_date d        ON f.date_id = d.date_id
-            LEFT JOIN {DW}.dim_program p     ON f.sk_program_id = p.sk_program_id
             LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-            WHERE {where_sql}
-            GROUP BY g.region_name ORDER BY sessions DESC
+            WHERE {where_sql} AND {search_sql}
+            GROUP BY g.region_name 
+            {sort_sql}
             LIMIT %s OFFSET %s
         """, table_params)
+
+        return {
+            "kpis": kpis,
+            "charts": {
+                "sessions_by_region":  [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_region],
+                "students_by_region":  [{"label": r["label"], "value": float(r["value"])} for r in students_by_region],
+            },
+            "table": table,
+            "total_count": int(total_count),
+        }
 
         return {
             "kpis": kpis,

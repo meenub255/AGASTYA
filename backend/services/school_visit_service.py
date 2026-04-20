@@ -50,7 +50,9 @@ def get_school_visit_filters(region_name: str | None = None):
     }
 
 
-def get_school_visit_data(region=None, area=None, program=None, year=None, month=None, limit=15, offset=0):
+def get_school_visit_data(region=None, area=None, program=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
+
     where_clauses = ["TRUE"]
     params = []
     
@@ -72,7 +74,7 @@ def get_school_visit_data(region=None, area=None, program=None, year=None, month
     
     where_sql = " AND ".join(where_clauses)
     
-    # Get KPIs (Using LEFT JOINs for robustness)
+    # Get KPIs (Using sidebar filters only)
     kpi_sql = f"""
         SELECT 
             COUNT(DISTINCT f.sk_school_id) as total_schools,
@@ -87,7 +89,7 @@ def get_school_visit_data(region=None, area=None, program=None, year=None, month
     """
     kpi_res = fetch_one(kpi_sql, params)
 
-    # Monthly Sessions (sessions in the latest month of the selected period)
+    # Monthly Sessions
     monthly_sql = f"""
         SELECT COUNT(f.sk_fact_session_id) as monthly_sessions
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
@@ -113,23 +115,38 @@ def get_school_visit_data(region=None, area=None, program=None, year=None, month
         "monthly_sessions": int(monthly_res.get("monthly_sessions") or 0) if monthly_res else 0
     }
 
-    # Get total row count for pagination (Grouping by School, Program, Class, Section)
+    # DataTable Logic
+    search_sql = "TRUE"
+    search_params = []
+    sort_sql = "ORDER BY school_name, program_name, class_name, section_name"
+    
+    if dt_params:
+        searchable_cols = ["s.school_name", "p.program_name", "e.class_name", "e.section_name"]
+        sortable_cols = ["school_name", "program_name", "class_name", "section_name", "sessions", "exposures"]
+        
+        inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+        search_sql = inner_search_sql
+        search_params = inner_search_params
+        if inner_sort_sql:
+            sort_sql = inner_sort_sql
+
+    # Get total row count for pagination
     count_sql = f"""
         SELECT COUNT(*) FROM (
-            SELECT s.school_name, p.program_name, e.class_name, e.section_name
+            SELECT s.school_name
             FROM {DATAMART_SCHEMA_NAME}.fact_session f
             INNER JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
             INNER JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
             INNER JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
             INNER JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
             INNER JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-            WHERE {where_sql}
+            WHERE {where_sql} AND {search_sql}
             GROUP BY s.school_name, p.program_name, e.class_name, e.section_name
         ) as sub
     """
-    total_count = fetch_one(count_sql, params).get("count", 0)
+    total_count = fetch_one(count_sql, params + search_params).get("count", 0)
 
-    # Get paginated data (Granular breakdown by Class and Section)
+    # Get paginated data
     sql = f"""
         SELECT 
             COALESCE(s.school_name, 'Unknown') as school_name,
@@ -144,12 +161,12 @@ def get_school_visit_data(region=None, area=None, program=None, year=None, month
         INNER JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         INNER JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         INNER JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-        WHERE {where_sql}
+        WHERE {where_sql} AND {search_sql}
         GROUP BY s.school_name, p.program_name, e.class_name, e.section_name
-        ORDER BY s.school_name, p.program_name, e.class_name, e.section_name
+        {sort_sql}
         LIMIT %s OFFSET %s
     """
-    rows = fetch_all(sql, params + [limit, offset])
+    rows = fetch_all(sql, params + search_params + [limit, offset])
     
     return {
         "table": rows, 
