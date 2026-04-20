@@ -857,4 +857,171 @@
             alert("Failed to export data");
         }
     };
+
+    window.PramanaDashboard = {
+        initDataTable: function(selector, options = {}) {
+            if ($.fn.DataTable.isDataTable(selector)) {
+                $(selector).DataTable().destroy();
+            }
+
+            const defaultOptions = {
+                paging: true,
+                searching: true,
+                ordering: true,
+                info: true,
+                responsive: true,
+                autoWidth: false, // Prevent DataTables from guessing widths, which causes misalignment
+                pageLength: 15,
+                lengthMenu: [10, 15, 25, 50, 100],
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Filter records...",
+                    lengthMenu: "Show _MENU_ entries"
+                },
+                order: [], // Disable initial sort to respect server-side default
+                drawCallback: function(settings) {
+                    const api = this.api();
+                    $(api.table().header()).find('th').each(function() {
+                        const $th = $(this);
+                        
+                        // Disable native DataTables sort click listeners
+                        $th.off('click.DT keypress.DT');
+                        
+                        if ($th.hasClass('sorting') || $th.hasClass('sorting_asc') || $th.hasClass('sorting_desc')) {
+                            
+                            // Inject custom 3-line icon
+                            if ($th.find('.dt-sort-icon').length === 0) {
+                                $th.append('<i class="fas fa-bars dt-sort-icon"></i>');
+                            }
+                            
+                            // Highlight icon if actively sorted
+                            const icon = $th.find('.dt-sort-icon');
+                            if ($th.hasClass('sorting_asc') || $th.hasClass('sorting_desc')) {
+                                icon.addClass('text-primary');
+                            } else {
+                                icon.removeClass('text-primary');
+                            }
+
+                            // Bind our custom sort dropdown interaction
+                            $th.off('click.PramanaSort').on('click.PramanaSort', function(e) {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                
+                                const tableId = $(this).closest('table').attr('id');
+                                const colIdx = $(this).index();
+                                const menu = $('#dtSortMenu');
+                                
+                                // Store target info in menu
+                                menu.data('tableId', tableId);
+                                menu.data('colIdx', colIdx);
+                                
+                                // Position menu appropriately
+                                const rect = this.getBoundingClientRect();
+                                menu.css({
+                                    top: rect.bottom + window.scrollY,
+                                    left: e.pageX - 75
+                                }).show();
+                            });
+                        }
+                    });
+                }
+            };
+
+            // Setup Custom Sort Dropdown Interactions (Run Once)
+            if (!window._pramanaCustomSortInitialized) {
+                window._pramanaCustomSortInitialized = true;
+                
+                // Hide menu when clicking out
+                $(document).on('click', function(e) {
+                    if (!$(e.target).closest('#dtSortMenu, th.sorting, th.sorting_asc, th.sorting_desc').length) {
+                        $('#dtSortMenu').hide();
+                    }
+                });
+                
+                // Handle menu selections
+                $(document).on('click', '.dt-sort-action', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const menu = $('#dtSortMenu');
+                    const tableId = menu.data('tableId');
+                    const colIdx = menu.data('colIdx');
+                    const sortType = $(this).data('sort');
+                    
+                    if (tableId && colIdx !== undefined) {
+                        const dt = $('#' + tableId).DataTable();
+                        if (sortType === 'remove') {
+                            dt.order([]).draw(); // Remove sort
+                        } else {
+                            dt.order([Math.floor(colIdx), sortType]).draw();
+                        }
+                    }
+                    menu.hide();
+                });
+            }
+
+            // If ajaxUrl is provided, we switch to server-side mode
+            if (options.ajaxUrl) {
+                const ajaxUrl = options.ajaxUrl;
+                const getFilters = options.getFilters;
+                const onDataLoad = options.onDataLoad;
+
+                const serverSideOptions = {
+                    serverSide: true,
+                    processing: true,
+                    ajax: {
+                        url: ajaxUrl,
+                        data: function(d) {
+                            // Merge DataTables params with our custom filters
+                            const customFilters = typeof getFilters === 'function' ? getFilters() : {};
+                            return $.extend({}, d, customFilters);
+                        },
+                        dataSrc: function(json) {
+                            // DataTables expects 'recordsTotal' and 'recordsFiltered'
+                            // In our backend, total_count reflects the filtered count
+                            json.recordsTotal = json.total_count || 0;
+                            json.recordsFiltered = json.total_count || 0; 
+                            
+                            if (typeof onDataLoad === 'function') {
+                                onDataLoad(json);
+                            }
+                            
+                            return json.table || [];
+                        },
+                        error: function(xhr, error, thrown) {
+                            console.error('DataTable AJAX error:', error, thrown);
+                            // Optional: Show user-friendly error in the table
+                            $(selector + ' tbody').html('<tr><td colspan="100%" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle mr-2"></i> Failed to load data from server</td></tr>');
+                        }
+                    }
+                };
+                delete options.ajaxUrl;
+                delete options.getFilters;
+                delete options.onDataLoad;
+                return $(selector).DataTable($.extend(true, defaultOptions, serverSideOptions, options));
+            }
+
+            return $(selector).DataTable($.extend(true, defaultOptions, options));
+        },
+        resetTable: function(tableSelector, loadDataCallback) {
+            // Clear Select2 dropdowns (reset to first option - usually "All" or "Select")
+            $('.select2').each(function() {
+                const firstVal = $(this).find('option:first').val();
+                $(this).val(firstVal).trigger('change.select2');
+            });
+            
+            // Clear any other filter inputs
+            $('.card-body input').val('');
+
+            // Reset DataTable search and sorting
+            if ($.fn.DataTable.isDataTable(tableSelector)) {
+                const table = $(tableSelector).DataTable();
+                table.search('').order([]).draw();
+            }
+
+            // Reload data for the page if callback is provided
+            if (typeof loadDataCallback === 'function') {
+                loadDataCallback();
+            }
+        }
+    };
 })();
