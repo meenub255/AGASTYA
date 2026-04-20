@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from backend.services import nationwide_service
 
-router = APIRouter(prefix="/nationwide-dashboard", tags=["nationwide-dashboard"])
+router = APIRouter(prefix="/nationwide", tags=["nationwide"])
 
 @router.get("/filters")
 def get_filters():
@@ -9,13 +9,21 @@ def get_filters():
 
 @router.get("/data")
 def get_data(
+    request: Request,
     start_year: str | None = Query(None),
     end_year:   str | None = Query(None),
     region:     str | None = Query(None),
     limit:      int        = Query(default=15),
     offset:     int        = Query(default=0),
 ):
-    return nationwide_service.get_nationwide_data(start_year, end_year, region, limit, offset)
+    from backend.services.query_utils import parse_datatables_params
+    dt_params = parse_datatables_params(dict(request.query_params))
+
+    if "length" in request.query_params:
+        limit = dt_params["length"]
+        offset = dt_params["start"]
+
+    return nationwide_service.get_nationwide_data(start_year, end_year, region, limit, offset, dt_params)
 
 @router.get("/export")
 def export_data(
