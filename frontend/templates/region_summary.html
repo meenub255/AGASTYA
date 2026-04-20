@@ -37,6 +37,9 @@
                 <button id="seeReportBtn" class="btn btn-primary btn-block mb-2">
                     <i class="fas fa-sync-alt mr-1"></i> See Report
                 </button>
+                <button id="resetFilters" class="btn btn-block btn-reset-filters mb-2">
+                    <i class="fas fa-undo mr-1"></i> Reset All
+                </button>
                 <button id="exportXlsx" class="btn btn-export btn-block">
                     <i class="fas fa-file-excel mr-1"></i> Export to XLSX
                 </button>
@@ -114,7 +117,6 @@
                                 </tbody>
                             </table>
                         </div>
-                        {% include "partials/pagination.html" %}
                     </div>
                 </div>
             </div>
@@ -172,22 +174,17 @@
         });
 
         function loadData() {
-            const filters = {
-                region: $('#regionFilter').val(),
-                program_type: $('#programTypeFilter').val(),
-                year: $('#yearFilter').val(),
-                month: $('#monthFilter').val(),
-                limit: pagination.state.limit,
-                offset: pagination.state.offset
-            };
-
-            const query = new URLSearchParams(filters).toString();
-            fetch(`/region-summary/data?${query}`)
-                .then(response => response.json())
-                .then(data => {
-                    const tbody = $('#summaryTableBody');
-                    tbody.empty();
-
+            window.PramanaDashboard.initDataTable('#regionTable', {
+                ajaxUrl: '/region-summary/data',
+                getFilters: function() {
+                    return {
+                        region: $('#regionFilter').val(),
+                        program_type: $('#programTypeFilter').val(),
+                        year: $('#yearFilter').val(),
+                        month: $('#monthFilter').val()
+                    };
+                },
+                onDataLoad: function(data) {
                     // Update KPIs (4 cards)
                     if (data.kpis) {
                         $('#kpiTotalSessions').text(data.kpis[0].value.toLocaleString());
@@ -195,41 +192,32 @@
                         $('#kpiScienceFairs').text(data.kpis[2].value.toLocaleString());
                         $('#kpiTeacherTraining').text(data.kpis[3].value.toLocaleString());
                     }
-
-                    if (!data.table || data.table.length === 0) {
-                        tbody.append('<tr><td colspan="5" class="text-center">No data found</td></tr>');
-                        pagination.updateInfo('regionTable', 0);
-                        return;
-                    }
-
-                    // Inject Table
-                    data.table.forEach(row => {
-                        tbody.append(`
-                        <tr>
-                            <td>${row.region}</td>
-                            <td>${row.sessions.toLocaleString()}</td>
-                            <td>${row.students_reached.toLocaleString()}</td>
-                            <td>${row.teachers_trained.toLocaleString()}</td>
-                            <td>${row.schools_covered.toLocaleString()}</td>
-                        </tr>
-                    `);
-                    });
-                    pagination.updateInfo('regionTable', data.total_count);
-                });
+                },
+                columns: [
+                    { data: 'region' },
+                    { data: 'sessions', render: function(data) {
+                        return data.toLocaleString();
+                    }},
+                    { data: 'students_reached', render: function(data) {
+                        return data.toLocaleString();
+                    }},
+                    { data: 'teachers_trained', render: function(data) {
+                        return data.toLocaleString();
+                    }},
+                    { data: 'schools_covered', render: function(data) {
+                        return data.toLocaleString();
+                    }}
+                ]
+            });
         }
 
 
         $('#seeReportBtn').on('click', function () {
-            pagination.reset();
             loadData();
         });
 
-        $('.prev-page').click(function () {
-            pagination.prev(loadData);
-        });
-
-        $('.next-page').click(function () {
-            pagination.next(loadData);
+        $('#resetFilters').click(function() {
+            window.PramanaDashboard.resetTable('#regionTable', loadData);
         });
 
         $('#exportXlsx').click(function () {

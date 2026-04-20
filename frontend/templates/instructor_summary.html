@@ -37,6 +37,9 @@
                 <button id="seeReport" class="btn btn-primary btn-block mb-2">
                     <i class="fas fa-sync-alt mr-1"></i> See Report
                 </button>
+                <button id="resetFilters" class="btn btn-block btn-reset-filters mb-2">
+                    <i class="fas fa-undo mr-1"></i> Reset All
+                </button>
                 <button id="exportXlsx" class="btn btn-export btn-block mb-2">
                     <i class="fas fa-file-excel mr-1"></i> Export to XLSX
                 </button>
@@ -122,7 +125,6 @@
                         </tbody>
                     </table>
                 </div>
-                {% include "partials/pagination.html" %}
             </div>
         </div>
     </div>
@@ -154,22 +156,18 @@ $(function () {
 
     function loadData() {
         window.loadReportData = loadData; 
-        const filters = {
-            region: $('#regionFilter').val(),
-            area: $('#areaFilter').val(),
-            year: $('#yearFilter').val(),
-            month: $('#monthFilter').val(),
-            limit: pagination.state.limit,
-            offset: pagination.state.offset
-        };
-
-        const queryParams = new URLSearchParams(filters).toString();
-        fetch(`/instructor-summary/data?${queryParams}`)
-            .then(res => res.json())
-            .then(data => {
-                const tbody = $('#instructorTable tbody');
-                tbody.empty();
-
+        
+        window.PramanaDashboard.initDataTable('#instructorTable', {
+            ajaxUrl: '/instructor-summary/data',
+            getFilters: function() {
+                return {
+                    region: $('#regionFilter').val(),
+                    area: $('#areaFilter').val(),
+                    year: $('#yearFilter').val(),
+                    month: $('#monthFilter').val()
+                };
+            },
+            onDataLoad: function(data) {
                 // Update KPIs
                 if (data.kpis) {
                     $('#kpiDaysWorked').text(data.kpis.days_worked.toLocaleString());
@@ -177,44 +175,29 @@ $(function () {
                     $('#kpiSchoolExposures').text(data.kpis.school_exposures.toLocaleString());
                     $('#kpiCombinedExposures').text(data.kpis.combined_exposures.toLocaleString());
                 }
-
-                if (data.table.length === 0) {
-                    tbody.append('<tr><td colspan="11" class="text-center">No data found</td></tr>');
-                    pagination.updateInfo('instructorTable', 0);
-                    return;
-                }
-                data.table.forEach(row => {
-                    tbody.append(`
-                        <tr>
-                            <td>${row.instructor_name}</td>
-                            <td>${row.days_worked}</td>
-                            <td>${row.school_sessions}</td>
-                            <td>${row.total_exposures}</td>
-                            <td>${row.fair_count}</td>
-                            <td>${row.training_exposures}</td>
-                            <td>${row.sf_exposures}</td>
-                            <td>${row.yil_sessions}</td>
-                            <td>${row.yil_exposures}</td>
-                            <td>${row.cv_visits}</td>
-                            <td>${row.cv_exposures}</td>
-                        </tr>
-                    `);
-                });
-                pagination.updateInfo('instructorTable', data.total_count);
-            });
+            },
+            columns: [
+                { data: 'instructor_name', width: '15%' },
+                { data: 'days_worked', className: 'text-center' },
+                { data: 'school_sessions', className: 'text-center' },
+                { data: 'total_exposures', className: 'text-center font-weight-bold', width: '10%' },
+                { data: 'fair_count', className: 'text-center' },
+                { data: 'training_exposures', className: 'text-center' },
+                { data: 'sf_exposures', className: 'text-center' },
+                { data: 'yil_sessions', className: 'text-center' },
+                { data: 'yil_exposures', className: 'text-center' },
+                { data: 'cv_visits', className: 'text-center' },
+                { data: 'cv_exposures', className: 'text-center' }
+            ]
+        });
     }
 
     $('#seeReport').click(function () {
-        pagination.reset();
         loadData();
     });
 
-    $('.prev-page').click(function() {
-        pagination.prev(loadData);
-    });
-
-    $('.next-page').click(function() {
-        pagination.next(loadData);
+    $('#resetFilters').click(function() {
+        window.PramanaDashboard.resetTable('#instructorTable', loadData);
     });
 
     $('#exportXlsx').click(function() {

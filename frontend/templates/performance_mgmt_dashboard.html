@@ -31,6 +31,9 @@
                 <button id="seeReport" class="btn btn-primary btn-block mb-2">
                     <i class="fas fa-sync-alt mr-1"></i> See Report
                 </button>
+                <button id="resetFilters" class="btn btn-block btn-reset-filters mb-2">
+                    <i class="fas fa-undo mr-1"></i> Reset All
+                </button>
                 <button id="exportXlsx" class="btn btn-export btn-block">
                     <i class="fas fa-file-excel mr-1"></i> Export to XLSX
                 </button>
@@ -86,7 +89,6 @@
                         <tbody></tbody>
                     </table>
                 </div>
-                {% include "partials/pagination.html" %}
             </div>
         </div>
     </div>
@@ -108,55 +110,60 @@ $(function () {
         });
 
     function loadData() {
-        const q = new URLSearchParams({
-            region: $('#regionFilter').val(),
-            year:   $('#yearFilter').val(),
-            month:  $('#monthFilter').val(),
-            limit:  pagination.state.limit,
-            offset: pagination.state.offset
-        }).toString();
-
-        fetch(`/performance-management-dashboard/data?${q}`)
-            .then(r => r.json())
-            .then(data => {
+        window.PramanaDashboard.initDataTable('#performanceTable', {
+            ajaxUrl: '/performance-mgmt/data',
+            getFilters: function() {
+                return {
+                    region: $('#regionFilter').val(),
+                    year:   $('#yearFilter').val(),
+                    month:  $('#monthFilter').val()
+                };
+            },
+            onDataLoad: function(data) {
                 if (data.kpis && data.kpis.length >= 4) {
                     $('#kpiInstructors').text(data.kpis[0].value.toLocaleString());
                     $('#kpiAvgSessions').text(data.kpis[1].value.toLocaleString());
                     $('#kpiSessions').text(data.kpis[2].value.toLocaleString());
                     $('#kpiStudents').text(data.kpis[3].value.toLocaleString());
                 }
-                const tbody = $('#performanceTable tbody');
-                tbody.empty();
-                if (!data.table || data.table.length === 0) {
-                    tbody.append('<tr><td colspan="8" class="text-center py-4">No data found</td></tr>');
-                    pagination.updateInfo('performanceTable', 0);
-                    return;
-                }
-                const top = data.table[0] ? data.table[0].sessions : 1;
-                data.table.forEach(row => {
-                    const pct = Math.round((row.sessions / top) * 100);
-                    tbody.append(`<tr>
-                        <td class="font-weight-bold">${row.instructor_name}</td>
-                        <td><span class="badge badge-secondary">${row.role}</span></td>
-                        <td>${row.region_name}</td>
-                        <td class="text-center">${(row.programs||0).toLocaleString()}</td>
-                        <td class="text-center">
-                            ${(row.sessions||0).toLocaleString()}
-                            <div class="progress progress-xxs mt-1"><div class="progress-bar bg-info" style="width:${pct}%"></div></div>
-                        </td>
-                        <td class="text-center">${(row.schools||0).toLocaleString()}</td>
-                        <td class="text-center">${(row.students_impacted||0).toLocaleString()}</td>
-                        <td class="text-center">${(row.avg_duration_min||0).toLocaleString()}</td>
-                    </tr>`);
-                });
-                pagination.updateInfo('performanceTable', data.total_count);
-            })
-            .catch(e => console.error('Error:', e));
+                // Store top sessions for progress bar calculation if needed
+                window._topSessions = (data.table && data.table.length > 0) ? data.table[0].sessions : 1;
+            },
+            columns: [
+                { data: 'instructor_name', className: 'font-weight-bold' },
+                { data: 'role', render: function(data) {
+                    return `<span class="badge badge-secondary">${data}</span>`;
+                }},
+                { data: 'region_name' },
+                { data: 'programs', className: 'text-center', render: function(data) {
+                    return (data||0).toLocaleString();
+                }},
+                { data: 'sessions', className: 'text-center', render: function(data) {
+                    const top = window._topSessions || 1;
+                    const pct = Math.round((data / top) * 100);
+                    return `
+                        ${(data||0).toLocaleString()}
+                        <div class="progress progress-xxs mt-1"><div class="progress-bar bg-info" style="width:${pct}%"></div></div>
+                    `;
+                }},
+                { data: 'schools', className: 'text-center', render: function(data) {
+                    return (data||0).toLocaleString();
+                }},
+                { data: 'students_impacted', className: 'text-center', render: function(data) {
+                    return (data||0).toLocaleString();
+                }},
+                { data: 'avg_duration_min', className: 'text-center', render: function(data) {
+                    return (data||0).toLocaleString();
+                }}
+            ]
+        });
     }
 
-    $('#seeReport').click(() => { pagination.reset(); loadData(); });
-    $('.prev-page').click(() => pagination.prev(loadData));
-    $('.next-page').click(() => pagination.next(loadData));
+    $('#seeReport').click(() => { loadData(); });
+
+    $('#resetFilters').click(function() {
+        window.PramanaDashboard.resetTable('#performanceTable', loadData);
+    });
     $('#exportXlsx').click(() => {
         const q = new URLSearchParams({ region: $('#regionFilter').val(), year: $('#yearFilter').val(), month: $('#monthFilter').val() }).toString();
         window.exportToXLSX(`/performance-management-dashboard/export?${q}`, 'performance_mgmt.xlsx');

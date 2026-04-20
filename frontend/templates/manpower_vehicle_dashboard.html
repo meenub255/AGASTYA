@@ -31,6 +31,9 @@
                 <button id="seeReport" class="btn btn-primary btn-block mb-2">
                     <i class="fas fa-sync-alt mr-1"></i> See Report
                 </button>
+                <button id="resetFilters" class="btn btn-block btn-reset-filters mb-2">
+                    <i class="fas fa-undo mr-1"></i> Reset All
+                </button>
                 <button id="exportXlsx" class="btn btn-export btn-block">
                     <i class="fas fa-file-excel mr-1"></i> Export to XLSX
                 </button>
@@ -85,7 +88,6 @@
                         <tbody></tbody>
                     </table>
                 </div>
-                {% include "partials/pagination.html" %}
             </div>
         </div>
     </div>
@@ -108,49 +110,50 @@ $(function () {
 
     function loadData() {
         window.loadReportData = loadData;
-        const q = new URLSearchParams({
-            region: $('#regionFilter').val(),
-            year:   $('#yearFilter').val(),
-            month:  $('#monthFilter').val(),
-            limit:  pagination.state.limit,
-            offset: pagination.state.offset
-        }).toString();
-
-        fetch(`/manpower-vehicle-dashboard/data?${q}`)
-            .then(r => r.json())
-            .then(data => {
+        window.PramanaDashboard.initDataTable('#vehicleTable', {
+            ajaxUrl: '/manpower-vehicle/data',
+            getFilters: function() {
+                return {
+                    region: $('#regionFilter').val(),
+                    year:   $('#yearFilter').val(),
+                    month:  $('#monthFilter').val()
+                };
+            },
+            onDataLoad: function(data) {
                 if (data.kpis && data.kpis.length >= 4) {
                     $('#kpiKms').text(data.kpis[0].value.toLocaleString());
                     $('#kpiFuelCost').text(data.kpis[1].value.toLocaleString());
                     $('#kpiFuelQty').text(data.kpis[2].value.toLocaleString());
                     $('#kpiDrivers').text(data.kpis[3].value.toLocaleString());
                 }
-                const tbody = $('#vehicleTable tbody');
-                tbody.empty();
-                if (!data.table || data.table.length === 0) {
-                    tbody.append('<tr><td colspan="7" class="text-center py-4">No data found</td></tr>');
-                    pagination.updateInfo('vehicleTable', 0);
-                    return;
-                }
-                data.table.forEach(row => {
-                    tbody.append(`<tr>
-                        <td class="font-weight-bold">${row.region_name}</td>
-                        <td>${row.program_name}</td>
-                        <td class="text-center">${(row.drivers||0).toLocaleString()}</td>
-                        <td class="text-center font-weight-bold">${(row.total_kms||0).toLocaleString()}</td>
-                        <td class="text-center">${(row.total_fuel_l||0).toLocaleString()}</td>
-                        <td class="text-center text-danger font-weight-bold">₹${parseFloat(row.total_cost||0).toLocaleString()}</td>
-                        <td class="text-center"><span class="badge badge-info">${row.vehicles_used||0}</span></td>
-                    </tr>`);
-                });
-                pagination.updateInfo('vehicleTable', data.total_count);
-            })
-            .catch(e => console.error('Error:', e));
+            },
+            columns: [
+                { data: 'region_name', className: 'font-weight-bold' },
+                { data: 'program_name' },
+                { data: 'drivers', className: 'text-center', render: function(data) {
+                    return (data||0).toLocaleString();
+                }},
+                { data: 'total_kms', className: 'text-center font-weight-bold', render: function(data) {
+                    return (data||0).toLocaleString();
+                }},
+                { data: 'total_fuel_l', className: 'text-center', render: function(data) {
+                    return (data||0).toLocaleString();
+                }},
+                { data: 'total_cost', className: 'text-center text-danger font-weight-bold', render: function(data) {
+                    return '₹' + parseFloat(data||0).toLocaleString();
+                }},
+                { data: 'vehicles_used', className: 'text-center', render: function(data) {
+                    return `<span class="badge badge-info">${data||0}</span>`;
+                }}
+            ]
+        });
     }
 
-    $('#seeReport').click(() => { pagination.reset(); loadData(); });
-    $('.prev-page').click(() => pagination.prev(loadData));
-    $('.next-page').click(() => pagination.next(loadData));
+    $('#seeReport').click(() => { loadData(); });
+
+    $('#resetFilters').click(function() {
+        window.PramanaDashboard.resetTable('#vehicleTable', loadData);
+    });
     $('#exportXlsx').click(() => {
         const q = new URLSearchParams({ region: $('#regionFilter').val(), year: $('#yearFilter').val(), month: $('#monthFilter').val() }).toString();
         window.exportToXLSX(`/manpower-vehicle-dashboard/export?${q}`, 'manpower_vehicle.xlsx');

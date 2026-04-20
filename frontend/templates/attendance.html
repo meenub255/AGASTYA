@@ -37,6 +37,9 @@
                 <button id="seeReport" class="btn btn-primary btn-block mb-2">
                     <i class="fas fa-sync-alt mr-1"></i> See Report
                 </button>
+                <button id="resetFilters" class="btn btn-block btn-reset-filters mb-2">
+                    <i class="fas fa-undo mr-1"></i> Reset All
+                </button>
                 <button id="exportXlsx" class="btn btn-export btn-block">
                     <i class="fas fa-file-excel mr-1"></i> Export to XLSX
                 </button>
@@ -113,7 +116,6 @@
                         </tbody>
                     </table>
                 </div>
-                {% include "partials/pagination.html" %}
             </div>
         </div>
     </div>
@@ -144,22 +146,18 @@ $(function () {
         });
 
     function loadData() {
-        const filters = {
-            region: $('#regionFilter').val(),
-            area: $('#areaFilter').val(),
-            year: $('#yearFilter').val(),
-            month: $('#monthFilter').val(),
-            limit: pagination.state.limit,
-            offset: pagination.state.offset
-        };
-
-        const query = new URLSearchParams(filters).toString();
-        fetch(`/attendance/data?${query}`)
-            .then(res => res.json())
-            .then(data => {
-                const tbody = $('#attendanceTable tbody');
-                tbody.empty();
-
+        // Initialize or reload DataTable with server-side processing
+        window.PramanaDashboard.initDataTable('#attendanceTable', {
+            ajaxUrl: '/attendance/data',
+            getFilters: function() {
+                return {
+                    region: $('#regionFilter').val(),
+                    area: $('#areaFilter').val(),
+                    year: $('#yearFilter').val(),
+                    month: $('#monthFilter').val()
+                };
+            },
+            onDataLoad: function(data) {
                 // Update KPIs
                 if (data.kpis && data.kpis.length >= 4) {
                     $('#kpiTotalStaff').text(data.kpis[0].value.toLocaleString());
@@ -167,40 +165,29 @@ $(function () {
                     $('#kpiTotalSessions').text(data.kpis[2].value.toLocaleString());
                     $('#kpiAvgSessions').text(data.kpis[3].value);
                 }
-
-                if (!data.table || data.table.length === 0) {
-                    tbody.append('<tr><td colspan="5" class="text-center py-4 text-muted">No records found for selected period</td></tr>');
-                    pagination.updateInfo('attendanceTable', 0);
-                    return;
-                }
-
-                data.table.forEach(row => {
-                    tbody.append(`
-                        <tr>
-                            <td class="font-weight-bold text-navy">${row.instructor_name}</td>
-                            <td><small class="text-muted"><i class="fas fa-globe mr-1"></i> ${row.region}</small></td>
-                            <td>${row.area}</td>
-                            <td class="text-center"><span class="badge badge-success px-2 py-1">${row.days_present}</span></td>
-                            <td class="text-center font-weight-bold">${row.total_sessions}</td>
-                        </tr>
-                    `);
-                });
-                pagination.updateInfo('attendanceTable', data.total_count);
-            })
-            .catch(err => console.error("Error fetching data:", err));
+            },
+            columns: [
+                { data: 'instructor_name', render: function(data) {
+                    return `<span class="font-weight-bold text-navy">${data}</span>`;
+                }},
+                { data: 'region', render: function(data) {
+                    return `<small class="text-muted"><i class="fas fa-globe mr-1"></i> ${data}</small>`;
+                }},
+                { data: 'area' },
+                { data: 'days_present', className: 'text-center', render: function(data) {
+                    return `<span class="badge badge-success px-2 py-1">${data}</span>`;
+                }},
+                { data: 'total_sessions', className: 'text-center font-weight-bold' }
+            ]
+        });
     }
 
     $('#seeReport').click(function () {
-        pagination.reset();
         loadData();
     });
 
-    $('.prev-page').click(function() {
-        pagination.prev(loadData);
-    });
-
-    $('.next-page').click(function() {
-        pagination.next(loadData);
+    $('#resetFilters').click(function() {
+        window.PramanaDashboard.resetTable('#attendanceTable', loadData);
     });
 
     $('#exportXlsx').click(function() {

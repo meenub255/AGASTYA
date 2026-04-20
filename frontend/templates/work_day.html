@@ -37,6 +37,9 @@
                 <button id="seeReport" class="btn btn-primary btn-block mb-2 text-bold">
                     <i class="fas fa-sync-alt mr-1"></i> See Report
                 </button>
+                <button id="resetFilters" class="btn btn-block btn-reset-filters mb-2 text-bold">
+                    <i class="fas fa-undo mr-1"></i> Reset All
+                </button>
                 <button id="exportXlsx" class="btn btn-export btn-block text-bold">
                     <i class="fas fa-file-excel mr-1"></i> Export to XLSX
                 </button>
@@ -112,7 +115,7 @@
                         </tbody>
                     </table>
                 </div>
-                {% include "partials/pagination.html" %}
+                </div>
             </div>
         </div>
     </div>
@@ -144,22 +147,17 @@ $(function () {
         });
 
     function loadData() {
-        const filters = {
-            region: $('#regionFilter').val(),
-            area: $('#areaFilter').val(),
-            year: $('#yearFilter').val(),
-            month: $('#monthFilter').val(),
-            limit: pagination.state.limit,
-            offset: pagination.state.offset
-        };
-
-        const query = new URLSearchParams(filters).toString();
-        fetch(`/work-day/data?${query}`)
-            .then(res => res.json())
-            .then(data => {
-                const tbody = $('#workDayTable tbody');
-                tbody.empty();
-
+        window.PramanaDashboard.initDataTable('#workDayTable', {
+            ajaxUrl: '/work-day/data',
+            getFilters: function() {
+                return {
+                    region: $('#regionFilter').val(),
+                    area: $('#areaFilter').val(),
+                    year: $('#yearFilter').val(),
+                    month: $('#monthFilter').val()
+                };
+            },
+            onDataLoad: function(data) {
                 // Update KPIs
                 if (data.kpis && data.kpis.length >= 4) {
                     $('#kpiTotalInstructors').text(data.kpis[0].value.toLocaleString());
@@ -167,39 +165,30 @@ $(function () {
                     $('#kpiAvgDays').text(data.kpis[2].value);
                     $('#kpiActiveCenters').text(data.kpis[3].value.toLocaleString());
                 }
-
-                if (!data.table || data.table.length === 0) {
-                    tbody.append('<tr><td colspan="4" class="text-center">No data found</td></tr>');
-                    pagination.updateInfo('workDayTable', 0);
-                    return;
-                }
-
-                data.table.forEach(row => {
-                    tbody.append(`
-                        <tr>
-                            <td class="text-bold text-navy">${row.instructor_name}</td>
-                            <td><small class="text-muted"><i class="fas fa-globe mr-1"></i> ${row.region}</small> / ${row.area}</td>
-                            <td class="text-center"><span class="badge badge-info">${row.days_worked}</span></td>
-                            <td><div class="text-primary font-weight-bold" style="word-break: break-all;">${row.dates_active}</div></td>
-                        </tr>
-                    `);
-                });
-                pagination.updateInfo('workDayTable', data.total_count);
-            })
-            .catch(err => console.error("Error fetching data:", err));
+            },
+            columns: [
+                { data: 'instructor_name', render: function(data) {
+                    return `<span class="text-bold text-navy">${data}</span>`;
+                }},
+                { data: 'region', render: function(data, type, row) {
+                    return `<small class="text-muted"><i class="fas fa-globe mr-1"></i> ${row.region}</small> / ${row.area}`;
+                }},
+                { data: 'days_worked', className: 'text-center', render: function(data) {
+                    return `<span class="badge badge-info">${data}</span>`;
+                }},
+                { data: 'dates_active', render: function(data) {
+                    return `<div class="text-primary font-weight-bold" style="word-break: break-all;">${data}</div>`;
+                }}
+            ]
+        });
     }
 
     $('#seeReport').click(function () {
-        pagination.reset();
         loadData();
     });
 
-    $('.prev-page').click(function() {
-        pagination.prev(loadData);
-    });
-
-    $('.next-page').click(function() {
-        pagination.next(loadData);
+    $('#resetFilters').click(function() {
+        window.PramanaDashboard.resetTable('#workDayTable', loadData);
     });
 
     $('#exportXlsx').click(function() {

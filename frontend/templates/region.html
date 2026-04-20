@@ -67,7 +67,17 @@
 <div class="row mt-2">
     <div class="col-lg-7 mb-3">
         <section class="card h-100 white-chart-card">
-            <div class="card-header border-0"><h3 class="card-title">Region impact</h3></div>
+            <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                <h3 class="card-title">Region impact</h3>
+                <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
+                   style="cursor: pointer;"
+                   data-toggle="popover" 
+                   data-trigger="click" 
+                   data-html="true"
+                   tabindex="0"
+                   title="Region Code Legend" 
+                   data-content="Loading..."></i>
+            </div>
             <div class="card-body">
                 <div style="height:250px;">
                     <canvas id="regionStateChart"></canvas>
@@ -91,8 +101,48 @@
 {% block scripts %}
 <script>
 $(function () {
+    let regionMapping = {};
     if ($.fn.select2) {
         $('.select2').select2({ theme: 'bootstrap4' });
+    }
+
+    // Initialize popovers
+    $('.region-legend-trigger').popover({
+        html: true,
+        sanitize: false,
+        trigger: 'click',
+        placement: 'bottom'
+    });
+
+    function getAcronym(str) {
+        if (!str) return '';
+        const parts = str.split('_');
+        if (parts.length === 1 && str.length > 5) {
+            return str.substring(0, 3).toUpperCase();
+        }
+        let acronym = '';
+        parts.forEach(p => {
+            if (p.length > 0) acronym += p[0].toUpperCase();
+        });
+        return acronym;
+    }
+
+    function updateLegendPopover() {
+        let content = '<div class="small" style="max-height: 200px; overflow-y: auto;"><table class="table table-sm mb-0">';
+        const sortedKeys = Object.keys(regionMapping).sort();
+        if (sortedKeys.length === 0) {
+            content = "No regions displayed";
+        } else {
+            sortedKeys.forEach(code => {
+                content += `<tr><td class="font-weight-bold pr-2" style="border-top:0">${code}</td><td style="border-top:0">: ${regionMapping[code]}</td></tr>`;
+            });
+            content += '</table></div>';
+        }
+        $('.region-legend-trigger').each(function() {
+            $(this).attr('data-content', content);
+            const popover = $(this).data('bs.popover');
+            if (popover) popover.config.content = content;
+        });
     }
 
     const rf = $('#regionFilter');
@@ -144,6 +194,15 @@ $(function () {
                 // State Chart
                 const ctxState = document.getElementById('regionStateChart').getContext('2d');
                 if (window.stateChart) window.stateChart.destroy();
+                regionMapping = {};
+                if (data.charts.state.labels) {
+                    data.charts.state.labels = data.charts.state.labels.map(label => {
+                        const code = getAcronym(label);
+                        regionMapping[code] = label;
+                        return code;
+                    });
+                }
+
                 window.stateChart = new Chart(ctxState, {
                     type: 'bar',
                     data: data.charts.state,
@@ -155,9 +214,15 @@ $(function () {
                                 position: 'bottom',
                                 align: 'start',
                                 labels: { color: '#000000' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    title: function(context) {
+                                        const code = context[0].label;
+                                        return regionMapping[code] || code;
+                                    }
+                                }
                             }
-
-
                         },
                         scales: {
                             y: {
@@ -167,11 +232,18 @@ $(function () {
                             },
                             x: {
                                 grid: { display: false },
-                                ticks: { color: '#000000' }
+                                ticks: { 
+                                    color: '#000000',
+                                    autoSkip: false,
+                                    maxRotation: 0,
+                                    minRotation: 0
+                                }
                             }
                         }
                     }
                 });
+                
+                updateLegendPopover();
 
                 // Monthly Chart
                 const ctxMonthly = document.getElementById('regionMonthlyChart').getContext('2d');

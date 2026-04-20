@@ -31,6 +31,9 @@
                 <button id="seeReport" class="btn btn-primary btn-block mb-2">
                     <i class="fas fa-sync-alt mr-1"></i> See Report
                 </button>
+                <button id="resetFilters" class="btn btn-block btn-reset-filters mb-2">
+                    <i class="fas fa-undo mr-1"></i> Reset All
+                </button>
                 <button id="exportXlsx" class="btn btn-export btn-block">
                     <i class="fas fa-file-excel mr-1"></i> Export to XLSX
                 </button>
@@ -126,7 +129,15 @@
                     <table id="programTable" class="table table-striped table-hover mb-0 high-contrast-table table-bordered">
                         <thead>
                             <tr id="tableHeaderRow">
-                                <!-- Dynamic Headers -->
+                                <th class="bg-navy-blue text-white">Region Name</th>
+                                <th class="bg-navy-blue text-white">Area Name</th>
+                                <th class="bg-navy-blue text-white">Program Name</th>
+                                <th class="bg-navy-blue text-white">Donor Name</th>
+                                <th class="bg-navy-blue text-white">No of Schools visited</th>
+                                <th class="bg-navy-blue text-white">Total Number of Days worked</th>
+                                <th class="bg-navy-blue text-white">School Sessions</th>
+                                <th class="bg-navy-blue text-white">Average Session Durat</th>
+                                <th class="bg-navy-blue text-white">Total Exposure</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -134,7 +145,6 @@
                         </tbody>
                     </table>
                 </div>
-                {% include "partials/pagination.html" %}
             </div>
         </div>
     </div>
@@ -164,23 +174,16 @@ $(function () {
 
     function loadData() {
         window.loadReportData = loadData;
-        const filters = {
-            category: $('#categoryFilter').val(),
-            year: $('#yearFilter').val(),
-            month: $('#monthFilter').val(),
-            limit: pagination.state.limit,
-            offset: pagination.state.offset
-        };
-
-        const query = new URLSearchParams(filters).toString();
-        fetch(`/programwise-report/data?${query}`)
-            .then(res => res.json())
-            .then(data => {
-                const thead = $('#tableHeaderRow');
-                const tbody = $('#programTable tbody');
-                thead.empty();
-                tbody.empty();
-
+        window.PramanaDashboard.initDataTable('#programTable', {
+            ajaxUrl: '/programwise-report/data',
+            getFilters: function() {
+                return {
+                    category: $('#categoryFilter').val(),
+                    year: $('#yearFilter').val(),
+                    month: $('#monthFilter').val()
+                };
+            },
+            onDataLoad: function(data) {
                 // Update KPIs
                 if (data.kpis && data.kpis.length >= 4) {
                     $('#kpiTotalPrograms').text(data.kpis[0].value.toLocaleString());
@@ -188,55 +191,37 @@ $(function () {
                     $('#kpiTotalSessions').text(data.kpis[2].value.toLocaleString());
                     $('#kpiTotalStudents').text(data.kpis[3].value.toLocaleString());
                 }
-
-                if (!data.table || data.table.length === 0) {
-                    thead.append('<th>Info</th>');
-                    tbody.append('<tr><td class="text-center py-4 text-muted">No records found</td></tr>');
-                    pagination.updateInfo('programTable', 0);
-                    return;
-                }
-
-                // Render Dynamic Headers from Keys of first row
-                const columns = Object.keys(data.table[0]);
-                columns.forEach(col => {
-                    thead.append(`<th class="bg-navy-blue text-white">${col}</th>`);
-                });
-
-                data.table.forEach(row => {
-                    let rowHtml = '<tr>';
-                    columns.forEach(col => {
-                        let val = row[col];
-                        let cellClass = "";
-                        
-                        // Formatting logic
-                        if (typeof val === 'number') {
-                            val = val.toLocaleString();
-                            cellClass = "text-center font-weight-bold";
-                        }
-                        if (col === 'Program Name') cellClass = "font-weight-bold text-navy";
-                        
-                        rowHtml += `<td class="${cellClass}">${val !== null ? val : '-'}</td>`;
-                    });
-                    rowHtml += '</tr>';
-                    tbody.append(rowHtml);
-                });
-                
-                pagination.updateInfo('programTable', data.total_count);
-            })
-            .catch(err => console.error("Error fetching program data:", err));
+            },
+            columns: [
+                { data: 'Region Name' },
+                { data: 'Area Name' },
+                { data: 'Program Name', className: 'font-weight-bold text-navy' },
+                { data: 'Donor Name' },
+                { data: 'No of Schools visited', className: 'text-center font-weight-bold', render: function(data) {
+                    return (data || 0).toLocaleString();
+                }},
+                { data: 'Total Number of Days worked', className: 'text-center font-weight-bold', render: function(data) {
+                    return (data || 0).toLocaleString();
+                }},
+                { data: 'School Sessions', className: 'text-center font-weight-bold', render: function(data) {
+                    return (data || 0).toLocaleString();
+                }},
+                { data: 'Average Session Durat', className: 'text-center font-weight-bold', render: function(data) {
+                    return (data || 0).toLocaleString();
+                }},
+                { data: 'Total Exposure', className: 'text-center font-weight-bold', render: function(data) {
+                    return (data || 0).toLocaleString();
+                }}
+            ]
+        });
     }
 
     $('#seeReport').click(function () {
-        pagination.reset();
         loadData();
     });
 
-    $('.prev-page').click(function() {
-        pagination.prev(loadData);
-    });
-
-    $('.next-page').click(function() {
-        pagination.next(loadData);
+    $('#resetFilters').click(function() {
+        window.PramanaDashboard.resetTable('#programTable', loadData);
     });
 
     $('#exportXlsx').click(function() {

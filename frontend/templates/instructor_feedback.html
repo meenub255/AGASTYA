@@ -25,6 +25,9 @@
                 <button id="seeReport" class="btn btn-primary btn-block mb-2">
                     <i class="fas fa-sync-alt mr-1"></i> See Report
                 </button>
+                <button id="resetFilters" class="btn btn-block btn-reset-filters mb-2">
+                    <i class="fas fa-undo mr-1"></i> Reset All
+                </button>
                 <button id="exportXlsx" class="btn btn-export btn-block">
                     <i class="fas fa-file-excel mr-1"></i> Export to XLSX
                 </button>
@@ -79,7 +82,6 @@
                         <tbody></tbody>
                     </table>
                 </div>
-                {% include "partials/pagination.html" %}
             </div>
         </div>
     </div>
@@ -100,48 +102,47 @@ $(function () {
         });
 
     function loadData() {
-        const q = new URLSearchParams({
-            instructor_name: $('#instructorFilter').val(),
-            year:            $('#yearFilter').val(),
-            limit:           pagination.state.limit,
-            offset:          pagination.state.offset
-        }).toString();
-
-        fetch(`/instructor-feedback/data?${q}`)
-            .then(r => r.json())
-            .then(data => {
+        window.PramanaDashboard.initDataTable('#feedbackTable', {
+            ajaxUrl: '/instructor-feedback/data',
+            getFilters: function() {
+                return {
+                    instructor_name: $('#instructorFilter').val(),
+                    year:            $('#yearFilter').val()
+                };
+            },
+            onDataLoad: function(data) {
                 if (data.kpis && data.kpis.length >= 4) {
                     $('#kpiInstructors').text(data.kpis[0].value.toLocaleString());
                     $('#kpiSessions').text(data.kpis[1].value.toLocaleString());
                     $('#kpiDemo').text(data.kpis[2].value.toLocaleString());
                     $('#kpiHandsOn').text(data.kpis[3].value.toLocaleString());
                 }
-                const tbody = $('#feedbackTable tbody');
-                tbody.empty();
-                if (!data.table || data.table.length === 0) {
-                    tbody.append('<tr><td colspan="7" class="text-center py-4">No data found</td></tr>');
-                    pagination.updateInfo('feedbackTable', 0);
-                    return;
-                }
-                data.table.forEach(row => {
-                    tbody.append(`<tr>
-                        <td class="font-weight-bold">${row.instructor_name}</td>
-                        <td>${row.session_date}</td>
-                        <td>${row.school_name}</td>
-                        <td><span class="badge badge-info">${row.activity_name}</span></td>
-                        <td class="text-center">${row.demo_sessions}</td>
-                        <td class="text-center">${row.hands_on_sessions}</td>
-                        <td class="text-center">${row.duration_minutes}</td>
-                    </tr>`);
-                });
-                pagination.updateInfo('feedbackTable', data.total_count);
-            })
-            .catch(e => console.error('Error:', e));
+            },
+            columns: [
+                { data: 'instructor_name', className: 'font-weight-bold', width: '15%' },
+                { data: 'session_date', className: 'text-center' },
+                { data: 'school_name', width: '20%' },
+                { data: 'activity_name', render: function(data) {
+                    return `<span class="badge badge-info">${data}</span>`;
+                }},
+                { data: 'demo_sessions', className: 'text-center', render: function(data) {
+                    return (data||0).toLocaleString();
+                }},
+                { data: 'hands_on_sessions', className: 'text-center', render: function(data) {
+                    return (data||0).toLocaleString();
+                }},
+                { data: 'duration_minutes', className: 'text-center', render: function(data) {
+                    return (data||0).toLocaleString();
+                }}
+            ]
+        });
     }
 
-    $('#seeReport').click(() => { pagination.reset(); loadData(); });
-    $('.prev-page').click(() => pagination.prev(loadData));
-    $('.next-page').click(() => pagination.next(loadData));
+    $('#seeReport').click(() => { loadData(); });
+
+    $('#resetFilters').click(function() {
+        window.PramanaDashboard.resetTable('#feedbackTable', loadData);
+    });
     $('#exportXlsx').click(() => {
         const q = new URLSearchParams({ instructor_name: $('#instructorFilter').val(), year: $('#yearFilter').val() }).toString();
         window.exportToXLSX(`/instructor-feedback/export?${q}`, 'instructor_feedback.xlsx');

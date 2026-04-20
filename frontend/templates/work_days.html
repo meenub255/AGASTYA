@@ -41,8 +41,8 @@
                         <button id="apply_filters" class="btn btn-navy-blue btn-block">
                             <i class="fas fa-sync-alt mr-1"></i> Update Data
                         </button>
-                        <button id="reset_filters" class="btn btn-outline-secondary btn-block mt-2">
-                            Reset Filters
+                        <button id="reset_filters" class="btn btn-block btn-reset-filters mt-2">
+                            <i class="fas fa-undo mr-1"></i> Reset All
                         </button>
                     </div>
                 </div>
@@ -91,10 +91,6 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
-                <div class="card-footer clearfix bg-white border-top-0">
-                    <div id="pagination_info" class="float-left text-muted mt-2"></div>
-                    <ul class="pagination pagination-sm m-0 float-right" id="pagination_links"></ul>
                 </div>
             </div>
         </div>
@@ -146,8 +142,8 @@ document.addEventListener('DOMContentLoaded', function() {
             area: $('#area_filter').val(),
             year: $('#year_filter').val(),
             month: $('#month_filter').val(),
-            limit: itemsPerPage,
-            offset: (page - 1) * itemsPerPage
+            limit: 5000,
+            offset: 0
         };
 
         const queryParams = new URLSearchParams(filters).toString();
@@ -157,7 +153,6 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 renderKPIs(data.kpis);
                 renderTable(data.table_data);
-                renderPagination(data.total_rows, page);
             })
             .catch(err => console.error("Error fetching data:", err));
     }
@@ -199,33 +194,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 </tr>
             `);
         });
+
+        // Initialize DataTable
+        window.PramanaDashboard.initDataTable('#work_days_table');
     }
 
-    function renderPagination(total, page) {
-        const totalPages = Math.ceil(total / itemsPerPage);
-        const start = total === 0 ? 0 : (page - 1) * itemsPerPage + 1;
-        const end = Math.min(page * itemsPerPage, total);
-        
-        $('#pagination_info').text(`Showing ${start} to ${end} of ${total} records`);
-        
-        const links = $('#pagination_links');
-        links.empty();
-        
-        if (totalPages <= 1) return;
-
-        // Simple pagination buttons
-        links.append(`<li class="page-item ${page === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${page - 1}">Previous</a></li>`);
-        
-        let startPage = Math.max(1, page - 2);
-        let endPage = Math.min(totalPages, startPage + 4);
-        if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
-
-        for (let i = startPage; i <= endPage; i++) {
-            links.append(`<li class="page-item ${i === page ? 'active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`);
-        }
-
-        links.append(`<li class="page-item ${page === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${page + 1}">Next</a></li>`);
-    }
+    // Pagination removed in favor of DataTables
 
     // Events
     $('.select2').select2({ theme: 'bootstrap4', width: '100%' });
@@ -236,18 +210,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     $('#apply_filters').on('click', () => { loadData(1); });
     $('#reset_filters').on('click', () => {
-        $('.select2').val('').trigger('change');
-        loadData(1);
+        window.PramanaDashboard.resetTable('#work_days_table', loadData);
     });
 
-    $('#pagination_links').on('click', 'a', function(e) {
-        e.preventDefault();
-        const p = $(this).data('page');
-        if (p) {
-            currentPage = p;
-            loadData(p);
-        }
-    });
+    $('#pagination_links').on('click', 'a', function(e) { e.preventDefault(); });
 
     // Initial Load
     loadFilters();

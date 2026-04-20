@@ -112,6 +112,11 @@
             <div class="col-md-2">
                 <button id="seeReport" class="btn btn-primary btn-sm btn-block">See Report</button>
             </div>
+            <div class="col-md-1 px-1">
+                <button id="resetFilters" class="btn btn-block btn-reset-filters btn-sm" title="Reset All">
+                    <i class="fas fa-undo"></i>
+                </button>
+            </div>
             <div class="col-md-1">
                 <button id="exportXlsx" class="btn btn-export btn-sm btn-block">
                     <i class="fas fa-file-excel"></i>
@@ -146,7 +151,6 @@
                 </tbody>
             </table>
         </div>
-        {% include "partials/pagination.html" %}
     </div>
 </div>
 
@@ -211,100 +215,112 @@ $(function () {
 
 
     function loadData() {
-        const filters = {
-            start_year: $('#startYear').val(),
-            end_year: $('#endYear').val(),
-            region: $('#regionFilter').val(),
-            program: $('#programFilter').val(),
-            limit: pagination.state.limit,
-            offset: pagination.state.offset
-        };
-        
-        const query = new URLSearchParams(filters).toString();
-        fetch(`/instructor/data?${query}`)
-            .then(res => res.json())
-            .then(data => {
-                $('#instructorTotal').text(data.kpis.total_active);
-                $('#instructorAverageSessions').text(data.kpis.average_sessions.toFixed(1));
-                $('#instructorTopRegion').text(data.kpis.top_region.name);
-                $('#instructorTopRegionSessions').text(data.kpis.top_region.sessions);
-                $('#instructorUnprocessed').text(data.kpis.unprocessed);
-
-                const tbody = $('#instructorLogBody');
-                tbody.empty();
-                if (data.table.length === 0) {
-                    tbody.append('<tr><td colspan="7" class="text-center">No rows found</td></tr>');
-                    pagination.updateInfo('instructorTable', 0);
-                } else {
-                    data.table.forEach(row => {
-                        tbody.append(`
-                            <tr>
-                                <td><strong>${row.name}</strong></td>
-                                <td><span class="badge badge-info">${row.type}</span></td>
-                                <td>${row.region}</td>
-                                <td>${row.sessions}</td>
-                                <td>${row.activity_types}</td>
-                                <td>${row.students_reached.toLocaleString()}</td>
-                                <td>${row.last_session_date}</td>
-                            </tr>
-                        `);
+        window.PramanaDashboard.initDataTable('#instructorTable', {
+            ajaxUrl: '/instructor/session-log',
+            getFilters: function() {
+                return {
+                    start_year: $('#startYear').val(),
+                    end_year: $('#endYear').val(),
+                    region: $('#regionFilter').val(),
+                    program: $('#programFilter').val()
+                };
+            },
+            onDataLoad: function(data) {
+                // Since session-log might not return all KPIs/Charts, we might need a separate call for them
+                // OR we can update the backend to consolidate them if requested.
+                // For now, let's keep the extra fetch for KPIs and charts to avoid breaking other things,
+                // but the table itself will be serverSide.
+                
+                // Fetch the rest of the dashboard data (KPIs, Charts, Multi-program)
+                const filters = {
+                    start_year: $('#startYear').val(),
+                    end_year: $('#endYear').val(),
+                    region: $('#regionFilter').val(),
+                    program: $('#programFilter').val()
+                };
+                const query = new URLSearchParams(filters).toString();
+                
+                // Update KPIs
+                fetch(`/instructor/kpis?${query}`)
+                    .then(res => res.json())
+                    .then(d => {
+                        const m = d.metrics;
+                        $('#instructorTotal').text(m.total_instructors.toLocaleString());
+                        $('#instructorAverageSessions').text(m.avg_sessions_per_instructor.toFixed(1));
+                        $('#instructorTopRegion').text(m.top_region);
+                        $('#instructorTopRegionSessions').text(m.top_region_sessions.toLocaleString());
+                        $('#instructorUnprocessed').text(m.unprocessed_sessions.toLocaleString());
                     });
-                    pagination.updateInfo('instructorTable', data.total_count);
-                }
 
-                // Chart
-                const ctxType = document.getElementById('instructorTypeChart').getContext('2d');
-                if (window.typeChart) window.typeChart.destroy();
-                window.typeChart = new Chart(ctxType, {
-                    type: 'pie',
-                    data: data.charts.type,
-                    options: { 
-                        maintainAspectRatio: false, 
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'bottom',
-                                align: 'start',
-                                labels: { color: '#000000' }
+                // Update Charts
+                fetch(`/instructor/type-breakdown?${query}`)
+                    .then(res => res.json())
+                    .then(d => {
+                        const ctxType = document.getElementById('instructorTypeChart').getContext('2d');
+                        if (window.typeChart) window.typeChart.destroy();
+                        window.typeChart = new Chart(ctxType, {
+                            type: 'pie',
+                            data: {
+                                labels: d.data.map(i => i.label),
+                                datasets: [{
+                                    data: d.data.map(i => i.value),
+                                    backgroundColor: ['#17a2b8', '#28a745', '#001f3f', '#dc3545', '#ffc107']
+                                }]
+                            },
+                            options: { 
+                                maintainAspectRatio: false, 
+                                plugins: {
+                                    legend: { display: true, position: 'bottom', labels: { color: '#000000' } }
+                                }
                             }
-
-
-                        }
-                    }
-                });
-
-                // Multi-program list
-                const list = $('#multiProgramList');
-                list.empty();
-                if (data.multi_program.length === 0) {
-                    list.append('<div class="text-center text-muted">None found</div>');
-                } else {
-                    data.multi_program.forEach(item => {
-                        list.append(`
-                            <div class="d-flex justify-content-between align-items-center mb-2 p-2 border-bottom">
-                                <div>
-                                    <h6 class="mb-0">${item.name}</h6>
-                                    <small class="text-muted">${item.programs} programs</small>
-                                </div>
-                                <span class="badge badge-primary">${item.sessions} sessions</span>
-                            </div>
-                        `);
+                        });
                     });
-                }
-            });
+
+                // Update Multi-program list
+                fetch(`/instructor/multi-program?${query}`)
+                    .then(res => res.json())
+                    .then(d => {
+                        const list = $('#multiProgramList');
+                        list.empty();
+                        if (d.data.length === 0) {
+                            list.append('<div class="text-center text-muted">None found</div>');
+                        } else {
+                            d.data.forEach(item => {
+                                list.append(`
+                                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 border-bottom">
+                                        <div>
+                                            <h6 class="mb-0">${item.name}</h6>
+                                            <small class="text-muted">${item.programs} programs</small>
+                                        </div>
+                                        <span class="badge badge-primary">${item.sessions} sessions</span>
+                                    </div>
+                                `);
+                            });
+                        }
+                    });
+            },
+            columns: [
+                { data: 'name', className: 'font-weight-bold' },
+                { data: 'type', render: function(data) {
+                    return `<span class="badge badge-info">${data}</span>`;
+                }},
+                { data: 'region' },
+                { data: 'sessions', className: 'text-center' },
+                { data: 'activity_types', className: 'small text-muted' },
+                { data: 'students', className: 'text-center font-weight-bold', render: function(data) {
+                    return (data||0).toLocaleString();
+                }},
+                { data: 'last_session', className: 'text-center' }
+            ]
+        });
     }
 
     $('#seeReport').click(function() {
-        pagination.reset();
         loadData();
     });
 
-    $('.prev-page').click(function() {
-        pagination.prev(loadData);
-    });
-
-    $('.next-page').click(function() {
-        pagination.next(loadData);
+    $('#resetFilters').click(function() {
+        window.PramanaDashboard.resetTable('#instructorTable', loadData);
     });
 
     $('#exportXlsx').click(function() {

@@ -37,6 +37,9 @@
                 <button id="seeReport" class="btn btn-primary btn-block mb-2">
                     <i class="fas fa-sync-alt mr-1"></i> See Report
                 </button>
+                <button id="resetFilters" class="btn btn-block btn-reset-filters">
+                    <i class="fas fa-undo mr-1"></i> Reset All
+                </button>
             </div>
         </div>
     </div>
@@ -107,7 +110,6 @@
                                 <th class="text-center">Initial KM</th>
                                 <th class="text-center">End KM</th>
                                 <th class="text-center">Total KMs</th>
-                                <th class="text-center">Cumulative AVG KM/Day</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -115,7 +117,6 @@
                         </tbody>
                     </table>
                 </div>
-                {% include "partials/pagination.html" %}
             </div>
         </div>
     </div>
@@ -165,22 +166,17 @@ $(function () {
 
     function loadData() {
         window.loadReportData = loadData;
-        const filters = {
-            region: $('#regionFilter').val(),
-            area: $('#areaFilter').val(),
-            year: $('#yearFilter').val(),
-            month: $('#monthFilter').val(),
-            limit: pagination.state.limit,
-            offset: pagination.state.offset
-        };
-
-        const query = new URLSearchParams(filters).toString();
-        fetch(`/api/vehicle-report/data?${query}`)
-            .then(res => res.json())
-            .then(data => {
-                const tbody = $('#vehicleTable tbody');
-                tbody.empty();
-
+        window.PramanaDashboard.initDataTable('#vehicleTable', {
+            ajaxUrl: '/api/vehicle-report/data',
+            getFilters: function() {
+                return {
+                    region: $('#regionFilter').val(),
+                    area: $('#areaFilter').val(),
+                    year: $('#yearFilter').val(),
+                    month: $('#monthFilter').val()
+                };
+            },
+            onDataLoad: function(data) {
                 // Update KPIs
                 if (data.kpis && data.kpis.length >= 4) {
                     $('#kpiTotalKMs').text((data.kpis[0].value || 0).toLocaleString());
@@ -188,43 +184,37 @@ $(function () {
                     $('#kpiFuelQty').text((data.kpis[2].value || 0).toLocaleString());
                     $('#kpiFuelCost').text((data.kpis[3].value || 0).toLocaleString());
                 }
-
-                if (data.table.length === 0) {
-                    tbody.append('<tr><td colspan="10" class="text-center">No data found</td></tr>');
-                    pagination.updateInfo('vehicleTable', 0);
-                    return;
-                }
-                data.table.forEach(row => {
-                    tbody.append(`
-                        <tr>
-                            <td><strong>${row.vehicle_name || 'N/A'}</strong></td>
-                            <td>${row.date || 'N/A'}</td>
-                            <td><span class="badge badge-secondary">${row.registration_no || 'N/A'}</span></td>
-                            <td>${row.center_name || 'N/A'}</td>
-                            <td>${row.region_name || 'N/A'}</td>
-                            <td>${row.driver_name || 'N/A'}</td>
-                            <td class="text-center">${(row.initial_km || 0).toLocaleString()}</td>
-                            <td class="text-center">${(row.end_km || 0).toLocaleString()}</td>
-                            <td class="text-center font-weight-bold text-info">${(row.total_kms || 0).toLocaleString()}</td>
-                            <td class="text-center text-success">${(parseFloat(row.cumulative_avg) || 0).toFixed(2)}</td>
-                        </tr>
-                    `);
-                });
-                pagination.updateInfo('vehicleTable', data.total_count);
-            });
+            },
+            columns: [
+                { data: 'vehicle_name', render: function(data) {
+                    return `<strong>${data || 'N/A'}</strong>`;
+                }},
+                { data: 'date' },
+                { data: 'registration_no', render: function(data) {
+                    return `<span class="badge badge-secondary">${data || 'N/A'}</span>`;
+                }},
+                { data: 'center_name' },
+                { data: 'region_name' },
+                { data: 'driver_name' },
+                { data: 'initial_km', className: 'text-center', render: function(data) {
+                    return (data || 0).toLocaleString();
+                }},
+                { data: 'end_km', className: 'text-center', render: function(data) {
+                    return (data || 0).toLocaleString();
+                }},
+                { data: 'total_kms', className: 'text-center font-weight-bold text-info', render: function(data) {
+                    return (data || 0).toLocaleString();
+                }}
+            ]
+        });
     }
 
     $('#seeReport').click(function () {
-        pagination.reset();
         loadData();
     });
 
-    $('.prev-page').click(function() {
-        pagination.prev(loadData);
-    });
-
-    $('.next-page').click(function() {
-        pagination.next(loadData);
+    $('#resetFilters').click(function() {
+        window.PramanaDashboard.resetTable('#vehicleTable', loadData);
     });
 
     // Initial load
