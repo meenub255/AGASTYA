@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 
 from backend.models.schemas import KPIBundle, SeriesBundle
 from backend.services import instructor_service
@@ -22,6 +22,7 @@ def instructor_kpis(
 
 @router.get("/session-log")
 def instructor_session_log(
+    request: Request,
     start: str | None = Query(default=None),
     end: str | None = Query(default=None),
     region: str | None = Query(default=None),
@@ -30,8 +31,15 @@ def instructor_session_log(
     limit: int = Query(default=10, ge=1, le=25),
     offset: int = Query(default=0)
 ):
+    from backend.services.query_utils import parse_datatables_params
+    dt_params = parse_datatables_params(dict(request.query_params))
+
+    if "length" in request.query_params:
+        limit = dt_params["length"]
+        offset = dt_params["start"]
+
     return instructor_service.get_instructor_session_log(
-        start=start, end=end, region=region, program=program, instructor=instructor, limit=limit, offset=offset
+        start=start, end=end, region=region, program=program, instructor=instructor, limit=limit, offset=offset, dt_params=dt_params
     )
 
 
