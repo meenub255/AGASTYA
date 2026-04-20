@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from backend.services import performance_mgmt_service
 
-router = APIRouter(prefix="/performance-management-dashboard", tags=["performance-management-dashboard"])
+router = APIRouter(prefix="/performance-mgmt", tags=["performance-mgmt"])
 
 @router.get("/filters")
 def get_filters():
@@ -9,13 +9,21 @@ def get_filters():
 
 @router.get("/data")
 def get_data(
+    request: Request,
     region: str | None = Query(None),
     year:   str | None = Query(None),
     month:  str | None = Query(None),
     limit:  int        = Query(default=15),
     offset: int        = Query(default=0),
 ):
-    return performance_mgmt_service.get_performance_mgmt_data(region, year, month, limit, offset)
+    from backend.services.query_utils import parse_datatables_params
+    dt_params = parse_datatables_params(dict(request.query_params))
+
+    if "length" in request.query_params:
+        limit = dt_params["length"]
+        offset = dt_params["start"]
+
+    return performance_mgmt_service.get_performance_mgmt_data(region, year, month, limit, offset, dt_params)
 
 @router.get("/export")
 def export_data(
