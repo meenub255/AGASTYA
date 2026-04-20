@@ -1,15 +1,15 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from backend.services import school_visit_service
 
 router = APIRouter(prefix="/school-visit", tags=["school-visit"])
 
 @router.get("/filters")
-def get_filters(region_name: str | None = Query(None)):
-    return school_visit_service.get_school_visit_filters(region_name)
-
+def get_filters():
+    return school_visit_service.get_school_visit_filters()
 
 @router.get("/data")
 def get_data(
+    request: Request,
     region: str | None = Query(None),
     area: str | None = Query(None),
     program: str | None = Query(None),
@@ -18,7 +18,14 @@ def get_data(
     limit: int = Query(15),
     offset: int = Query(0)
 ):
-    return school_visit_service.get_school_visit_data(region, area, program, year, month, limit, offset)
+    from backend.services.query_utils import parse_datatables_params
+    dt_params = parse_datatables_params(dict(request.query_params))
+    
+    if "length" in request.query_params:
+        limit = dt_params["length"]
+        offset = dt_params["start"]
+        
+    return school_visit_service.get_school_visit_data(region, area, program, year, month, limit, offset, dt_params)
 
 @router.get("/export")
 def export_data(

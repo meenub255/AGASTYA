@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from backend.services import instructor_summary_service
 
 router = APIRouter(prefix="/instructor-summary", tags=["instructor-summary"])
@@ -9,6 +9,7 @@ def get_filters():
 
 @router.get("/data")
 def get_data(
+    request: Request,
     region: str | None = Query(None),
     area: str | None = Query(None),
     year: str | None = Query(None),
@@ -16,13 +17,21 @@ def get_data(
     limit: int = Query(15),
     offset: int = Query(0)
 ):
+    from backend.services.query_utils import parse_datatables_params
+    dt_params = parse_datatables_params(dict(request.query_params))
+    
+    if "length" in request.query_params:
+        limit = dt_params["length"]
+        offset = dt_params["start"]
+
     return instructor_summary_service.get_instructor_summary_data(
         region=region,
         area=area,
         year=year,
         month=month,
         limit=limit,
-        offset=offset
+        offset=offset,
+        dt_params=dt_params
     )
 
 @router.get("/export")

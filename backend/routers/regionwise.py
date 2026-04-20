@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from backend.services import regionwise_service
 
 router = APIRouter(prefix="/regionwise-dashboard", tags=["regionwise-dashboard"])
@@ -9,6 +9,7 @@ def get_filters(region: str | None = Query(None)):
 
 @router.get("/data")
 def get_data(
+    request: Request,
     region: str | None = Query(None),
     area:   str | None = Query(None),
     year:   str | None = Query(None),
@@ -16,7 +17,14 @@ def get_data(
     limit:  int        = Query(default=15),
     offset: int        = Query(default=0),
 ):
-    return regionwise_service.get_regionwise_data(region, area, year, month, limit, offset)
+    from backend.services.query_utils import parse_datatables_params
+    dt_params = parse_datatables_params(dict(request.query_params))
+
+    if "length" in request.query_params:
+        limit = dt_params["length"]
+        offset = dt_params["start"]
+
+    return regionwise_service.get_regionwise_data(region, area, year, month, limit, offset, dt_params)
 
 @router.get("/export")
 def export_data(

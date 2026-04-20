@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from backend.services import instructor_feedback_service
 
 router = APIRouter(prefix="/instructor-feedback", tags=["instructor-feedback"])
@@ -9,12 +9,20 @@ def get_filters():
 
 @router.get("/data")
 def get_data(
+    request: Request,
     instructor_name: str | None = Query(None),
     year: str | None = Query(None),
     limit: int = Query(15),
     offset: int = Query(0)
 ):
-    return instructor_feedback_service.get_instructor_feedback_data(instructor_name, year, limit, offset)
+    from backend.services.query_utils import parse_datatables_params
+    dt_params = parse_datatables_params(dict(request.query_params))
+
+    if "length" in request.query_params:
+        limit = dt_params["length"]
+        offset = dt_params["start"]
+
+    return instructor_feedback_service.get_instructor_feedback_data(instructor_name, year, limit, offset, dt_params)
 
 @router.get("/export")
 def export_data(
