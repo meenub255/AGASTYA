@@ -25,7 +25,8 @@ def get_arealead_summary_filters():
     }
 
 
-def get_arealead_summary_data(region=None, area=None, year=None, month=None, limit=15, offset=0):
+def get_arealead_summary_data(region=None, area=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
     where_clauses = ["TRUE"]
     params = []
     
@@ -44,7 +45,7 @@ def get_arealead_summary_data(region=None, area=None, year=None, month=None, lim
     
     where_sql = " AND ".join(where_clauses)
     
-    # KPI Query
+    # 1. KPI Query (sidebar filters only)
     kpi_sql = f"""
         SELECT 
             COUNT(DISTINCT g.area_name) as total_leads,
@@ -60,31 +61,41 @@ def get_arealead_summary_data(region=None, area=None, year=None, month=None, lim
     """
     kpis_raw = fetch_one(kpi_sql, params)
     
-    leads = kpis_raw.get('total_leads', 0)
-    instructors = kpis_raw.get('total_instructors', 0)
-    sessions = kpis_raw.get('total_sessions', 0)
-    students = kpis_raw.get('total_students', 0)
-
     kpi_list = [
-        {"label": "Total Area Leads", "value": leads, "icon": "fas fa-user-tie", "color": "bg-info"},
-        {"label": "Total Instructors", "value": instructors, "icon": "fas fa-chalkboard-teacher", "color": "bg-success"},
-        {"label": "Total Sessions", "value": sessions, "icon": "fas fa-layer-group", "color": "bg-navy-blue"},
-        {"label": "Total Students Impacted", "value": students, "icon": "fas fa-user-graduate", "color": "bg-danger"}
+        {"label": "Total Area Leads", "value": kpis_raw.get('total_leads', 0), "icon": "fas fa-user-tie", "color": "bg-info"},
+        {"label": "Total Instructors", "value": kpis_raw.get('total_instructors', 0), "icon": "fas fa-chalkboard-teacher", "color": "bg-success"},
+        {"label": "Total Sessions", "value": kpis_raw.get('total_sessions', 0), "icon": "fas fa-layer-group", "color": "bg-navy-blue"},
+        {"label": "Total Students Impacted", "value": kpis_raw.get('total_students', 0), "icon": "fas fa-user-graduate", "color": "bg-danger"}
     ]
 
-    # Get total count for pagination
+    # 2. DataTable Logic
+    search_sql = "TRUE"
+    search_params = []
+    sort_sql = "ORDER BY g.region_name, g.area_name"
+    
+    if dt_params:
+        searchable_cols = ["g.area_name", "g.region_name"]
+        sortable_cols = ["area", "region", "total_instructors", "total_sessions", "total_students"]
+        
+        inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+        search_sql = inner_search_sql
+        search_params = inner_search_params
+        if inner_sort_sql:
+            sort_sql = inner_sort_sql
+
+    # Get total count (Filtered by sidebar AND table search)
     count_sql = f"""
         SELECT COUNT(*) FROM (
-            SELECT g.area_name, g.region_name
+            SELECT g.area_name
             FROM {DATAMART_SCHEMA_NAME}.fact_session f
             JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-            WHERE {where_sql}
+            WHERE {where_sql} AND {search_sql}
             GROUP BY g.area_name, g.region_name
         ) as sub
     """
-    total_count_row = fetch_one(count_sql, params)
+    total_count_row = fetch_one(count_sql, params + search_params)
     total_count = total_count_row.get("count", 0) if total_count_row else 0
 
     # Get paginated data
@@ -100,17 +111,15 @@ def get_arealead_summary_data(region=None, area=None, year=None, month=None, lim
         JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-        WHERE {where_sql}
+        WHERE {where_sql} AND {search_sql}
         GROUP BY g.area_name, g.region_name
-        ORDER BY g.region_name, g.area_name
+        {sort_sql}
         LIMIT %s OFFSET %s
     """
-    rows = fetch_all(sql, params + [limit, offset])
+    rows = fetch_all(sql, params + search_params + [limit, offset])
     
     return {
         "kpis": kpi_list,
         "table": rows, 
         "total_count": total_count
     }
-
-
