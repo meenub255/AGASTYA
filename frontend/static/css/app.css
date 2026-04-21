@@ -2204,93 +2204,144 @@ table.dataTable thead th {
     color: #fff;
 }
 
-/* --- Sidebar Reorganization & Premium Styling --- */
+/* Increase Width for long labels and fix alignment */
+body:not(.sidebar-collapse) .main-sidebar, 
+body:not(.sidebar-collapse) .main-sidebar::before {
+    width: 285px !important;
+}
+
+body:not(.sidebar-collapse) .content-wrapper, 
+body:not(.sidebar-collapse) .main-footer, 
+body:not(.sidebar-collapse) .main-header {
+    margin-left: 285px !important;
+}
+
+/* Sidebar Branding fix */
+.brand-link {
+    width: 100% !important;
+    white-space: nowrap;
+    overflow: hidden;
+    padding: 15px 20px !important;
+}
+
+/* Base Nav Item reset */
 .main-sidebar .nav-sidebar .nav-item > .nav-link {
-    padding: 0.75rem 1rem;
-    transition: background 0.2s, color 0.2s;
+    padding: 10px 15px !important;
+    padding-right: 35px !important; /* Space for arrows */
+    transition: all 0.2s;
     border-radius: 8px;
-    margin: 2px 8px;
+    margin: 4px 12px !important;
+    display: flex;
+    align-items: center;
+    white-space: normal;
+    min-height: 46px;
+    position: relative;
+}
+
+.main-sidebar .nav-sidebar .nav-item > .nav-link i.nav-icon {
+    width: 1.6rem;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
 }
 
 .main-sidebar .nav-sidebar .nav-item > .nav-link p {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 500;
+    margin: 0;
+    line-height: 1.25;
 }
 
 .main-sidebar .nav-sidebar .nav-header {
-    font-size: 0.75rem;
+    font-size: 0.68rem;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 1.2px;
     color: rgba(255, 255, 255, 0.4);
-    padding: 1.5rem 1rem 0.5rem;
+    padding: 24px 0 10px 24px;
 }
 
 /* Treeview Sub-menu Styling */
 .main-sidebar .nav-treeview {
-    background: rgba(0, 0, 0, 0.1);
-    margin: 0 8px;
-    border-radius: 0 0 8px 8px;
-    padding-bottom: 5px;
+    background: transparent;
+    margin: 0 12px;
 }
 
 .main-sidebar .nav-treeview > .nav-item > .nav-link {
-    padding: 0.5rem 1rem 0.5rem 2.5rem !important;
+    padding: 8px 12px 8px 38px !important; /* Indent sub-items */
     border-radius: 6px;
-    margin: 1px 0;
+    margin: 2px 0 !important;
+}
+
+.main-sidebar .nav-treeview > .nav-item > .nav-link i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.85rem;
+    opacity: 0.6;
 }
 
 .main-sidebar .nav-treeview > .nav-item > .nav-link p {
-    font-size: 0.88rem;
+    font-size: 0.84rem;
     font-weight: 400;
     color: rgba(255, 255, 255, 0.7);
 }
 
-.main-sidebar .nav-treeview > .nav-item > .nav-link:hover p,
+.main-sidebar .nav-treeview > .nav-item > .nav-link.active {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
 .main-sidebar .nav-treeview > .nav-item > .nav-link.active p {
     color: #ffffff;
+    font-weight: 600;
 }
 
-.main-sidebar .nav-treeview > .nav-item > .nav-link i {
-    font-size: 0.85rem;
-    width: 1.5rem;
-}
-
-/* Sidebar Active State Glow */
-.main-sidebar .nav-pills .nav-link.active {
-    box-shadow: 0 4px 12px rgba(64, 144, 240, 0.3);
+/* Active Glow for Top Level */
+.main-sidebar .nav-pills .nav-link.active:not(.nav-treeview .nav-link) {
+    background: linear-gradient(90deg, #1d4ed8, #3b82f6) !important;
+    box-shadow: 0 4px 10px rgba(29, 78, 216, 0.35);
 }
 
 /* Data Quality Report Special Card */
 .nav-card-placeholder {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    background: rgba(255, 255, 255, 0.035);
     border: 1px dashed rgba(255, 255, 255, 0.15);
     border-radius: 12px;
-    margin: 1rem 12px;
-    padding: 1rem;
-    transition: border-color 0.3s;
-}
-
-.nav-card-placeholder:hover {
-    border-color: rgba(255, 255, 255, 0.3);
+    margin: 30px 15px;
+    padding: 15px;
+    position: relative;
+    overflow: hidden;
+    width: calc(100% - 30px);
 }
 
 .nav-card-placeholder .card-icon {
     font-size: 1.25rem;
-    color: var(--brand-blue);
-    margin-bottom: 0.5rem;
+    color: #60a5fa;
+    margin-bottom: 10px;
 }
 
 .nav-card-placeholder .card-title {
-    font-size: 0.85rem !important;
+    font-size: 0.84rem !important;
     font-weight: 600;
-    display: block;
-    margin-bottom: 2px;
     color: #fff !important;
+    margin-bottom: 5px;
+    display: block !important;
+    float: none !important; /* Fix overlap */
 }
 
 .nav-card-placeholder .card-status {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--text-faint);
-}
+    color: rgba(255, 255, 255, 0.45);
+    display: block;
+}
+
+/* Hide card in collapsed mode */
+.sidebar-collapse .nav-card-placeholder {
+    display: none !important;
+}
+
+
