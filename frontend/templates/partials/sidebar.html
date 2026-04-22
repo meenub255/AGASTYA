@@ -1,37 +1,45 @@
-<aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="/" class="brand-link px-3 py-3">
-        <img src="{{ url_for('static', path='images/side-bar-img-orange.png') }}" alt="Agastya Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-        <span class="brand-text font-weight-bold ml-2">Agastya Analytics</span>
-    </a>
+<aside class="main-sidebar sidebar-custom-dark elevation-4">
+    <!-- Brand Logo Section -->
+    <div class="brand-container">
+        <a href="/" class="brand-link">
+            <div class="brand-logo-wrapper">
+                <img src="{{ url_for('static', path='images/side-bar-img-orange.png') }}" alt="Agastya Logo" class="brand-image">
+            </div>
+            <span class="brand-text">Agastya <span class="text-accent">Analytics</span></span>
+        </a>
+    </div>
 
+    <!-- Sidebar Menu Section -->
     <div class="sidebar">
-        <nav class="mt-3">
-            <ul class="nav nav-pills nav-sidebar flex-column nav-child-indent" data-widget="treeview" role="menu" data-accordion="false">
+        <nav class="sidebar-nav-wrapper">
+            <ul class="nav nav-pills nav-sidebar flex-column nav-flat" data-widget="treeview" role="menu" data-accordion="false">
                 
-                <!-- Core Navigation -->
+                <!-- Section: Main -->
+                <li class="nav-header">MAIN NAVIGATION</li>
                 <li class="nav-item">
                     <a href="/" class="nav-link {% if page_id == 'landing' %}active{% endif %}">
                         <i class="nav-icon fas fa-home"></i>
-                        <p>Home</p>
+                        <p>Dashboard Home</p>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="/overview" class="nav-link {% if page_id == 'overview' %}active{% endif %}">
-                        <i class="nav-icon fas fa-th-large"></i>
-                        <p>Overview Dashboard</p>
+                        <i class="nav-icon fas fa-chart-pie"></i>
+                        <p>Global Overview</p>
                     </a>
                 </li>
 
-                <li class="nav-header">MANAGEMENT & TRACKING</li>
+                <!-- Section: Categories -->
+                <li class="nav-header">INSIGHTS & TRACKING</li>
 
-                <!-- Instructor Performance Category -->
+                <!-- Instructor Performance -->
                 {% set instructor_active = page_id in ['performance-management-dashboard', 'instructor-summary', 'instructor-detail', 'instructor-feedback', 'attendance'] %}
                 <li class="nav-item has-treeview {% if instructor_active %}menu-open{% endif %}">
                     <a href="#" class="nav-link {% if instructor_active %}active{% endif %}">
-                        <i class="nav-icon fas fa-user-graduate"></i>
+                        <i class="nav-icon fas fa-chalkboard-teacher"></i>
                         <p>
                             Instructor Performance
-                            <i class="right fas fa-angle-left"></i>
+                            <i class="right fas fa-chevron-left"></i>
                         </p>
                     </a>
                     <ul class="nav nav-treeview">
@@ -43,108 +51,108 @@
                         </li>
                         <li class="nav-item">
                             <a href="/instructor-summary" class="nav-link {% if page_id == 'instructor-summary' %}active{% endif %}">
-                                <i class="fas fa-users nav-icon"></i>
+                                <i class="fas fa-users-cog nav-icon"></i>
                                 <p>Instructor Summary</p>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a href="/instructor-detail" class="nav-link {% if page_id == 'instructor-detail' %}active{% endif %}">
-                                <i class="fas fa-id-card nav-icon"></i>
-                                <p>Instructor Detail</p>
+                                <i class="fas fa-address-card nav-icon"></i>
+                                <p>Detailed View</p>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a href="/instructor-feedback" class="nav-link {% if page_id == 'instructor-feedback' %}active{% endif %}">
-                                <i class="fas fa-comment-alt nav-icon"></i>
-                                <p>Instructor Feedback</p>
+                                <i class="fas fa-comment-dots nav-icon"></i>
+                                <p>Feedback Hub</p>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a href="/attendance" class="nav-link {% if page_id == 'attendance' %}active{% endif %}">
                                 <i class="fas fa-calendar-check nav-icon"></i>
-                                <p>Attendance log</p>
+                                <p>Attendance Log</p>
                             </a>
                         </li>
                     </ul>
                 </li>
 
-                <!-- Program Reach Category -->
+                <!-- Program Reach -->
                 {% set reach_active = page_id in ['nationwide-dashboard', 'regionwise-dashboard', 'program-visits', 'programwise-report', 'exposure-session-dashboard'] %}
                 <li class="nav-item has-treeview {% if reach_active %}menu-open{% endif %}">
                     <a href="#" class="nav-link {% if reach_active %}active{% endif %}">
-                        <i class="nav-icon fas fa-globe-asia"></i>
+                        <i class="nav-icon fas fa-map-marked-alt"></i>
                         <p>
-                            Program Reach
-                            <i class="right fas fa-angle-left"></i>
+                            Program Impact
+                            <i class="right fas fa-chevron-left"></i>
                         </p>
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
                             <a href="/nationwide-dashboard" class="nav-link {% if page_id == 'nationwide-dashboard' %}active{% endif %}">
-                                <i class="fas fa-map-marked-alt nav-icon"></i>
-                                <p>Nationwide Dashboard</p>
+                                <i class="fas fa-globe-americas nav-icon"></i>
+                                <p>Nationwide Data</p>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a href="/regionwise-dashboard" class="nav-link {% if page_id == 'regionwise-dashboard' %}active{% endif %}">
-                                <i class="fas fa-map-pin nav-icon"></i>
-                                <p>Regionwise Dashboard</p>
+                                <i class="fas fa-map-marker-alt nav-icon"></i>
+                                <p>Regional Insights</p>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a href="/program-visits" class="nav-link {% if page_id == 'program-visits' %}active{% endif %}">
                                 <i class="fas fa-school nav-icon"></i>
-                                <p>School Visits</p>
+                                <p>Site Visits</p>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a href="/programwise-report" class="nav-link {% if page_id == 'programwise-report' %}active{% endif %}">
-                                <i class="fas fa-file-alt nav-icon"></i>
-                                <p>Programwise Report</p>
+                                <i class="fas fa-clipboard-list nav-icon"></i>
+                                <p>Program Reports</p>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a href="/exposure-session-dashboard" class="nav-link {% if page_id == 'exposure-session-dashboard' %}active{% endif %}">
                                 <i class="fas fa-layer-group nav-icon"></i>
-                                <p>Exposure & Session</p>
+                                <p>Session Metrics</p>
                             </a>
                         </li>
                     </ul>
                 </li>
 
-                <!-- Operational Efficiency Category -->
+                <!-- Operational Efficiency -->
                 {% set ops_active = page_id in ['manpower-vehicle-dashboard', 'vehicle-report', 'work-days-report', 'arealead-summary', 'region-summary'] %}
                 <li class="nav-item has-treeview {% if ops_active %}menu-open{% endif %}">
                     <a href="#" class="nav-link {% if ops_active %}active{% endif %}">
-                        <i class="nav-icon fas fa-cogs"></i>
+                        <i class="nav-icon fas fa-sliders-h"></i>
                         <p>
-                            Operational Efficiency
-                            <i class="right fas fa-angle-left"></i>
+                            Operations
+                            <i class="right fas fa-chevron-left"></i>
                         </p>
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
                             <a href="/manpower-vehicle-dashboard" class="nav-link {% if page_id == 'manpower-vehicle-dashboard' %}active{% endif %}">
-                                <i class="fas fa-truck-monster nav-icon"></i>
-                                <p>Manpower & Vehicle</p>
+                                <i class="fas fa-shuttle-van nav-icon"></i>
+                                <p>Assets & Teams</p>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a href="/vehicle-report" class="nav-link {% if page_id == 'vehicle-report' %}active{% endif %}">
-                                <i class="fas fa-car nav-icon"></i>
-                                <p>Vehicle Report</p>
+                                <i class="fas fa-gas-pump nav-icon"></i>
+                                <p>Vehicle Logs</p>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a href="/work-days-report" class="nav-link {% if page_id == 'work-days-report' %}active{% endif %}">
-                                <i class="fas fa-calendar-day nav-icon"></i>
-                                <p>Work Days Report</p>
+                                <i class="fas fa-business-time nav-icon"></i>
+                                <p>Workforce Days</p>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a href="/arealead-summary" class="nav-link {% if page_id == 'arealead-summary' %}active{% endif %}">
                                 <i class="fas fa-user-shield nav-icon"></i>
-                                <p>AreaLead Summary</p>
+                                <p>Area Management</p>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -159,11 +167,23 @@
             </ul>
         </nav>
 
-        <!-- Upcoming Services Placeholder -->
-        <div class="nav-card-placeholder mt-4">
-            <div class="card-icon"><i class="fas fa-database"></i></div>
-            <span class="card-title">Data Quality Report</span>
-            <span class="card-status">Upcoming Service</span>
+        <!-- Premium Status Card -->
+        <div class="sidebar-status-card">
+            <div class="status-card-inner">
+                <div class="status-icon-glow">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="status-content">
+                    <span class="status-label">Data Quality Engine</span>
+                    <span class="status-badge">Processing</span>
+                </div>
+                <div class="status-footer">
+                    <div class="progress-mini">
+                        <div class="progress-bar-glow" style="width: 65%"></div>
+                    </div>
+                    <span class="status-meta">AI Optimization Live</span>
+                </div>
+            </div>
         </div>
     </div>
 </aside>
