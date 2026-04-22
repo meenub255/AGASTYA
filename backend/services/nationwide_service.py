@@ -69,17 +69,19 @@ def get_nationwide_data(start_year=None, end_year=None, region=None, limit=15, o
             {"label": "Total Programs",       "value": int(kpi_row.get("total_programs", 0) or 0),    "icon": "fas fa-project-diagram",    "color": "bg-danger"},
         ]
 
-        # Charts (sidebar filters only)
-        sessions_by_region = fetch_all(f"""
-            SELECT COALESCE(g.region_name, 'Unknown') AS label,
+        # Chart 1: Monthly sessions trend (for line chart with trend line)
+        sessions_trend_monthly = fetch_all(f"""
+            SELECT TO_CHAR(d.full_date, 'YYYY-MM') AS label,
                    COUNT(DISTINCT f.sk_fact_session_id) AS value
             FROM {DW}.fact_session f
             LEFT JOIN {DW}.dim_date d      ON f.date_id = d.date_id
             LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-            WHERE {where_sql}
-            GROUP BY g.region_name ORDER BY value DESC LIMIT 12
+            WHERE {where_sql} AND d.full_date IS NOT NULL
+            GROUP BY TO_CHAR(d.full_date, 'YYYY-MM')
+            ORDER BY label
         """, params)
 
+        # Chart 2: Students by region (for pie chart)
         students_by_region = fetch_all(f"""
             SELECT COALESCE(g.region_name, 'Unknown') AS label,
                    COALESCE(SUM(e.total_exposure_count), 0) AS value
@@ -88,7 +90,7 @@ def get_nationwide_data(start_year=None, end_year=None, region=None, limit=15, o
             LEFT JOIN {DW}.dim_geography g  ON f.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
             WHERE {where_sql}
-            GROUP BY g.region_name ORDER BY value DESC LIMIT 12
+            GROUP BY g.region_name ORDER BY value DESC LIMIT 10
         """, params)
 
         # DataTable Logic
@@ -150,18 +152,8 @@ def get_nationwide_data(start_year=None, end_year=None, region=None, limit=15, o
         return {
             "kpis": kpis,
             "charts": {
-                "sessions_by_region":  [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_region],
-                "students_by_region":  [{"label": r["label"], "value": float(r["value"])} for r in students_by_region],
-            },
-            "table": table,
-            "total_count": int(total_count),
-        }
-
-        return {
-            "kpis": kpis,
-            "charts": {
-                "sessions_by_region":  [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_region],
-                "students_by_region":  [{"label": r["label"], "value": float(r["value"])} for r in students_by_region],
+                "sessions_trend_monthly": [{"label": r["label"], "value": float(r["value"])} for r in sessions_trend_monthly],
+                "students_by_region":     [{"label": r["label"], "value": float(r["value"])} for r in students_by_region],
             },
             "table": table,
             "total_count": int(total_count),
