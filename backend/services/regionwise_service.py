@@ -100,7 +100,41 @@ def get_regionwise_data(region=None, area=None, year=None, month=None, limit=15,
             LIMIT %s OFFSET %s
         """, params + [limit, offset])
 
-        return {"kpis": kpis, "table": table, "total_count": int(total_count)}
+        # Chart 1: Sessions by Program (bar chart)
+        sessions_by_program = fetch_all(f"""
+            SELECT COALESCE(p.program_name, 'Unknown') AS label,
+                   COUNT(DISTINCT f.sk_fact_session_id) AS value
+            FROM {DW}.fact_session f
+            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
+            LEFT JOIN {DW}.dim_program p    ON f.sk_program_id = p.sk_program_id
+            WHERE {where_sql}
+            GROUP BY p.program_name ORDER BY value DESC LIMIT 10
+        """, params)
+
+        # Chart 2: Exposure by Month (line chart with trend)
+        exposure_by_month = fetch_all(f"""
+            SELECT TO_CHAR(d.full_date, 'YYYY-MM') AS label,
+                   COALESCE(SUM(e.total_exposure_count), 0) AS value
+            FROM {DW}.fact_session f
+            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
+            LEFT JOIN {DW}.dim_program p    ON f.sk_program_id = p.sk_program_id
+            LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+            WHERE {where_sql} AND d.full_date IS NOT NULL
+            GROUP BY TO_CHAR(d.full_date, 'YYYY-MM')
+            ORDER BY label
+        """, params)
+
+        return {
+            "kpis": kpis,
+            "charts": {
+                "sessions_by_program": [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_program],
+                "exposure_by_month":   [{"label": r["label"], "value": float(r["value"])} for r in exposure_by_month],
+            },
+            "table": table,
+            "total_count": int(total_count),
+        }
     except Exception as e:
         logger.error(f"regionwise data error: {e}", exc_info=True)
         return {"kpis": [], "table": [], "total_count": 0}
