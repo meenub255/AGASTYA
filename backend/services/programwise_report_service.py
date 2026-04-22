@@ -36,10 +36,10 @@ def get_programwise_report_data(category=None, year=None, month=None, limit=15, 
     # 1. KPI Query (sidebar filters only)
     kpi_sql = f"""
         SELECT 
-            COUNT(DISTINCT p.program_name) as total_programs,
-            COUNT(DISTINCT f.sk_school_id) as total_schools,
-            COUNT(DISTINCT f.sk_fact_session_id) as total_sessions,
-            SUM(COALESCE(e.total_exposure_count, 0)) as total_students
+            COALESCE(COUNT(DISTINCT p.program_name), 0) as total_programs,
+            COALESCE(COUNT(DISTINCT f.sk_school_id), 0) as total_schools,
+            COALESCE(COUNT(DISTINCT f.sk_fact_session_id), 0) as total_sessions,
+            COALESCE(SUM(e.total_exposure_count), 0) as total_students
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
@@ -48,12 +48,13 @@ def get_programwise_report_data(category=None, year=None, month=None, limit=15, 
     """
     kpis_raw = fetch_one(kpi_sql, params)
     
-    kpi_list = [
-        {"label": "Total Programs", "value": kpis_raw.get('total_programs', 0), "icon": "fas fa-project-diagram", "color": "bg-info"},
-        {"label": "Total Schools", "value": kpis_raw.get('total_schools', 0), "icon": "fas fa-school", "color": "bg-success"},
-        {"label": "Total Sessions", "value": kpis_raw.get('total_sessions', 0), "icon": "fas fa-chalkboard-teacher", "color": "bg-navy-blue"},
-        {"label": "Total Students Impacted", "value": kpis_raw.get('total_students', 0), "icon": "fas fa-user-graduate", "color": "bg-danger"}
-    ]
+    # Return object format for template compatibility
+    kpis = {
+        "total_programs": int(kpis_raw.get('total_programs', 0) or 0),
+        "total_schools": int(kpis_raw.get('total_schools', 0) or 0),
+        "total_sessions": int(kpis_raw.get('total_sessions', 0) or 0),
+        "total_students": int(kpis_raw.get('total_students', 0) or 0)
+    }
 
     # 2. DataTable Logic
     search_sql = "TRUE"
@@ -110,9 +111,36 @@ def get_programwise_report_data(category=None, year=None, month=None, limit=15, 
     """
     rows = fetch_all(sql, params + search_params + [limit, offset])
     
+    # Chart 1: Schools Visited by Region (bar chart)
+    schools_by_region = fetch_all(f"""
+        SELECT COALESCE(g.region_name, 'Unknown') AS label,
+               COUNT(DISTINCT f.sk_school_id) AS value
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+        JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        WHERE {where_sql}
+        GROUP BY g.region_name ORDER BY value DESC LIMIT 10
+    """, params)
+
+    # Chart 2: Sessions by Donor (pie chart)
+    sessions_by_donor = fetch_all(f"""
+        SELECT COALESCE(p.donor_name, 'Unknown') AS label,
+               COUNT(DISTINCT f.sk_fact_session_id) AS value
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        WHERE {where_sql}
+        GROUP BY p.donor_name ORDER BY value DESC LIMIT 8
+    """, params)
+
     return {
-        "kpis": kpi_list,
+        "kpis": kpis,
         "table": rows, 
-        "total_count": total_count
+        "total_count": int(total_count or 0),
+        "charts": {
+            "schools_by_region": [{"label": r["label"], "value": float(r["value"])} for r in schools_by_region],
+            "sessions_by_donor": [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_donor],
+        }
     }
 
