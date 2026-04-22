@@ -63,27 +63,6 @@
                 <div class="col-md-6 mb-2">
                     <div class="card h-100 white-chart-card">
                         <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
-                            <h3 class="card-title text-sm uppercase">Number of Instructors per Region</h3>
-                            <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
-                               style="cursor: pointer;"
-                               data-toggle="popover" 
-                               data-trigger="click" 
-                               data-html="true"
-                               tabindex="0"
-                               title="Region Code Legend" 
-                               data-content="Loading..."></i>
-                        </div>
-                        <div class="card-body">
-                            <div style="height:380px;">
-                                <canvas id="instructorRegionChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6 mb-2">
-                    <div class="card h-100 white-chart-card">
-                        <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
                             <h3 class="card-title text-sm uppercase">Number of Programs by Region</h3>
                             <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
                                style="cursor: pointer;"
@@ -101,6 +80,27 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="col-md-6 mb-2">
+                    <div class="card h-100 white-chart-card">
+                        <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                            <h3 class="card-title text-sm uppercase">Number of Instructors per Region</h3>
+                            <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
+                               style="cursor: pointer;"
+                               data-toggle="popover" 
+                               data-trigger="click" 
+                               data-html="true"
+                               tabindex="0"
+                               title="Region Code Legend" 
+                               data-content="Loading..."></i>
+                        </div>
+                        <div class="card-body">
+                            <div style="height:380px;">
+                                <canvas id="instructorRegionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     </div>
@@ -112,6 +112,11 @@
     $(function () {
         const pagination = window.PramanaPagination;
         let regionMapping = {};
+
+        // Register Global Plugins
+        if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+            Chart.register(ChartDataLabels);
+        }
 
         if ($.fn.select2) {
             $('.select2').select2({ theme: 'bootstrap4' });
@@ -233,6 +238,7 @@
                         }
 
                         if (window[chartRef]) window[chartRef].destroy();
+
                         window[chartRef] = new Chart(ctx, {
                             type: 'bar',
                             data: chartData,
@@ -244,6 +250,19 @@
                                         position: 'bottom',
                                         align: 'start',
                                         labels: { color: '#000000' }
+                                    },
+                                    datalabels: {
+                                        anchor: 'end',
+                                        align: 'top',
+                                        offset: 4,
+                                        color: '#666666',
+                                        font: {
+                                            weight: 'bold',
+                                            size: 11
+                                        },
+                                        formatter: function(value) {
+                                            return value.toLocaleString();
+                                        }
                                     },
                                     tooltip: {
                                         callbacks: {
@@ -278,7 +297,68 @@
                         });
                     }
 
-                    renderBarChart('instructorRegionChart', data.charts.instructors_by_region, 'instructorChartInst');
+                    function renderTreemap(canvasId, chartData, chartRef) {
+                        const el = document.getElementById(canvasId);
+                        if (!el) return;
+                        const ctx = el.getContext('2d');
+
+                        if (window[chartRef]) window[chartRef].destroy();
+
+                        // Transform labels and data into treemap format: [{v: value, g: group}]
+                        const treeData = chartData.labels.map((label, i) => {
+                            const code = getAcronym(label);
+                            regionMapping[code] = label;
+                            return {
+                                v: chartData.datasets[0].data[i],
+                                g: code
+                            };
+                        });
+
+                        window[chartRef] = new Chart(ctx, {
+                            type: 'treemap',
+                            data: {
+                                datasets: [{
+                                    label: 'Instructors',
+                                    tree: treeData,
+                                    key: 'v',
+                                    groups: ['g'],
+                                    backgroundColor: (ctx) => {
+                                        const value = ctx.raw && ctx.raw.v;
+                                        if (!value) return '#3b82f6';
+                                        return `rgba(59, 130, 246, ${0.4 + (value / 150) * 0.6})`;
+                                    },
+                                    borderColor: '#1e3a8a',
+                                    borderWidth: 1,
+                                    spacing: 1,
+                                    labels: {
+                                        display: true,
+                                        formatter: (ctx) => [ctx.raw.g, ctx.raw.v.toLocaleString()],
+                                        color: '#fff',
+                                        font: { size: 11, weight: 'bold' }
+                                    },
+                                    captions: { display: false }
+                                }]
+                            },
+                            options: {
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    datalabels: { display: false }, // Disable to avoid conflict with treemap labels
+                                    tooltip: {
+                                        callbacks: {
+                                            title: (items) => {
+                                                const code = items[0].raw.g;
+                                                return regionMapping[code] || code;
+                                            },
+                                            label: (item) => `Instructors: ${item.raw.v.toLocaleString()}`
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    renderTreemap('instructorRegionChart', data.charts.instructors_by_region, 'instructorChartInst');
                     renderBarChart('programChart', data.charts.programs_by_region, 'programChartInst');
                     
                     // Update Legend Popover with all discovered mappings
