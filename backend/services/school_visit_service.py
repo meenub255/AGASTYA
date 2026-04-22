@@ -168,10 +168,38 @@ def get_school_visit_data(region=None, area=None, program=None, year=None, month
     """
     rows = fetch_all(sql, params + search_params + [limit, offset])
     
+    # Chart 1: Sessions by Program (pie chart)
+    sessions_by_program = fetch_all(f"""
+        SELECT COALESCE(p.program_name, 'Unknown') AS label,
+               COUNT(DISTINCT f.sk_fact_session_id) AS value
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        INNER JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+        INNER JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        INNER JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        WHERE {where_sql}
+        GROUP BY p.program_name ORDER BY value DESC LIMIT 8
+    """, params)
+
+    # Chart 2: Sessions by Month (line chart with trend)
+    sessions_by_month = fetch_all(f"""
+        SELECT TO_CHAR(d.full_date, 'YYYY-MM') AS label,
+               COUNT(DISTINCT f.sk_fact_session_id) AS value
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        INNER JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        INNER JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        WHERE {where_sql} AND d.full_date IS NOT NULL
+        GROUP BY TO_CHAR(d.full_date, 'YYYY-MM')
+        ORDER BY label
+    """, params)
+
     return {
         "table": rows, 
         "total_count": total_count,
-        "kpis": kpis
+        "kpis": kpis,
+        "charts": {
+            "sessions_by_program": [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_program],
+            "sessions_by_month":   [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_month],
+        }
     }
 
 
