@@ -27,7 +27,13 @@
                         <option value="">All Months</option>
                     </select>
                 </div>
-                <hr>
+                <div class="form-group mb-2">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="toggleDataLabels" checked>
+                        <label class="custom-control-label text-sm" for="toggleDataLabels">Show Data Labels</label>
+                    </div>
+                </div>
+                <hr class="my-2">
                 <button id="seeReport" class="btn btn-primary btn-block mb-2">
                     <i class="fas fa-sync-alt mr-1"></i> See Report
                 </button>
@@ -288,7 +294,9 @@ $(function () {
                 plugins: {
                     legend: { display: false },
                     datalabels: { 
-                        display: true,
+                        display: function(context) {
+                            return $('#toggleDataLabels').is(':checked');
+                        },
                         anchor: 'end',
                         align: 'end',
                         color: '#000',
@@ -359,7 +367,9 @@ $(function () {
                 plugins: {
                     legend: { display: true, position: 'bottom', labels: { color: '#000', usePointStyle: true, boxWidth: 8, padding: 8, font: { size: 11 } } },
                     datalabels: { 
-                        display: true,
+                        display: function(context) {
+                            return $('#toggleDataLabels').is(':checked');
+                        },
                         color: '#fff',
                         font: { weight: 'bold', size: 11 },
                         formatter: function(value, context) {
@@ -454,6 +464,11 @@ $(function () {
         };
         const query = new URLSearchParams(filters).toString();
         window.exportToXLSX(`/programwise-report/export?${query}`, 'programwise_report.xlsx');
+    });
+
+    $('#toggleDataLabels').change(function() {
+        if (window.schoolsRegionInst) window.schoolsRegionInst.update();
+        if (window.sessionsDonorInst) window.sessionsDonorInst.update();
     });
 
     // Auto-load

@@ -477,6 +477,11 @@ $(function () {
         window.exportToXLSX(`/school-visit/export?${query}`, 'school_visits.xlsx');
     });
 
+    $('#toggleDataLabels').change(function() {
+        if (window.sessionsProgramPieInst) window.sessionsProgramPieInst.update();
+        if (window.sessionsTrendLineInst) window.sessionsTrendLineInst.update();
+    });
+
     // Initialize
     initFilters();
     setTimeout(loadData, 400);

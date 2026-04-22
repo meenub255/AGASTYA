@@ -33,7 +33,13 @@
                         <option value="">All Months</option>
                     </select>
                 </div>
-                <hr>
+                <div class="form-group mb-2">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="toggleDataLabels" checked>
+                        <label class="custom-control-label text-sm" for="toggleDataLabels">Show Data Labels</label>
+                    </div>
+                </div>
+                <hr class="my-2">
                 <button id="seeReport" class="btn btn-primary btn-block mb-2">
                     <i class="fas fa-sync-alt mr-1"></i> See Report
                 </button>
@@ -194,7 +200,9 @@ $(function () {
                 plugins: {
                     legend: { display: true, position: 'bottom', labels: { color: '#000', usePointStyle: true, boxWidth: 10, padding: 16, font: { size: 13, weight: 'bold' } } },
                     datalabels: { 
-                        display: true,
+                        display: function(context) {
+                            return $('#toggleDataLabels').is(':checked');
+                        },
                         color: '#fff',
                         font: { weight: 'bold', size: 13 },
                         formatter: function(value, context) {
@@ -262,6 +270,7 @@ $(function () {
                     legend: { display: true, position: 'bottom', labels: { color: '#000', usePointStyle: true, boxWidth: 8, padding: 12 } },
                     datalabels: { 
                         display: function(context) {
+                            if (!$('#toggleDataLabels').is(':checked')) return false;
                             return context.datasetIndex === 0;
                         },
                         align: 'top',
@@ -336,6 +345,11 @@ $(function () {
     $('#exportXlsx').click(() => {
         const q = new URLSearchParams({ region: $('#regionFilter').val(), program: $('#programFilter').val(), year: $('#yearFilter').val(), month: $('#monthFilter').val() }).toString();
         window.exportToXLSX(`/exposure-session-dashboard/export?${q}`, 'exposure_session.xlsx');
+    });
+
+    $('#toggleDataLabels').change(function() {
+        if (window.genderDoughnutInst) window.genderDoughnutInst.update();
+        if (window.exposureTrendLineInst) window.exposureTrendLineInst.update();
     });
 
     setTimeout(loadData, 300);
