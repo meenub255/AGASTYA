@@ -21,6 +21,9 @@
     ];
 
     document.addEventListener("DOMContentLoaded", async () => {
+        if (window.ChartDataLabels) {
+            Chart.register(ChartDataLabels);
+        }
         syncRangeLabels();
         bindFilters();
         try {

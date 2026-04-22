@@ -393,6 +393,7 @@ $(function () {
                     legend: { display: true, position: 'bottom', labels: { color: '#000', usePointStyle: true, boxWidth: 8, padding: 12 } },
                     datalabels: { 
                         display: function(context) {
+                            if (!$('#toggleDataLabels').is(':checked')) return false;
                             return context.datasetIndex === 0;
                         },
                         align: 'top',
