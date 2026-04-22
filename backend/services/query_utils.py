@@ -101,6 +101,6 @@ def get_datatables_sql(dt_params: dict, searchable_columns: list[str], sortable_
         col_name = sortable_columns[dt_params["sort_col_idx"]]
         if col_name:
             direction = "DESC" if dt_params["sort_dir"].lower() == "desc" else "ASC"
-            sort_sql = f"ORDER BY {col_name} {direction}"
+            sort_sql = f'ORDER BY "{col_name}" {direction}'
 
     return search_sql, search_params, sort_sql
