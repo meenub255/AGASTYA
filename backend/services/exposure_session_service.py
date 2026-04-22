@@ -138,7 +138,35 @@ def get_exposure_session_data(region=None, program=None, year=None, month=None, 
                 row["session_date"] = row["session_date"].strftime("%Y-%m-%d")
             formatted.append(row)
 
-        return {"kpis": kpis, "table": formatted, "total_count": int(total_count)}
+        # Chart 1: Gender Split (doughnut chart)
+        gender_split = [
+            {"label": "Boys",  "value": int(kpi_row.get("total_boys", 0) or 0)},
+            {"label": "Girls", "value": int(kpi_row.get("total_girls", 0) or 0)},
+        ]
+
+        # Chart 2: Exposure by Month (line chart with trend)
+        exposure_by_month = fetch_all(f"""
+            SELECT TO_CHAR(d.full_date, 'YYYY-MM') AS label,
+                   COALESCE(SUM(e.total_exposure_count), 0) AS value
+            FROM {DW}.fact_session f
+            LEFT JOIN {DW}.dim_geography g  ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DW}.dim_program p    ON f.sk_program_id = p.sk_program_id
+            LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
+            LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+            WHERE {where_sql} AND d.full_date IS NOT NULL
+            GROUP BY TO_CHAR(d.full_date, 'YYYY-MM')
+            ORDER BY label
+        """, params)
+
+        return {
+            "kpis": kpis,
+            "table": formatted,
+            "total_count": int(total_count),
+            "charts": {
+                "gender_split":      gender_split,
+                "exposure_by_month": [{"label": r["label"], "value": float(r["value"])} for r in exposure_by_month],
+            }
+        }
     except Exception as e:
         logger.error(f"exposure session data error: {e}", exc_info=True)
         return {"kpis": [], "table": [], "total_count": 0}
