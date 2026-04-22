@@ -29,6 +29,16 @@
     --radius-lg: 16px;
     --radius-md: 12px;
     --radius-sm: 999px;
+
+    /* Sidebar Redesign Tokens */
+    --sb-bg: #101828;
+    --sb-brand-bg: #101828;
+    --sb-item-hover: rgba(255, 255, 255, 0.05);
+    --sb-item-active: rgba(255, 255, 255, 0.1);
+    --sb-text: #94a3b8;
+    --sb-text-active: #ffffff;
+    --sb-accent: #38bdf8;
+    --sb-width: 280px;
 }
 
 
@@ -2204,144 +2214,397 @@ table.dataTable thead th {
     color: #fff;
 }
 
-/* Increase Width for long labels and fix alignment */
-body:not(.sidebar-collapse) .main-sidebar, 
-body:not(.sidebar-collapse) .main-sidebar::before {
-    width: 285px !important;
-}
+/* ==========================================================================
+   SIDEBAR REDESIGN - PREMIUM DASHBOARD UI
+   ========================================================================== */
 
-body:not(.sidebar-collapse) .content-wrapper, 
-body:not(.sidebar-collapse) .main-footer, 
-body:not(.sidebar-collapse) .main-header {
-    margin-left: 285px !important;
-}
-
-/* Sidebar Branding fix */
-.brand-link {
-    width: 100% !important;
-    white-space: nowrap;
+/* Main Sidebar Core */
+.main-sidebar {
+    background-color: var(--sb-bg) !important;
+    width: var(--sb-width) !important;
+    height: 100vh !important;
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
-    padding: 15px 20px !important;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    z-index: 1038;
 }
 
-/* Base Nav Item reset */
-.main-sidebar .nav-sidebar .nav-item > .nav-link {
-    padding: 10px 15px !important;
-    padding-right: 35px !important; /* Space for arrows */
-    transition: all 0.2s;
-    border-radius: 8px;
-    margin: 4px 12px !important;
+/* Sidebar Wrapper for Scroll */
+.sidebar {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+/* Brand Container */
+.brand-container {
+    height: 72px;
     display: flex;
     align-items: center;
-    white-space: normal;
-    min-height: 46px;
-    position: relative;
+    padding: 0 24px;
+    background: var(--sb-brand-bg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    flex-shrink: 0;
 }
 
-.main-sidebar .nav-sidebar .nav-item > .nav-link i.nav-icon {
-    width: 1.6rem;
-    font-size: 1.1rem;
+.brand-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 !important;
+    border: none !important;
+    width: auto !important;
+}
+
+.brand-logo-wrapper {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.main-sidebar .nav-sidebar .nav-item > .nav-link p {
-    font-size: 0.9rem;
-    font-weight: 500;
-    margin: 0;
-    line-height: 1.25;
+.brand-image {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
 }
 
-.main-sidebar .nav-sidebar .nav-header {
-    font-size: 0.68rem;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    color: rgba(255, 255, 255, 0.4);
-    padding: 24px 0 10px 24px;
+.brand-text {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.01em;
 }
 
-/* Treeview Sub-menu Styling */
-.main-sidebar .nav-treeview {
-    background: transparent;
-    margin: 0 12px;
+.brand-text .text-accent {
+    color: var(--brand-amber);
 }
 
-.main-sidebar .nav-treeview > .nav-item > .nav-link {
-    padding: 8px 12px 8px 38px !important; /* Indent sub-items */
-    border-radius: 6px;
-    margin: 2px 0 !important;
+/* Navigation Menu */
+.sidebar-nav-wrapper {
+    padding: 16px 0;
 }
 
-.main-sidebar .nav-treeview > .nav-item > .nav-link i {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.85rem;
-    opacity: 0.6;
+.nav-header {
+    padding: 24px 24px 8px 24px !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    color: rgba(255, 255, 255, 0.3) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.1em !important;
+    background: transparent !important;
 }
 
-.main-sidebar .nav-treeview > .nav-item > .nav-link p {
-    font-size: 0.84rem;
-    font-weight: 400;
-    color: rgba(255, 255, 255, 0.7);
+.nav-sidebar .nav-item {
+    margin: 6px 12px !important;
 }
 
-.main-sidebar .nav-treeview > .nav-item > .nav-link.active {
-    background: rgba(255, 255, 255, 0.1) !important;
-}
-
-.main-sidebar .nav-treeview > .nav-item > .nav-link.active p {
-    color: #ffffff;
-    font-weight: 600;
-}
-
-/* Active Glow for Top Level */
-.main-sidebar .nav-pills .nav-link.active:not(.nav-treeview .nav-link) {
-    background: linear-gradient(90deg, #1d4ed8, #3b82f6) !important;
-    box-shadow: 0 4px 10px rgba(29, 78, 216, 0.35);
-}
-
-/* Data Quality Report Special Card */
-.nav-card-placeholder {
-    background: rgba(255, 255, 255, 0.035);
-    border: 1px dashed rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
-    margin: 30px 15px;
-    padding: 15px;
+.nav-sidebar .nav-link {
+    border-radius: 10px !important;
+    padding: 10px 14px !important;
+    color: var(--sb-text) !important;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     position: relative;
     overflow: hidden;
-    width: calc(100% - 30px);
 }
 
-.nav-card-placeholder .card-icon {
-    font-size: 1.25rem;
-    color: #60a5fa;
-    margin-bottom: 10px;
-}
-
-.nav-card-placeholder .card-title {
-    font-size: 0.84rem !important;
-    font-weight: 600;
+.nav-sidebar .nav-link:hover {
+    background: var(--sb-item-hover) !important;
     color: #fff !important;
-    margin-bottom: 5px;
-    display: block !important;
-    float: none !important; /* Fix overlap */
 }
 
-.nav-card-placeholder .card-status {
-    font-size: 0.62rem;
+.nav-sidebar .nav-link.active {
+    background: var(--sb-item-active) !important;
+    color: #fff !important;
+    font-weight: 600;
+}
+
+.nav-sidebar .nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 3px;
+    background: var(--brand-amber);
+    border-radius: 0 4px 4px 0;
+}
+
+.nav-icon {
+    width: 20px !important;
+    font-size: 1.05rem !important;
+    margin: 0 !important;
+    opacity: 0.8;
+}
+
+.nav-link.active .nav-icon {
+    color: var(--brand-amber);
+    opacity: 1;
+}
+
+/* Treeview Arrows */
+.nav-sidebar .right {
+    margin-left: auto !important;
+    font-size: 0.75rem !important;
+    transition: transform 0.3s ease;
+    opacity: 0.5;
+}
+
+.menu-open > .nav-link .right {
+    transform: rotate(-90deg);
+}
+
+/* Sub-menus */
+.nav-treeview {
+    margin-top: 4px;
+    padding-left: 0 !important;
+}
+
+.nav-treeview .nav-item {
+    margin: 1px 0 !important;
+}
+
+.nav-treeview .nav-link {
+    padding: 8px 14px 8px 46px !important;
+    font-size: 0.88rem !important;
+    opacity: 0.85;
+}
+
+.nav-treeview .nav-link:hover {
+    opacity: 1;
+}
+
+.nav-treeview .nav-icon {
+    font-size: 0.85rem !important;
+    position: absolute;
+    left: 18px;
+}
+
+/* Premium Status Card */
+.sidebar-status-card {
+    padding: 16px;
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.status-card-inner {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.status-icon-glow {
+    width: 32px;
+    height: 32px;
+    background: rgba(56, 189, 248, 0.1);
+    color: var(--sb-accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+}
+
+.status-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.status-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.status-badge {
+    font-size: 0.6rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: rgba(255, 255, 255, 0.45);
-    display: block;
+    padding: 2px 6px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border-radius: 4px;
 }
 
-/* Hide card in collapsed mode */
-.sidebar-collapse .nav-card-placeholder {
-    display: none !important;
+.status-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 12px;
+}
+
+.progress-mini {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-bar-glow {
+    height: 100%;
+    background: linear-gradient(90deg, var(--sb-accent), #818cf8);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+    border-radius: 2px;
+}
+
+.status-meta {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Collapsed State Overrides */
+.sidebar-collapse .main-sidebar {
+    width: 72px !important;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-x: hidden !important;
+}
+
+/* Hover Expansion for Collapsed Sidebar */
+.sidebar-mini.sidebar-collapse .main-sidebar:hover {
+    width: var(--sb-width) !important;
+    box-shadow: 12px 0 35px rgba(0, 0, 0, 0.4);
+    overflow-x: visible !important; /* Allow expansion to feel natural */
+}
+
+.sidebar-collapse .brand-text,
+.sidebar-collapse .nav-link p,
+.sidebar-collapse .nav-header,
+.sidebar-collapse .status-content,
+.sidebar-collapse .status-footer,
+.sidebar-collapse .right {
+    opacity: 0;
+    visibility: hidden;
+    white-space: nowrap;
+    display: none; /* Return to display none for absolute safety in collapsed state */
+}
+
+.sidebar-mini.sidebar-collapse .main-sidebar:hover .brand-text,
+.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-link p,
+.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-header,
+.sidebar-mini.sidebar-collapse .main-sidebar:hover .status-content,
+.sidebar-mini.sidebar-collapse .main-sidebar:hover .status-footer,
+.sidebar-mini.sidebar-collapse .main-sidebar:hover .right {
+    opacity: 1;
+    visibility: visible;
+    display: block; /* Show them back on hover */
+}
+
+/* Specific fix for nav-link p to avoid layout jump */
+.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-link p {
+    display: inline-block;
+}
+
+.sidebar-collapse .brand-container {
+    padding: 0;
+    justify-content: center;
+    transition: padding 0.3s ease;
+    overflow: hidden;
+}
+
+.sidebar-mini.sidebar-collapse .main-sidebar:hover .brand-container {
+    padding: 0 24px;
+    justify-content: flex-start;
+    overflow: visible;
+}
+
+.sidebar-collapse .nav-item {
+    margin: 4px 8px !important;
+    transition: margin 0.3s ease;
+}
+
+.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-item {
+    margin: 4px 12px !important;
+}
+
+.sidebar-collapse .nav-link {
+    justify-content: center;
+    padding: 12px !important;
+    transition: all 0.3s ease;
+}
+
+.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-link {
+    justify-content: flex-start;
+    padding: 10px 14px !important;
+}
+
+/* Ensure sub-menu items maintain indentation during hover */
+.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-treeview .nav-link {
+    padding-left: 46px !important;
+}
+
+.sidebar-collapse .nav-link .nav-icon {
+    font-size: 1.2rem !important;
+    margin-right: 0 !important;
+    transition: all 0.3s ease;
+}
+
+.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-icon {
+    font-size: 1.05rem !important;
+    margin-right: 12px !important;
+}
+
+.sidebar-collapse .sidebar-status-card {
+    padding: 10px;
+    border-top: none;
+}
+
+.sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar-status-card {
+    padding: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-collapse .status-icon-glow {
+    margin-bottom: 0;
+    transition: margin 0.3s ease;
+}
+
+.sidebar-mini.sidebar-collapse .main-sidebar:hover .status-icon-glow {
+    margin-bottom: 12px;
+}
+
+/* Body adjustments */
+body:not(.sidebar-collapse) .content-wrapper,
+body:not(.sidebar-collapse) .main-footer,
+body:not(.sidebar-collapse) .main-header {
+    margin-left: var(--sb-width) !important;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-collapse .content-wrapper,
+.sidebar-collapse .main-footer,
+.sidebar-collapse .main-header {
+    margin-left: 72px !important;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
