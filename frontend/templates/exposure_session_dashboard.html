@@ -76,6 +76,38 @@
             </div>
         </div>
 
+        <!-- Charts Row -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="card h-100 white-chart-card">
+                    <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                        <h3 class="card-title text-sm uppercase">Gender Distribution</h3>
+                        <i class="fas fa-info-circle text-muted ml-auto gender-legend-trigger" 
+                           style="cursor: pointer;"
+                           data-toggle="popover" 
+                           data-trigger="click" 
+                           data-html="true"
+                           tabindex="0"
+                           title="Gender Legend" 
+                           data-content="<div style='font-size:11px'><b>Boys</b>: Male students<br><b>Girls</b>: Female students</div>"></i>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:260px"><canvas id="genderDoughnut"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100 white-chart-card">
+                    <div class="card-header border-0 pb-0">
+                        <h3 class="card-title text-sm uppercase">Exposure Trend by Month</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:260px"><canvas id="exposureTrendLine"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -104,9 +136,30 @@
 
 {% block scripts %}
 <script>
+if (window.ChartDataLabels) { Chart.register(ChartDataLabels); }
 $(function () {
     const pagination = window.PramanaPagination;
     if ($.fn.select2) $('.select2').select2({ theme: 'bootstrap4' });
+
+    $('.gender-legend-trigger').popover({
+        html: true,
+        sanitize: false,
+        trigger: 'click',
+        placement: 'bottom'
+    });
+
+    function computeTrendLine(values) {
+        const n = values.length;
+        if (n < 2) return values.slice();
+        let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+        for (let i = 0; i < n; i++) {
+            sumX += i; sumY += values[i];
+            sumXY += i * values[i]; sumXX += i * i;
+        }
+        const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+        const intercept = (sumY - slope * sumX) / n;
+        return values.map((_, i) => Math.round(intercept + slope * i));
+    }
 
     fetch('/exposure-session-dashboard/filters')
         .then(r => r.json())
@@ -116,6 +169,127 @@ $(function () {
             data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
             data.months.forEach(m => $('#monthFilter').append(new Option(m.name, m.id)));
         });
+
+    function renderDoughnutChart(canvasId, chartData, chartRef) {
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+        const ctx = el.getContext('2d');
+        if (window[chartRef]) window[chartRef].destroy();
+
+        window[chartRef] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: chartData.map(d => d.label),
+                datasets: [{
+                    data: chartData.map(d => d.value),
+                    backgroundColor: ['#3b82f6', '#ec4899'],
+                    borderWidth: 3,
+                    borderColor: '#ffffff',
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                cutout: '55%',
+                plugins: {
+                    legend: { display: true, position: 'bottom', labels: { color: '#000', usePointStyle: true, boxWidth: 10, padding: 16, font: { size: 13, weight: 'bold' } } },
+                    datalabels: { 
+                        display: true,
+                        color: '#fff',
+                        font: { weight: 'bold', size: 13 },
+                        formatter: function(value, context) {
+                            const total = context.dataset.data.reduce((s, v) => s + v, 0);
+                            const pct = total ? Math.round((value / total) * 100) : 0;
+                            return pct >= 4 ? `${value.toLocaleString()}\n(${pct}%)` : '';
+                        },
+                        textAlign: 'center'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((s, v) => s + v, 0);
+                                const pct = total ? Math.round((context.parsed / total) * 100) : 0;
+                                return `${context.label}: ${context.parsed.toLocaleString()} (${pct}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderLineChartWithTrend(canvasId, chartData, chartRef) {
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+        const ctx = el.getContext('2d');
+        if (window[chartRef]) window[chartRef].destroy();
+
+        const labels = chartData.map(d => d.label);
+        const values = chartData.map(d => d.value);
+        const trend = computeTrendLine(values);
+
+        window[chartRef] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Exposure',
+                        data: values,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245,158,11,0.12)',
+                        pointBackgroundColor: '#f59e0b',
+                        pointRadius: 3,
+                        tension: 0.35,
+                        fill: true,
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Trend',
+                        data: trend,
+                        borderColor: '#ef4444',
+                        borderDash: [6, 3],
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0
+                    }
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'bottom', labels: { color: '#000', usePointStyle: true, boxWidth: 8, padding: 12 } },
+                    datalabels: { 
+                        display: function(context) {
+                            return context.datasetIndex === 0;
+                        },
+                        align: 'top',
+                        anchor: 'end',
+                        color: '#f59e0b',
+                        font: { weight: 'bold', size: 10 },
+                        offset: 4,
+                        formatter: function(value) {
+                            return value.toLocaleString();
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((s, v) => s + (Number(v) || 0), 0) || 0;
+                                const pct = total ? Math.round((Number(context.parsed) / total) * 100) : 0;
+                                return `${context.dataset.label}: ${context.parsed.toLocaleString()} (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false }, ticks: { color: '#000', precision: 0 } },
+                    x: { grid: { display: false }, ticks: { color: '#000', maxRotation: 45, autoSkip: true, maxTicksLimit: 12 } }
+                }
+            }
+        });
+    }
 
     function loadData() {
         window.PramanaDashboard.initDataTable('#exposureTable', {
@@ -134,6 +308,10 @@ $(function () {
                     $('#kpiBoys').text(data.kpis[1].value.toLocaleString());
                     $('#kpiGirls').text(data.kpis[2].value.toLocaleString());
                     $('#kpiSessions').text(data.kpis[3].value.toLocaleString());
+                }
+                if (data.charts) {
+                    renderDoughnutChart('genderDoughnut', data.charts.gender_split || [], 'genderDoughnutInst');
+                    renderLineChartWithTrend('exposureTrendLine', data.charts.exposure_by_month || [], 'exposureTrendLineInst');
                 }
             },
             columns: [

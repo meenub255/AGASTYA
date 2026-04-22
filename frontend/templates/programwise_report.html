@@ -91,6 +91,46 @@
             </div>
         </div>
 
+        <!-- Charts Row -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="card h-100 white-chart-card">
+                    <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                        <h3 class="card-title text-sm uppercase">Schools Visited by Region</h3>
+                        <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
+                           style="cursor: pointer;"
+                           data-toggle="popover" 
+                           data-trigger="click" 
+                           data-html="true"
+                           tabindex="0"
+                           title="Region Code Legend" 
+                           data-content="Loading..."></i>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:260px"><canvas id="schoolsRegionBar"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100 white-chart-card">
+                    <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                        <h3 class="card-title text-sm uppercase">Sessions by Donor</h3>
+                        <i class="fas fa-info-circle text-muted ml-auto donor-legend-trigger" 
+                           style="cursor: pointer;"
+                           data-toggle="popover" 
+                           data-trigger="click" 
+                           data-html="true"
+                           tabindex="0"
+                           title="Donor Code Legend" 
+                           data-content="Loading..."></i>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:260px"><canvas id="sessionsDonorPie"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Table -->
         <style>
             .program-table-container {
@@ -153,11 +193,49 @@
 
 {% block scripts %}
 <script>
+if (window.ChartDataLabels) { Chart.register(ChartDataLabels); }
 $(function () {
     const pagination = window.PramanaPagination;
+    let regionMapping = {};
+    let donorMapping = {};
 
-    if ($.fn.select2) {
-        $('.select2').select2({ theme: 'bootstrap4' });
+    if ($.fn.select2) $('.select2').select2({ theme: 'bootstrap4' });
+
+    const BAR_PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
+    const PIE_PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+
+    $('.region-legend-trigger, .donor-legend-trigger').popover({
+        html: true,
+        sanitize: false,
+        trigger: 'click',
+        placement: 'bottom'
+    });
+
+    function getAcronym(str) {
+        if (!str) return '';
+        // Split by space, underscore, or hyphen
+        const parts = str.split(/[ \-_]/);
+        if (parts.length === 1 && str.length > 8) return str.substring(0, 3).toUpperCase();
+        let acronym = '';
+        parts.forEach(p => { if (p.length > 0) acronym += p[0].toUpperCase(); });
+        // Handle short names that might still be descriptive
+        return acronym.length > 1 ? acronym : str.substring(0, 3).toUpperCase();
+    }
+
+    function updateLegendPopover(selector, mapping) {
+        let content = '<div class="acronym-mapping-popover"><table class="table table-sm pb-0 mb-0" style="font-size:11px">';
+        const sortedKeys = Object.keys(mapping).sort();
+        if (sortedKeys.length === 0) {
+            content = "No data available";
+        } else {
+            sortedKeys.forEach(code => {
+                const names = mapping[code];
+                const displayName = Array.isArray(names) ? names[0] + (names.length > 1 ? ` (+${names.length-1} more)` : '') : names;
+                content += `<tr><td class="font-weight-bold pr-2" style="border-top:0">${code}</td><td style="border-top:0">: ${displayName}</td></tr>`;
+            });
+            content += '</table></div>';
+        }
+        $(selector).attr('data-content', content);
     }
 
     fetch('/programwise-report/filters')
@@ -172,6 +250,145 @@ $(function () {
             data.months.forEach(m => monthSelect.append(new Option(m.name, m.id)));
         });
 
+    function renderBarChart(canvasId, chartData, chartRef) {
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+        const ctx = el.getContext('2d');
+        if (window[chartRef]) window[chartRef].destroy();
+
+        const aggregated = {};
+        chartData.forEach(d => {
+            const code = getAcronym(d.label);
+            if (!aggregated[code]) {
+                aggregated[code] = { value: 0, labels: [] };
+            }
+            aggregated[code].value += d.value;
+            if (!aggregated[code].labels.includes(d.label)) {
+                aggregated[code].labels.push(d.label);
+            }
+            regionMapping[code] = aggregated[code].labels;
+        });
+
+        const labels = Object.keys(aggregated);
+        const values = labels.map(l => aggregated[l].value);
+
+        window[chartRef] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Schools',
+                    data: values,
+                    backgroundColor: BAR_PALETTE.slice(0, labels.length),
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    datalabels: { 
+                        display: true,
+                        anchor: 'end',
+                        align: 'end',
+                        color: '#000',
+                        font: { weight: 'bold', size: 10 },
+                        formatter: function(value) {
+                            return value > 0 ? value.toLocaleString() : '';
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                const code = context[0].label;
+                                const names = regionMapping[code] || [];
+                                return names.join(', ');
+                            },
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((s, v) => s + v, 0);
+                                const pct = total ? Math.round((context.parsed / total) * 100) : 0;
+                                return `Count: ${context.parsed.toLocaleString()} (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false }, ticks: { color: '#000', precision: 0 } },
+                    x: { grid: { display: false }, ticks: { color: '#000', padding: 5, maxRotation: 0, autoSkip: false } }
+                }
+            }
+        });
+        updateLegendPopover('.region-legend-trigger', regionMapping);
+    }
+
+    function renderPieChart(canvasId, chartData, chartRef) {
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+        const ctx = el.getContext('2d');
+        if (window[chartRef]) window[chartRef].destroy();
+
+        const aggregated = {};
+        chartData.forEach(d => {
+            const code = d.label && d.label.length <= 4 ? d.label : getAcronym(d.label);
+            if (!aggregated[code]) {
+                aggregated[code] = { value: 0, labels: [] };
+            }
+            aggregated[code].value += d.value;
+            if (!aggregated[code].labels.includes(d.label)) {
+                aggregated[code].labels.push(d.label);
+            }
+            donorMapping[code] = aggregated[code].labels;
+        });
+
+        const labels = Object.keys(aggregated);
+        const values = labels.map(l => aggregated[l].value);
+
+        window[chartRef] = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: PIE_PALETTE.slice(0, labels.length),
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'bottom', labels: { color: '#000', usePointStyle: true, boxWidth: 8, padding: 8, font: { size: 11 } } },
+                    datalabels: { 
+                        display: true,
+                        color: '#fff',
+                        font: { weight: 'bold', size: 11 },
+                        formatter: function(value, context) {
+                            const total = context.dataset.data.reduce((s, v) => s + v, 0);
+                            const pct = total ? Math.round((value / total) * 100) : 0;
+                            return pct >= 4 ? `${value.toLocaleString()}\n(${pct}%)` : '';
+                        },
+                        textAlign: 'center'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                const code = context[0].label;
+                                const names = donorMapping[code] || [];
+                                return names.join(', ');
+                            },
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((s, v) => s + v, 0);
+                                const pct = total ? Math.round((context.parsed / total) * 100) : 0;
+                                return `Count: ${context.parsed.toLocaleString()} (${pct}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        updateLegendPopover('.donor-legend-trigger', donorMapping);
+    }
+
     function loadData() {
         window.loadReportData = loadData;
         window.PramanaDashboard.initDataTable('#programTable', {
@@ -184,12 +401,17 @@ $(function () {
                 };
             },
             onDataLoad: function(data) {
-                // Update KPIs
-                if (data.kpis && data.kpis.length >= 4) {
-                    $('#kpiTotalPrograms').text(data.kpis[0].value.toLocaleString());
-                    $('#kpiTotalSchools').text(data.kpis[1].value.toLocaleString());
-                    $('#kpiTotalSessions').text(data.kpis[2].value.toLocaleString());
-                    $('#kpiTotalStudents').text(data.kpis[3].value.toLocaleString());
+                if (data.kpis) {
+                    $('#kpiTotalPrograms').text(data.kpis.total_programs.toLocaleString());
+                    $('#kpiTotalSchools').text(data.kpis.total_schools.toLocaleString());
+                    $('#kpiTotalSessions').text(data.kpis.total_sessions.toLocaleString());
+                    $('#kpiTotalStudents').text(data.kpis.total_students.toLocaleString());
+                }
+                if (data.charts) {
+                    regionMapping = {};
+                    donorMapping = {};
+                    renderBarChart('schoolsRegionBar', data.charts.schools_by_region || [], 'schoolsRegionInst');
+                    renderPieChart('sessionsDonorPie', data.charts.sessions_by_donor || [], 'sessionsDonorInst');
                 }
             },
             columns: [

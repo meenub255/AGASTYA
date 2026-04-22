@@ -33,7 +33,13 @@
                         <option value="">All Months</option>
                     </select>
                 </div>
-                <hr>
+                <div class="form-group mb-2">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="toggleDataLabels" checked>
+                        <label class="custom-control-label text-sm" for="toggleDataLabels">Show Data Labels</label>
+                    </div>
+                </div>
+                <hr class="my-2">
                 <button id="seeReport" class="btn btn-primary btn-block mb-2">
                     <i class="fas fa-sync-alt mr-1"></i> See Report
                 </button>
@@ -76,6 +82,38 @@
             </div>
         </div>
 
+        <!-- Charts Row -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="card h-100 white-chart-card">
+                    <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                        <h3 class="card-title text-sm uppercase">Sessions by Program</h3>
+                        <i class="fas fa-info-circle text-muted ml-auto acronym-legend-trigger" 
+                           style="cursor: pointer;"
+                           data-toggle="popover" 
+                           data-trigger="click" 
+                           data-html="true"
+                           tabindex="0"
+                           title="Program Code Legend" 
+                           data-content="Loading..."></i>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:260px"><canvas id="sessionsProgramChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100 white-chart-card">
+                    <div class="card-header border-0 pb-0">
+                        <h3 class="card-title text-sm uppercase">Exposure Trend by Month</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:260px"><canvas id="exposureTrendChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -103,9 +141,61 @@
 
 {% block scripts %}
 <script>
+if (window.ChartDataLabels) { Chart.register(ChartDataLabels); }
 $(function () {
     const pagination = window.PramanaPagination;
+    let acronymMapping = {};
+
     if ($.fn.select2) $('.select2').select2({ theme: 'bootstrap4' });
+
+    const BAR_PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
+
+    $('.acronym-legend-trigger').popover({
+        html: true,
+        sanitize: false,
+        trigger: 'click',
+        placement: 'bottom'
+    });
+
+    function getAcronym(str) {
+        if (!str) return '';
+        // Split by space, underscore, or hyphen
+        const parts = str.split(/[ \-_]/);
+        if (parts.length === 1 && str.length > 8) return str.substring(0, 3).toUpperCase();
+        let acronym = '';
+        parts.forEach(p => { if (p.length > 0) acronym += p[0].toUpperCase(); });
+        // Handle short names that might still be descriptive
+        return acronym.length > 1 ? acronym : str.substring(0, 3).toUpperCase();
+    }
+
+    function updateLegendPopover() {
+        let content = '<div class="acronym-mapping-popover"><table class="table table-sm pb-0 mb-0" style="font-size:11px">';
+        const sortedKeys = Object.keys(acronymMapping).sort();
+        if (sortedKeys.length === 0) {
+            content = "No data available";
+        } else {
+            sortedKeys.forEach(code => {
+                const names = acronymMapping[code];
+                const displayName = Array.isArray(names) ? names[0] + (names.length > 1 ? ` (+${names.length-1} more)` : '') : names;
+                content += `<tr><td class="font-weight-bold pr-2" style="border-top:0">${code}</td><td style="border-top:0">: ${displayName}</td></tr>`;
+            });
+            content += '</table></div>';
+        }
+        $('.acronym-legend-trigger').attr('data-content', content);
+    }
+
+    function computeTrendLine(values) {
+        const n = values.length;
+        if (n < 2) return values.slice();
+        let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+        for (let i = 0; i < n; i++) {
+            sumX += i; sumY += values[i];
+            sumXY += i * values[i]; sumXX += i * i;
+        }
+        const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+        const intercept = (sumY - slope * sumX) / n;
+        return values.map((_, i) => Math.round(intercept + slope * i));
+    }
 
     function loadFilters(region = null) {
         const url = region ? `/regionwise-dashboard/filters?region=${encodeURIComponent(region)}` : '/regionwise-dashboard/filters';
@@ -129,6 +219,146 @@ $(function () {
     loadFilters();
     $('#regionFilter').on('change', function() { loadFilters($(this).val()); });
 
+    function renderBarChart(canvasId, chartData, chartRef) {
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+        const ctx = el.getContext('2d');
+        if (window[chartRef]) window[chartRef].destroy();
+
+        // Aggregate by acronym
+        const aggregated = {};
+        chartData.forEach(d => {
+            const code = getAcronym(d.label);
+            if (!aggregated[code]) {
+                aggregated[code] = { value: 0, labels: [] };
+            }
+            aggregated[code].value += d.value;
+            if (!aggregated[code].labels.includes(d.label)) {
+                aggregated[code].labels.push(d.label);
+            }
+            acronymMapping[code] = aggregated[code].labels;
+        });
+
+        const labels = Object.keys(aggregated);
+        const values = labels.map(l => aggregated[l].value);
+
+        window[chartRef] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Sessions',
+                    data: values,
+                    backgroundColor: BAR_PALETTE.slice(0, labels.length),
+                    borderRadius: 4,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    datalabels: { 
+                        display: function(context) {
+                            return $('#toggleDataLabels').is(':checked');
+                        },
+                        anchor: 'end',
+                        align: 'end',
+                        color: '#000',
+                        font: { weight: 'bold', size: 10 },
+                        formatter: function(value) {
+                            return value > 0 ? value.toLocaleString() : '';
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                const code = context[0].label;
+                                const names = acronymMapping[code] || [];
+                                return names.join(', ');
+                            },
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((s, v) => s + v, 0);
+                                const pct = total ? Math.round((context.parsed / total) * 100) : 0;
+                                return `Count: ${context.parsed.toLocaleString()} (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false }, ticks: { color: '#000', precision: 0 } },
+                    x: { grid: { display: false }, ticks: { color: '#000', maxRotation: 0, autoSkip: false } }
+                }
+            }
+        });
+        updateLegendPopover();
+    }
+
+    function renderLineChartWithTrend(canvasId, chartData, chartRef) {
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+        const ctx = el.getContext('2d');
+        if (window[chartRef]) window[chartRef].destroy();
+
+        const labels = chartData.map(d => d.label);
+        const values = chartData.map(d => d.value);
+        const trend = computeTrendLine(values);
+
+        window[chartRef] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Exposure',
+                        data: values,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16,185,129,0.12)',
+                        pointBackgroundColor: '#10b981',
+                        pointRadius: 3,
+                        tension: 0.35,
+                        fill: true,
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Trend',
+                        data: trend,
+                        borderColor: '#ef4444',
+                        borderDash: [6, 3],
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0
+                    }
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'bottom', labels: { color: '#000', usePointStyle: true, boxWidth: 8, padding: 12 } },
+                    datalabels: { 
+                        display: function(context) {
+                            if (!$('#toggleDataLabels').is(':checked')) return false;
+                            return context.datasetIndex === 0;
+                        },
+                        align: 'top',
+                        anchor: 'end',
+                        color: '#10b981',
+                        font: { weight: 'bold', size: 10 },
+                        offset: 4,
+                        formatter: function(value) {
+                            return value.toLocaleString();
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false }, ticks: { color: '#000', precision: 0 } },
+                    x: { grid: { display: false }, ticks: { color: '#000', maxRotation: 45, autoSkip: true, maxTicksLimit: 12 } }
+                }
+            }
+        });
+    }
+
     function loadData() {
         window.PramanaDashboard.initDataTable('#regionwiseTable', {
             ajaxUrl: '/regionwise-dashboard/data',
@@ -146,6 +376,11 @@ $(function () {
                     $('#kpiSchools').text(data.kpis[1].value.toLocaleString());
                     $('#kpiExposure').text(data.kpis[2].value.toLocaleString());
                     $('#kpiAvgDuration').text(data.kpis[3].value.toLocaleString());
+                }
+                if (data.charts) {
+                    acronymMapping = {}; // Reset for this load
+                    renderBarChart('sessionsProgramChart', data.charts.sessions_by_program || [], 'sessionsProgramInst');
+                    renderLineChartWithTrend('exposureTrendChart', data.charts.exposure_by_month || [], 'exposureTrendInst');
                 }
             },
             columns: [
@@ -169,6 +404,11 @@ $(function () {
     $('#exportXlsx').click(() => {
         const q = new URLSearchParams({ region: $('#regionFilter').val(), area: $('#areaFilter').val(), year: $('#yearFilter').val(), month: $('#monthFilter').val() }).toString();
         window.exportToXLSX(`/regionwise-dashboard/export?${q}`, 'regionwise_dashboard.xlsx');
+    });
+
+    $('#toggleDataLabels').change(function() {
+        if (window.sessionsProgramInst) window.sessionsProgramInst.update();
+        if (window.exposureTrendInst) window.exposureTrendInst.update();
     });
 
     setTimeout(loadData, 300);
