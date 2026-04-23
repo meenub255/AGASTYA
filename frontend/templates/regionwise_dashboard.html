@@ -98,7 +98,7 @@
                            data-content="Loading..."></i>
                     </div>
                     <div class="card-body">
-                        <div style="height:260px"><canvas id="sessionsProgramChart"></canvas></div>
+                        <div style="height:350px"><canvas id="sessionsProgramChart"></canvas></div>
                     </div>
                 </div>
             </div>
@@ -108,7 +108,7 @@
                         <h3 class="card-title text-sm uppercase">Exposure Trend by Month</h3>
                     </div>
                     <div class="card-body">
-                        <div style="height:260px"><canvas id="exposureTrendChart"></canvas></div>
+                        <div style="height:350px"><canvas id="exposureTrendChart"></canvas></div>
                     </div>
                 </div>
             </div>
@@ -256,6 +256,7 @@ $(function () {
             },
             options: {
                 maintainAspectRatio: false,
+                layout: { padding: { top: 30 } },
                 plugins: {
                     legend: { display: false },
                     datalabels: { 
@@ -334,6 +335,7 @@ $(function () {
             },
             options: {
                 maintainAspectRatio: false,
+                layout: { padding: { top: 30 } },
                 plugins: {
                     legend: { display: true, position: 'bottom', labels: { color: '#000', usePointStyle: true, boxWidth: 8, padding: 12 } },
                     datalabels: { 
