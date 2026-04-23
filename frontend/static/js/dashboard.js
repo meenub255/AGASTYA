@@ -1,5 +1,47 @@
 (function () {
     const charts = {};
+    window.PieConnectorPlugin = {
+        id: 'pieConnector',
+        afterDatasetsDraw(chart) {
+            if (chart.config.type !== 'pie' && chart.config.type !== 'doughnut') return;
+            const { ctx } = chart;
+            const datalabelsConfig = chart.options.plugins.datalabels;
+            if (!datalabelsConfig || datalabelsConfig.display === false) return;
+
+            chart.data.datasets.forEach((dataset, i) => {
+                const meta = chart.getDatasetMeta(i);
+                meta.data.forEach((element, index) => {
+                    const display = datalabelsConfig.display;
+                    const isDisplayed = typeof display === 'function' 
+                        ? display({ datasetIndex: i, dataIndex: index, chart: chart, active: false }) 
+                        : display;
+                    
+                    if (!isDisplayed) return;
+
+                    const { startAngle, endAngle, outerRadius, x, y } = element;
+                    const midAngle = (startAngle + endAngle) / 2;
+                    
+                    const offset = datalabelsConfig.offset || 0;
+                    
+                    const startX = x + Math.cos(midAngle) * outerRadius;
+                    const startY = y + Math.sin(midAngle) * outerRadius;
+                    
+                    // The label is roughly at outerRadius + offset
+                    const endX = x + Math.cos(midAngle) * (outerRadius + offset - 5); 
+                    const endY = y + Math.sin(midAngle) * (outerRadius + offset - 5);
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = '#000000';
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(endX, endY);
+                    ctx.stroke();
+                    ctx.restore();
+                });
+            });
+        }
+    };
     const COLORS = {
         indigo: "#5b5ce6",
         blue: "#3f8cff",
@@ -882,6 +924,26 @@
                     lengthMenu: "Show _MENU_ entries"
                 },
                 order: [], // Disable initial sort to respect server-side default
+                columnDefs: [
+                    {
+                        targets: '_all',
+                        render: function(data, type, row) {
+                            if (type === 'display' && typeof data === 'string' && data.length > 0) {
+                                // Don't format if it's purely numeric or a date-like string
+                                if (/^[\d,.\-%]+$/.test(data) || /^\d{4}-\d{2}-\d{2}/.test(data)) {
+                                    return data;
+                                }
+                                // Convert to Title Case (and replace underscores with spaces)
+                                return data.replace(/_/g, ' ')
+                                           .toLowerCase()
+                                           .split(' ')
+                                           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                           .join(' ');
+                            }
+                            return data;
+                        }
+                    }
+                ],
                 drawCallback: function(settings) {
                     const api = this.api();
                     $(api.table().header()).find('th').each(function() {
