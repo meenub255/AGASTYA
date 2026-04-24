@@ -1,4 +1,4 @@
-from backend.services.query_utils import fetch_all, fetch_one
+from backend.services.query_utils import fetch_all, fetch_one, get_list_filter_clause
 from backend.config import DATAMART_SCHEMA_NAME
 
 def get_programwise_report_filters():
@@ -18,18 +18,21 @@ def get_programwise_report_filters():
 
 def get_programwise_report_data(category=None, year=None, month=None, limit=15, offset=0, dt_params=None):
     from backend.services.query_utils import parse_datatables_params, get_datatables_sql
-    where_clauses = ["TRUE"]
+    where_clauses = []
     params = []
     
-    if category:
-        where_clauses.append("p.donor_name = %s")
-        params.append(category)
-    if year:
-        where_clauses.append("d.year_actual = %s")
-        params.append(int(year))
-    if month:
-        where_clauses.append("d.month_actual = %s")
-        params.append(int(month))
+    # Use helper for list-based filters
+    c_clause, c_params = get_list_filter_clause("p.donor_name", category)
+    where_clauses.append(c_clause)
+    params.extend(c_params)
+    
+    y_clause, y_params = get_list_filter_clause("d.year_actual", year, cast_type="int")
+    where_clauses.append(y_clause)
+    params.extend(y_params)
+    
+    m_clause, m_params = get_list_filter_clause("d.month_actual", month, cast_type="int")
+    where_clauses.append(m_clause)
+    params.extend(m_params)
     
     where_sql = " AND ".join(where_clauses)
     
@@ -112,26 +115,44 @@ def get_programwise_report_data(category=None, year=None, month=None, limit=15, 
     rows = fetch_all(sql, params + search_params + [limit, offset])
     
     # Chart 1: Schools Visited by Region (bar chart)
+    # Comparison Logic: If multiple donors are selected, group by donor as well
+    compare_donor = isinstance(category, list) and len([v for v in category if v]) > 1
+    
+    group_sql = ""
+    group_select = ""
+    if compare_donor:
+        group_sql = ", p.donor_name"
+        group_select = ", COALESCE(p.donor_name, 'Unknown') AS group"
+
     schools_by_region = fetch_all(f"""
         SELECT COALESCE(g.region_name, 'Unknown') AS label,
                COUNT(DISTINCT f.sk_school_id) AS value
+               {group_select}
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         WHERE {where_sql}
-        GROUP BY g.region_name ORDER BY value DESC LIMIT 10
+        GROUP BY g.region_name {group_sql} ORDER BY value DESC LIMIT 30
     """, params)
 
-    # Chart 2: Sessions by Donor (pie chart)
+    # Chart 2: Sessions by Donor (pie chart) - usually doesn't need grouping unless comparing years
+    compare_year = isinstance(year, list) and len([v for v in year if v]) > 1
+    yr_group_sql = ""
+    yr_group_select = ""
+    if compare_year:
+        yr_group_sql = ", d.year_actual"
+        yr_group_select = ", d.year_actual::text AS group"
+
     sessions_by_donor = fetch_all(f"""
         SELECT COALESCE(p.donor_name, 'Unknown') AS label,
                COUNT(DISTINCT f.sk_fact_session_id) AS value
+               {yr_group_select}
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         WHERE {where_sql}
-        GROUP BY p.donor_name ORDER BY value DESC LIMIT 8
+        GROUP BY p.donor_name {yr_group_sql} ORDER BY value DESC LIMIT 15
     """, params)
 
     return {
@@ -139,8 +160,16 @@ def get_programwise_report_data(category=None, year=None, month=None, limit=15, 
         "table": rows, 
         "total_count": int(total_count or 0),
         "charts": {
-            "schools_by_region": [{"label": r["label"], "value": float(r["value"])} for r in schools_by_region],
-            "sessions_by_donor": [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_donor],
+            "schools_by_region": [{
+                "label": r["label"], 
+                "value": float(r["value"]),
+                **({"group": r["group"]} if "group" in r else {})
+            } for r in schools_by_region],
+            "sessions_by_donor": [{
+                "label": r["label"], 
+                "value": float(r["value"]),
+                **({"group": r["group"]} if "group" in r else {})
+            } for r in sessions_by_donor],
         }
     }
 
