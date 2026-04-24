@@ -230,3 +230,79 @@ def get_sessions_by_donor(year: list[int] | list[str] | None = None, region: lis
     )
 
     return [{"label": row["label"], "value": float(row["value"])} for row in rows]
+
+
+def get_drilldown_data(
+    region: str,
+    year: list[int] | list[str] | None = None,
+    program: list[str] | None = None,
+):
+    """
+    Returns rich drill-down stats for a specific region click.
+    Extra data beyond what the KPIs already show:
+      - Total sessions, students reached, schools visited in the region
+      - Per-program breakdown table
+    """
+    where_clause, params = _build_filters(year=year, region=[region], program=program)
+
+    # 1. Extended summary stats (not shown in main KPIs)
+    summary_row = fetch_one(
+        f"""
+        SELECT
+            COUNT(DISTINCT f.sk_fact_session_id)        AS total_sessions,
+            COALESCE(SUM(fa.total_exposure_count), 0)   AS total_students,
+            COUNT(DISTINCT f.sk_school_id)              AS total_schools
+        FROM dw.fact_session f
+        LEFT JOIN dw.dim_date d       ON d.date_id        = f.date_id
+        LEFT JOIN dw.dim_geography g  ON g.sk_geography_id = f.sk_geography_id
+        LEFT JOIN dw.dim_program p    ON p.sk_program_id   = f.sk_program_id
+        LEFT JOIN dw.fact_attendance_exposure fa ON fa.session_nk_id = f.session_nk_id
+        {where_clause}
+        """,
+        params,
+    )
+
+    # 2. Per-program breakdown table
+    prog_rows = fetch_all(
+        f"""
+        SELECT
+            COALESCE(p.program_name, 'Unknown')         AS program_name,
+            COALESCE(p.donor_name, 'Unknown')           AS donor,
+            COUNT(DISTINCT f.sk_fact_session_id)        AS sessions,
+            COALESCE(SUM(fa.total_exposure_count), 0)   AS students_reached,
+            COUNT(DISTINCT f.sk_school_id)              AS schools_visited,
+            COUNT(DISTINCT f.sk_user_id)                AS instructors
+        FROM dw.fact_session f
+        LEFT JOIN dw.dim_date d       ON d.date_id        = f.date_id
+        LEFT JOIN dw.dim_geography g  ON g.sk_geography_id = f.sk_geography_id
+        LEFT JOIN dw.dim_program p    ON p.sk_program_id   = f.sk_program_id
+        LEFT JOIN dw.fact_attendance_exposure fa ON fa.session_nk_id = f.session_nk_id
+        {where_clause}
+        GROUP BY p.program_name, p.donor_name
+        ORDER BY sessions DESC
+        LIMIT 50
+        """,
+        params,
+    )
+
+    programs = [
+        {
+            "program": row.get("program_name") or "Unknown",
+            "donor": row.get("donor") or "Unknown",
+            "sessions": int(row.get("sessions", 0) or 0),
+            "students_reached": int(row.get("students_reached", 0) or 0),
+            "schools_visited": int(row.get("schools_visited", 0) or 0),
+            "instructors": int(row.get("instructors", 0) or 0),
+        }
+        for row in prog_rows
+    ]
+
+    return {
+        "region": region,
+        "summary": {
+            "total_sessions": int(summary_row.get("total_sessions", 0) or 0),
+            "total_students": int(summary_row.get("total_students", 0) or 0),
+            "total_schools": int(summary_row.get("total_schools", 0) or 0),
+        },
+        "programs": programs,
+    }
