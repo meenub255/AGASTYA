@@ -251,15 +251,15 @@ def regionwise_dashboard_page(request: Request):
 
 @app.get("/exposure-session-dashboard", response_class=HTMLResponse)
 def exposure_session_dashboard_page(request: Request):
-    return render_page(request, "exposure_session_dashboard.html", "ExposureSession Dashboard", "exposure-session-dashboard")
+    return render_page(request, "exposure_session_dashboard.html", "Exposure Session Dashboard", "exposure-session-dashboard")
 
 @app.get("/performance-management-dashboard", response_class=HTMLResponse)
 def performance_management_dashboard_page(request: Request):
-    return render_page(request, "performance_mgmt_dashboard.html", "PerformanceManagement Dashboard", "performance-management-dashboard")
+    return render_page(request, "performance_mgmt_dashboard.html", "Performance Management Dashboard", "performance-management-dashboard")
 
 @app.get("/manpower-vehicle-dashboard", response_class=HTMLResponse)
 def manpower_vehicle_dashboard_page(request: Request):
-    return render_page(request, "manpower_vehicle_dashboard.html", "ManpowerVehicle Dashboard", "manpower-vehicle-dashboard")
+    return render_page(request, "manpower_vehicle_dashboard.html", "Manpower Vehicle Dashboard", "manpower-vehicle-dashboard")
 
 @app.get("/instructor-feedback", response_class=HTMLResponse)
 def instructor_feedback_page(request: Request):
