@@ -9,10 +9,10 @@ router = APIRouter(prefix="/exposure", tags=["exposure"])
 
 @router.get("/total-students", response_model=CountResponse)
 def total_students(
-    start: str | None = Query(default=None),
-    end: str | None = Query(default=None),
-    region: str | None = Query(default=None),
-    program: str | None = Query(default=None),
+    start: list[str] | None = Query(default=None),
+    end: list[str] | None = Query(default=None),
+    region: list[str] | None = Query(default=None),
+    program: list[str] | None = Query(default=None),
 ):
     return {
         "count": exposure_service.get_total_students(start=start, end=end, region=region, program=program)
@@ -21,40 +21,40 @@ def total_students(
 
 @router.get("/kpis", response_model=KPIBundle)
 def exposure_kpis(
-    start: str | None = Query(default=None),
-    end: str | None = Query(default=None),
-    region: str | None = Query(default=None),
-    program: str | None = Query(default=None),
+    start: list[str] | None = Query(default=None),
+    end: list[str] | None = Query(default=None),
+    region: list[str] | None = Query(default=None),
+    program: list[str] | None = Query(default=None),
 ):
     return {"metrics": exposure_service.get_exposure_kpis(start=start, end=end, region=region, program=program)}
 
 
 @router.get("/gender-split")
 def gender_split(
-    start: str | None = Query(default=None),
-    end: str | None = Query(default=None),
-    region: str | None = Query(default=None),
-    program: str | None = Query(default=None),
+    start: list[str] | None = Query(default=None),
+    end: list[str] | None = Query(default=None),
+    region: list[str] | None = Query(default=None),
+    program: list[str] | None = Query(default=None),
 ):
     return {"metrics": exposure_service.get_gender_split(start=start, end=end, region=region, program=program)}
 
 
 @router.get("/community-gender-split")
 def community_gender_split(
-    start: str | None = Query(default=None),
-    end: str | None = Query(default=None),
-    region: str | None = Query(default=None),
-    program: str | None = Query(default=None),
+    start: list[str] | None = Query(default=None),
+    end: list[str] | None = Query(default=None),
+    region: list[str] | None = Query(default=None),
+    program: list[str] | None = Query(default=None),
 ):
     return {"metrics": exposure_service.get_community_gender_split(start=start, end=end, region=region, program=program)}
 
 
 @router.get("/top-schools")
 def top_schools(
-    start: str | None = Query(default=None),
-    end: str | None = Query(default=None),
-    region: str | None = Query(default=None),
-    program: str | None = Query(default=None),
+    start: list[str] | None = Query(default=None),
+    end: list[str] | None = Query(default=None),
+    region: list[str] | None = Query(default=None),
+    program: list[str] | None = Query(default=None),
     limit: int = Query(default=5, ge=1, le=20),
 ):
     return {
@@ -65,10 +65,10 @@ def top_schools(
 
 @router.get("/cohort-breakdown", response_model=SeriesBundle)
 def cohort_breakdown(
-    start: str | None = Query(default=None),
-    end: str | None = Query(default=None),
-    region: str | None = Query(default=None),
-    program: str | None = Query(default=None),
+    start: list[str] | None = Query(default=None),
+    end: list[str] | None = Query(default=None),
+    region: list[str] | None = Query(default=None),
+    program: list[str] | None = Query(default=None),
 ):
     return {
         "title": "Exposure by Cohort Type",
@@ -78,10 +78,10 @@ def cohort_breakdown(
 
 @router.get("/program-metrics", response_model=SeriesBundle)
 def program_metrics(
-    start: str | None = Query(default=None),
-    end: str | None = Query(default=None),
-    region: str | None = Query(default=None),
-    program: str | None = Query(default=None),
+    start: list[str] | None = Query(default=None),
+    end: list[str] | None = Query(default=None),
+    region: list[str] | None = Query(default=None),
+    program: list[str] | None = Query(default=None),
     limit: int = Query(default=10, ge=1, le=25),
 ):
     return {
@@ -94,10 +94,10 @@ def program_metrics(
 
 @router.get("/program-distribution", response_model=SeriesBundle)
 def program_distribution(
-    start: str | None = Query(default=None),
-    end: str | None = Query(default=None),
-    region: str | None = Query(default=None),
-    program: str | None = Query(default=None),
+    start: list[str] | None = Query(default=None),
+    end: list[str] | None = Query(default=None),
+    region: list[str] | None = Query(default=None),
+    program: list[str] | None = Query(default=None),
 ):
     return {
         "title": "Program Distribution",
