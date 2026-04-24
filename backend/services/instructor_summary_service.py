@@ -55,7 +55,7 @@ def get_instructor_summary_data(region=None, area=None, year=None, month=None, l
             COUNT(DISTINCT d.full_date) as days_worked,
             COUNT(f.sk_fact_session_id) as total_sessions,
             SUM(COALESCE(e.total_exposure_count, 0)) as total_exposures,
-            SUM(CASE WHEN a.activity_name ILIKE ANY (ARRAY['%YIL%', '%SF%', '%CV%']) THEN COALESCE(e.total_exposure_count, 0) ELSE 0 END) as combined_exposures
+            SUM(CASE WHEN a.activity_name ILIKE ANY (ARRAY['%%YIL%%', '%%SF%%', '%%CV%%']) THEN COALESCE(e.total_exposure_count, 0) ELSE 0 END) as combined_exposures
         FROM {DATAMART_SCHEMA_NAME}.dim_user u
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON u.sk_user_id = f.sk_user_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
