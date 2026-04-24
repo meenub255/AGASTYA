@@ -577,9 +577,51 @@ h5,
     margin-bottom: 0.2rem;
 }
 
+.select2-container--bootstrap4 .select2-selection--multiple {
+    min-height: calc(1.5em + 0.5rem + 2px) !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 0.25rem !important;
+    padding-bottom: 2px !important;
+}
+
+.select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice {
+    background-color: #007bff !important;
+    border: 1px solid #006fe6 !important;
+    color: #fff !important;
+    padding: 0 8px !important;
+    margin-top: 4px !important;
+    margin-left: 4px !important;
+    font-size: 0.85rem !important;
+    line-height: 1.8 !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice__remove {
+    color: #fff !important;
+    margin-right: 5px !important;
+    border: none !important;
+    background: transparent !important;
+    font-weight: bold !important;
+}
+
+.select2-container--bootstrap4 .select2-selection--multiple .select2-search__field {
+    height: 24px !important;
+    margin-top: 5px !important;
+    padding-left: 8px !important;
+}
+
+.filter-multi + .select2-container {
+    width: 100% !important;
+}
+
+/* Ensure single select also looks consistent */
+.select2-container--bootstrap4 .select2-selection--single {
+    height: calc(1.5em + 0.5rem + 2px) !important;
+}
+
 .form-control,
 .select2-container .select2-selection--single {
-    height: calc(1.5em + 0.5rem + 2px) !important;
     padding: 0.25rem 0.5rem;
     font-size: 0.85rem;
 }
