@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- KPI Grid -->
-{% include "partials/kpi_cards.html" %}
-
-<!-- Filters -->
-<div class="card card-default">
-    <div class="card-body">
-        <div class="row align-items-end">
-            <div class="col-md-2">
-                <div class="form-group mb-0">
-                    <label>Start Year</label>
-                    <select id="startYear" class="form-control select2">
+<div class="row">
+    <!-- Left Column: Filter Slicers -->
+    <div class="col-md-2 mb-3">
+        <div class="card filter-card shadow-lg">
+            <div class="card-header">
+                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group mb-4">
+                    <label class="filter-label">Start Year</label>
+                    <select id="startYear" class="form-control select2 filter-multi" multiple="multiple" data-filter="start_year" data-placeholder="Select Start Year">
                         <option value="2020">2020</option>
                         <option value="2021">2021</option>
                         <option value="2022">2022</option>
@@ -21,11 +21,9 @@
                         <option value="2026">2026</option>
                     </select>
                 </div>
-            </div>
-            <div class="col-md-2">
-                <div class="form-group mb-0">
-                    <label>End Year</label>
-                    <select id="endYear" class="form-control select2">
+                <div class="form-group mb-4">
+                    <label class="filter-label">End Year</label>
+                    <select id="endYear" class="form-control select2 filter-multi" multiple="multiple" data-filter="end_year" data-placeholder="Select End Year">
                         <option value="2020">2020</option>
                         <option value="2021">2021</option>
                         <option value="2022">2022</option>
@@ -35,34 +33,33 @@
                         <option value="2026" selected>2026</option>
                     </select>
                 </div>
-            </div>
-            <div class="col-md-2">
-                <div class="form-group mb-0">
-                    <label>Region</label>
-                    <select id="regionFilter" class="form-control select2">
-                        <option value="">All Regions</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Region</label>
+                    <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region">
                     </select>
                 </div>
-            </div>
-            <div class="col-md-2">
-                <div class="form-group mb-0">
-                    <label>Program</label>
-                    <select id="programFilter" class="form-control select2">
-                        <option value="">All Programs</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Program</label>
+                    <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program" data-placeholder="Select Program">
                     </select>
                 </div>
-            </div>
-            <div class="col-md-2">
-                <button id="seeReport" class="btn btn-primary btn-sm btn-block">See Report</button>
-            </div>
-            <div class="col-md-1">
-                <button id="exportXlsx" class="btn btn-export btn-sm btn-block">
-                    <i class="fas fa-file-excel"></i>
-                </button>
+                
+                <div class="mt-5">
+                    <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-3">
+                        <i class="fas fa-sync-alt mr-2"></i>See Report
+                    </button>
+                    <button id="exportXlsx" class="btn btn-success btn-block btn-premium mb-3">
+                        <i class="fas fa-file-excel mr-2"></i>Export XLSX
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
+
+    <!-- Right Column: Content -->
+    <div class="col-md-10">
+        <!-- KPI Grid -->
+        {% include "partials/kpi_cards.html" %}
 
 <div class="row mt-2">
     <div class="col-lg-7 mb-3">
@@ -104,8 +101,9 @@
 <script>
     $(function () {
         let regionMapping = {};
+        // Premium Multi-filter initialization
         if ($.fn.select2) {
-            $('.select2').select2({ theme: 'bootstrap4' });
+            window.PramanaDashboard.initMultiFilters();
         }
 
         // Initialize popovers
@@ -160,12 +158,12 @@
             });
 
         rf.on('change', function () {
-            const selectedRegion = $(this).val();
-            pf.empty().append(new Option('All Programs', ''));
+            const regions = $(this).val();
+            pf.empty();
             
-            if (selectedRegion) {
-                // Fetch programs for this regional specifically
-                fetch(`/dashboard/filters?region_name=${encodeURIComponent(selectedRegion)}`)
+            if (regions && regions.length > 0) {
+                const query = $.param({ region_name: regions }, true);
+                fetch(`/dashboard/filters?${query}`)
                     .then(res => res.json())
                     .then(data => {
                         data.programs.forEach(p => pf.append(new Option(p, p)));
@@ -178,14 +176,8 @@
 
 
         function loadData() {
-            const filters = {
-                start_year: $('#startYear').val(),
-                end_year: $('#endYear').val(),
-                region: $('#regionFilter').val(),
-                program: $('#programFilter').val()
-            };
-
-            const query = new URLSearchParams(filters).toString();
+            const filters = window.PramanaDashboard.collectFilters();
+            const query = $.param(filters, true);
             fetch(`/session/data?${query}`)
                 .then(res => res.json())
                 .then(data => {
@@ -287,13 +279,8 @@
         });
 
         $('#exportXlsx').click(function () {
-            const filters = {
-                start_year: $('#startYear').val(),
-                end_year: $('#endYear').val(),
-                region: $('#regionFilter').val(),
-                program: $('#programFilter').val()
-            };
-            const query = new URLSearchParams(filters).toString();
+            const filters = window.PramanaDashboard.collectFilters();
+            const query = $.param(filters, true);
             window.exportToXLSX(`/session/export?${query}`, 'session_report.xlsx');
         });
 

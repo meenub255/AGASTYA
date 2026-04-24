@@ -4,45 +4,45 @@
 <div class="row">
     <!-- Left Column: Filter Slicers -->
     <div class="col-md-2 mb-3">
-        <div class="card card-outline card-primary h-100">
+        <div class="card filter-card shadow-lg">
             <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-filter mr-1"></i> Filters</h3>
+                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
             </div>
             <div class="card-body">
-                <div class="form-group">
-                    <label>Donor Name</label>
-                    <select id="categoryFilter" class="form-control select2">
-                        <option value="">All Donors</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Donor Name</label>
+                    <select id="categoryFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="category" data-placeholder="Select Donor">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Select Year</label>
-                    <select id="yearFilter" class="form-control select2">
-                        <option value="">All Years</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Year</label>
+                    <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year" data-placeholder="Select Year">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Month</label>
-                    <select id="monthFilter" class="form-control select2">
-                        <option value="">All Months</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Month</label>
+                    <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month">
                     </select>
                 </div>
-                <div class="form-group mb-2">
+                
+                <div class="form-group mb-4">
                     <div class="custom-control custom-switch">
                         <input type="checkbox" class="custom-control-input" id="toggleDataLabels" checked>
-                        <label class="custom-control-label text-sm" for="toggleDataLabels">Show Data Labels</label>
+                        <label class="custom-control-label filter-label" for="toggleDataLabels" style="text-transform: none;">Show Data Labels</label>
                     </div>
                 </div>
-                <hr class="my-2">
-                <button id="seeReport" class="btn btn-primary btn-block mb-2">
-                    <i class="fas fa-sync-alt mr-1"></i> See Report
-                </button>
-                <button id="resetFilters" class="btn btn-block btn-reset-filters mb-2">
-                    <i class="fas fa-undo mr-1"></i> Reset All
-                </button>
-                <button id="exportXlsx" class="btn btn-export btn-block">
-                    <i class="fas fa-file-excel mr-1"></i> Export to XLSX
-                </button>
+
+                <div class="mt-5">
+                    <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-3">
+                        <i class="fas fa-sync-alt mr-2"></i>See Report
+                    </button>
+                    <button id="resetFilters" class="btn btn-outline-light btn-block btn-premium mb-3" style="border-color: rgba(255,255,255,0.2)">
+                        <i class="fas fa-undo mr-2"></i>Reset All
+                    </button>
+                    <button id="exportXlsx" class="btn btn-success btn-block btn-premium mb-3">
+                        <i class="fas fa-file-excel mr-2"></i>Export XLSX
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -101,8 +101,8 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <div class="card h-100 white-chart-card">
-                    <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
-                        <h3 class="card-title text-sm uppercase">Schools Visited by Region</h3>
+                    <div class="card-header border-0 pb-1 d-flex justify-content-between align-items-center" style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
+                        <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Schools Visited by Region</h3>
                         <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
                            style="cursor: pointer;"
                            data-toggle="popover" 
@@ -119,8 +119,8 @@
             </div>
             <div class="col-md-6">
                 <div class="card h-100 white-chart-card">
-                    <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
-                        <h3 class="card-title text-sm uppercase">Sessions by Donor</h3>
+                    <div class="card-header border-0 pb-1 d-flex justify-content-between align-items-center" style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
+                        <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Sessions by Donor</h3>
                         <i class="fas fa-info-circle text-muted ml-auto donor-legend-trigger" 
                            style="cursor: pointer;"
                            data-toggle="popover" 
@@ -205,7 +205,9 @@ $(function () {
     let regionMapping = {};
     let donorMapping = {};
 
-    if ($.fn.select2) $('.select2').select2({ theme: 'bootstrap4' });
+    if ($.fn.select2) {
+        $('.select2:not(.filter-multi)').select2({ theme: 'bootstrap4' });
+    }
 
     const BAR_PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
     const PIE_PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
@@ -217,31 +219,16 @@ $(function () {
         placement: 'bottom'
     });
 
-    function getAcronym(str) {
-        if (!str) return '';
-        // Split by space, underscore, or hyphen
-        const parts = str.split(/[ \-_]/);
-        if (parts.length === 1 && str.length > 8) return str.substring(0, 3).toUpperCase();
-        let acronym = '';
-        parts.forEach(p => { if (p.length > 0) acronym += p[0].toUpperCase(); });
-        // Handle short names that might still be descriptive
-        return acronym.length > 1 ? acronym : str.substring(0, 3).toUpperCase();
-    }
+    $('.region-legend-trigger, .donor-legend-trigger').popover({
+        html: true,
+        sanitize: false,
+        trigger: 'click',
+        placement: 'bottom'
+    });
 
-    function updateLegendPopover(selector, mapping) {
-        let content = '<div class="acronym-mapping-popover"><table class="table table-sm pb-0 mb-0" style="font-size:11px">';
-        const sortedKeys = Object.keys(mapping).sort();
-        if (sortedKeys.length === 0) {
-            content = "No data available";
-        } else {
-            sortedKeys.forEach(code => {
-                const names = mapping[code];
-                const displayName = Array.isArray(names) ? names[0] + (names.length > 1 ? ` (+${names.length-1} more)` : '') : names;
-                content += `<tr><td class="font-weight-bold pr-2" style="border-top:0">${code}</td><td style="border-top:0">: ${displayName}</td></tr>`;
-            });
-            content += '</table></div>';
-        }
-        $(selector).attr('data-content', content);
+    // Premium Multi-filter initialization
+    if ($.fn.select2) {
+        window.PramanaDashboard.initMultiFilters();
     }
 
     fetch('/programwise-report/filters')
@@ -256,175 +243,13 @@ $(function () {
             data.months.forEach(m => monthSelect.append(new Option(m.name, m.id)));
         });
 
-    function renderBarChart(canvasId, chartData, chartRef) {
-        const el = document.getElementById(canvasId);
-        if (!el) return;
-        const ctx = el.getContext('2d');
-        if (window[chartRef]) window[chartRef].destroy();
-
-        const aggregated = {};
-        chartData.forEach(d => {
-            const code = getAcronym(d.label);
-            if (!aggregated[code]) {
-                aggregated[code] = { value: 0, labels: [] };
-            }
-            aggregated[code].value += d.value;
-            if (!aggregated[code].labels.includes(d.label)) {
-                aggregated[code].labels.push(d.label);
-            }
-            regionMapping[code] = aggregated[code].labels;
-        });
-
-        const labels = Object.keys(aggregated);
-        const values = labels.map(l => aggregated[l].value);
-
-        window[chartRef] = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Schools',
-                    data: values,
-                    backgroundColor: BAR_PALETTE.slice(0, labels.length),
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                layout: { padding: { top: 30 } },
-                plugins: {
-                    legend: { display: false },
-                    datalabels: { 
-                        display: function(context) {
-                            return $('#toggleDataLabels').is(':checked');
-                        },
-                        anchor: 'end',
-                        align: 'end',
-                        color: '#000',
-                        font: { weight: 'bold', size: 10 },
-                        formatter: function(value) {
-                            return value > 0 ? value.toLocaleString() : '';
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            title: function(context) {
-                                const code = context[0].label;
-                                const names = regionMapping[code] || [];
-                                return names.join(', ');
-                            },
-                            label: function(context) {
-                                const total = context.dataset.data.reduce((s, v) => s + v, 0);
-                                const pct = total ? Math.round((context.parsed / total) * 100) : 0;
-                                return `Count: ${context.parsed.toLocaleString()} (${pct}%)`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: { beginAtZero: true, grid: { display: false }, ticks: { color: '#000', precision: 0 } },
-                    x: { grid: { display: false }, ticks: { color: '#000', padding: 5, maxRotation: 0, autoSkip: false } }
-                }
-            }
-        });
-        updateLegendPopover('.region-legend-trigger', regionMapping);
-    }
-
-    function renderPieChart(canvasId, chartData, chartRef) {
-        const el = document.getElementById(canvasId);
-        if (!el) return;
-        const ctx = el.getContext('2d');
-        if (window[chartRef]) window[chartRef].destroy();
-
-        const aggregated = {};
-        chartData.forEach(d => {
-            const code = d.label && d.label.length <= 4 ? d.label : getAcronym(d.label);
-            if (!aggregated[code]) {
-                aggregated[code] = { value: 0, labels: [] };
-            }
-            aggregated[code].value += d.value;
-            if (!aggregated[code].labels.includes(d.label)) {
-                aggregated[code].labels.push(d.label);
-            }
-            donorMapping[code] = aggregated[code].labels;
-        });
-
-        const labels = Object.keys(aggregated);
-        const values = labels.map(l => aggregated[l].value);
-
-        window[chartRef] = new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: values,
-                    backgroundColor: PIE_PALETTE.slice(0, labels.length),
-                    borderWidth: 2,
-                    borderColor: '#ffffff'
-                }]
-            },
-            plugins: [ChartDataLabels, window.PieConnectorPlugin],
-            options: {
-                maintainAspectRatio: false,
-                layout: { padding: 25 },
-                plugins: {
-                    legend: { 
-                        display: true, 
-                        position: 'bottom', 
-                        labels: { 
-                            color: '#000', 
-                            usePointStyle: true, 
-                                boxWidth: 8, 
-                                padding: 40, 
-                                font: { size: 10 } 
-                            } 
-                        },
-                    datalabels: { 
-                        display: function(context) {
-                            return $('#toggleDataLabels').is(':checked');
-                        },
-                        anchor: 'end',
-                        align: 'end',
-                        offset: 12,
-                        color: '#000',
-                        font: { weight: 'bold', size: 9 },
-                        formatter: function(value, context) {
-                            const total = context.dataset.data.reduce((s, v) => s + v, 0);
-                            const pct = total ? Math.round((value / total) * 100) : 0;
-                            return pct >= 2 ? `${value.toLocaleString()} (${pct}%)` : '';
-                        },
-                        textAlign: 'center'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            title: function(context) {
-                                const code = context[0].label;
-                                const names = donorMapping[code] || [];
-                                return names.join(', ');
-                            },
-                            label: function(context) {
-                                const total = context.dataset.data.reduce((s, v) => s + v, 0);
-                                const pct = total ? Math.round((context.parsed / total) * 100) : 0;
-                                return `Count: ${context.parsed.toLocaleString()} (${pct}%)`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        updateLegendPopover('.donor-legend-trigger', donorMapping);
-    }
 
     function loadData() {
         window.loadReportData = loadData;
         window.PramanaDashboard.initDataTable('#programTable', {
             ajaxUrl: '/programwise-report/data',
             getFilters: function() {
-                return {
-                    category: $('#categoryFilter').val(),
-                    year: $('#yearFilter').val(),
-                    month: $('#monthFilter').val()
-                };
+                return window.PramanaDashboard.collectFilters();
             },
             onDataLoad: function(data) {
                 if (data.kpis) {
@@ -436,8 +261,22 @@ $(function () {
                 if (data.charts) {
                     regionMapping = {};
                     donorMapping = {};
-                    renderBarChart('schoolsRegionBar', data.charts.schools_by_region || [], 'schoolsRegionInst');
-                    renderPieChart('sessionsDonorPie', data.charts.sessions_by_donor || [], 'sessionsDonorInst');
+                    
+                    // Note: renderChart is global in dashboard.js
+                    window.PramanaDashboard.renderChart('schoolsRegionBar', 'bar', data.charts.schools_by_region || [], 'Schools', {
+                        borderRadius: 4,
+                        useAcronyms: true,
+                        legendSelector: '.region-legend-trigger'
+                    });
+                    
+                    window.PramanaDashboard.renderChart('sessionsDonorPie', 'pie', data.charts.sessions_by_donor || [], 'Sessions', {
+                        showLegend: true,
+                        legendPosition: 'bottom',
+                        useAcronyms: true,
+                        usePieConnectors: true,
+                        showPercentages: true,
+                        legendSelector: '.donor-legend-trigger'
+                    });
                 }
             },
             columns: [
@@ -472,19 +311,14 @@ $(function () {
         window.PramanaDashboard.resetTable('#programTable', loadData);
     });
 
-    $('#exportXlsx').click(function() {
-        const filters = {
-            category: $('#categoryFilter').val(),
-            year: $('#yearFilter').val(),
-            month: $('#monthFilter').val()
-        };
-        const query = new URLSearchParams(filters).toString();
-        window.exportToXLSX(`/programwise-report/export?${query}`, 'programwise_report.xlsx');
+    $('#exportXlsx').click(() => {
+        const filters = window.PramanaDashboard.collectFilters();
+        const q = $.param(filters, true);
+        window.exportToXLSX(`/programwise-report/export?${q}`, 'programwise_report.xlsx');
     });
 
     $('#toggleDataLabels').change(function() {
-        if (window.schoolsRegionInst) window.schoolsRegionInst.update();
-        if (window.sessionsDonorInst) window.sessionsDonorInst.update();
+        window.PramanaDashboard.updateAllCharts();
     });
 
     // Auto-load

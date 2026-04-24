@@ -2,47 +2,42 @@
 
 {% block content %}
 <div class="row">
-    <!-- Filter Pane -->
+    <!-- Left Column: Filter Slicers -->
     <div class="col-md-2 mb-3">
-        <div class="card card-outline card-primary h-100">
+        <div class="card filter-card shadow-lg">
             <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-filter mr-1"></i> Filters</h3>
+                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
             </div>
             <div class="card-body">
-                <div class="form-group">
-                    <label>Start Year</label>
-                    <select id="startYear" class="form-control select2">
-                        <option value="">All Years</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Year</label>
+                    <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year" data-placeholder="Select Year">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>End Year</label>
-                    <select id="endYear" class="form-control select2">
-                        <option value="">All Years</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Region</label>
+                    <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Region</label>
-                    <select id="regionFilter" class="form-control select2">
-                        <option value="">All Regions</option>
-                    </select>
-                </div>
-                <div class="form-group mb-2">
+                
+                <div class="form-group mb-4">
                     <div class="custom-control custom-switch">
                         <input type="checkbox" class="custom-control-input" id="toggleDataLabels" checked>
-                        <label class="custom-control-label text-sm" for="toggleDataLabels">Show Data Labels</label>
+                        <label class="custom-control-label filter-label" for="toggleDataLabels" style="text-transform: none;">Show Data Labels</label>
                     </div>
                 </div>
-                <hr class="my-2">
-                <button id="seeReport" class="btn btn-primary btn-block mb-2">
-                    <i class="fas fa-sync-alt mr-1"></i> See Report
-                </button>
-                <button id="resetFilters" class="btn btn-block btn-reset-filters mb-2">
-                    <i class="fas fa-undo mr-1"></i> Reset All
-                </button>
-                <button id="exportXlsx" class="btn btn-export btn-block">
-                    <i class="fas fa-file-excel mr-1"></i> Export to XLSX
-                </button>
+
+                <div class="mt-5">
+                    <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-3">
+                        <i class="fas fa-sync-alt mr-2"></i>See Report
+                    </button>
+                    <button id="resetFilters" class="btn btn-outline-light btn-block btn-premium mb-3" style="border-color: rgba(255,255,255,0.2)">
+                        <i class="fas fa-undo mr-2"></i>Reset All
+                    </button>
+                    <button id="exportXlsx" class="btn btn-success btn-block btn-premium mb-3">
+                        <i class="fas fa-file-excel mr-2"></i>Export XLSX
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -205,13 +200,15 @@
             return values.map((_, i) => Math.round(intercept + slope * i));
         }
 
+        // Premium Multi-filter initialization
+        if ($.fn.select2) {
+            window.PramanaDashboard.initMultiFilters();
+        }
+
         fetch('/nationwide/filters')
             .then(r => r.json())
             .then(data => {
-                data.years.forEach(y => {
-                    $('#startYear').append(new Option(y, y));
-                    $('#endYear').append(new Option(y, y));
-                });
+                data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
                 data.regions.forEach(r => $('#regionFilter').append(new Option(r, r)));
             });
 
@@ -262,7 +259,7 @@
                         datalabels: { 
                             display: function(context) {
                                 if (!$('#toggleDataLabels').is(':checked')) return false;
-                                return context.datasetIndex === 0; // Only show for the main data line
+                                return context.datasetIndex === 0;
                             },
                             align: 'top',
                             anchor: 'end',
@@ -288,7 +285,6 @@
             const ctx = el.getContext('2d');
             if (window[chartRef]) window[chartRef].destroy();
 
-            // Aggregate by acronym
             const aggregated = {};
             chartData.forEach(d => {
                 const code = getAcronym(d.label);
@@ -373,11 +369,7 @@
             window.PramanaDashboard.initDataTable('#nationwideTable', {
                 ajaxUrl: '/nationwide/data',
                 getFilters: function() {
-                    return {
-                        start_year: $('#startYear').val(),
-                        end_year: $('#endYear').val(),
-                        region: $('#regionFilter').val()
-                    };
+                    return window.PramanaDashboard.collectFilters();
                 },
                 onDataLoad: function(data) {
                     if (data.kpis && data.kpis.length >= 4) {
@@ -387,7 +379,7 @@
                         $('#kpiPrograms').text(data.kpis[3].value.toLocaleString());
                     }
                     if (data.charts) {
-                        regionMapping = {}; // Reset mapping for this load
+                        regionMapping = {};
                         renderLineChartWithTrend('sessionsTrendChart', data.charts.sessions_trend_monthly || [], 'sessionsTrendInst');
                         renderPieChart('studentsRegionChart', data.charts.students_by_region || [], 'studentsRegionInst');
                     }
@@ -422,7 +414,8 @@
             window.PramanaDashboard.resetTable('#nationwideTable', loadData);
         });
         $('#exportXlsx').click(() => {
-            const q = new URLSearchParams({ start_year: $('#startYear').val(), end_year: $('#endYear').val(), region: $('#regionFilter').val() }).toString();
+            const filters = window.PramanaDashboard.collectFilters();
+            const q = $.param(filters, true);
             window.exportToXLSX(`/nationwide/export?${q}`, 'nationwide_dashboard.xlsx');
         });
 

@@ -4,51 +4,35 @@
 <div class="row">
     <!-- Left Column: Filter Slicers -->
     <div class="col-md-2 mb-3">
-        <div class="card card-outline card-primary h-100">
+        <div class="card filter-card shadow-lg">
             <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-filter mr-1"></i> Filters</h3>
+                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
             </div>
             <div class="card-body">
-                <div class="form-group">
-                    <label>Start Year</label>
-                    <select id="startYear" class="form-control select2">
-                        <option value="2020">2020</option>
-                        <option value="2021">2021</option>
-                        <option value="2022">2022</option>
-                        <option value="2023">2023</option>
-                        <option value="2024">2024</option>
-                        <option value="2025">2025</option>
-                        <option value="2026">2026</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Year</label>
+                    <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year" data-placeholder="Select Year">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>End Year</label>
-                    <select id="endYear" class="form-control select2">
-                        <option value="2020">2020</option>
-                        <option value="2021">2021</option>
-                        <option value="2022">2022</option>
-                        <option value="2023">2023</option>
-                        <option value="2024">2024</option>
-                        <option value="2025">2025</option>
-                        <option value="2026" selected>2026</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Region</label>
+                    <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Region</label>
-                    <select id="regionFilter" class="form-control select2">
-                        <option value="">All Regions</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Program</label>
+                    <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program" data-placeholder="Select Program">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Program</label>
-                    <select id="programFilter" class="form-control select2">
-                        <option value="">All Programs</option>
-                    </select>
+                
+                <div class="mt-5">
+                    <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-3">
+                        <i class="fas fa-sync-alt mr-2"></i>See Report
+                    </button>
+                    <button id="resetFilters" class="btn btn-outline-light btn-block btn-premium mb-3" style="border-color: rgba(255,255,255,0.2)">
+                        <i class="fas fa-undo mr-2"></i>Reset All
+                    </button>
                 </div>
-                <hr>
-                <button id="seeReport" class="btn btn-primary btn-block">
-                    <i class="fas fa-sync-alt mr-1"></i> See Report
-                </button>
             </div>
         </div>
     </div>
@@ -169,47 +153,45 @@
             });
         }
 
+        // Global multi-filter initialization
+        if ($.fn.select2) {
+            window.PramanaDashboard.initMultiFilters();
+        }
+
         const rf = $('#regionFilter');
         const pf = $('#programFilter');
+        const yf = $('#yearFilter');
 
-        // Initially disable programs
-        pf.prop('disabled', true);
-
+        // Initial filters load
         fetch('/dashboard/filters')
             .then(res => res.json())
             .then(data => {
                 data.regions.forEach(r => rf.append(new Option(r, r)));
+                data.years.forEach(y => yf.append(new Option(y, y)));
             });
 
+        // Dynamic Program Filter based on Region
         rf.on('change', function () {
-            const selectedRegion = $(this).val();
+            const regions = $(this).val(); // This is now an array
             pf.empty().append(new Option('All Programs', ''));
             
-            if (selectedRegion) {
-                // Fetch programs for this regional specifically
-                fetch(`/dashboard/filters?region_name=${encodeURIComponent(selectedRegion)}`)
+            if (regions && regions.length > 0) {
+                const query = $.param({ region_name: regions }, true);
+                fetch(`/dashboard/filters?${query}`)
                     .then(res => res.json())
                     .then(data => {
                         data.programs.forEach(p => pf.append(new Option(p, p)));
-                        pf.prop('disabled', false);
                     });
-            } else {
-                pf.prop('disabled', true);
             }
         });
 
-
         function loadData() {
-            const filters = {
-                start_year: $('#startYear').val(),
-                end_year: $('#endYear').val(),
-                region: $('#regionFilter').val(),
-                program: $('#programFilter').val(),
-                limit: pagination.state.limit,
-                offset: pagination.state.offset
-            };
-
-            const query = new URLSearchParams(filters).toString();
+            const filters = window.PramanaDashboard.collectFilters();
+            
+            // Sync with backend naming if necessary
+            if (filters.year) filters.years = filters.year; 
+            
+            const query = $.param(filters, true);
             fetch(`/dashboard/data?${query}`)
                 .then(res => res.json())
                 .then(data => {
@@ -314,6 +296,11 @@
                             };
                         });
 
+                        const values = treeData.map(d => d.v);
+                        const maxVal = Math.max(...values) || 1;
+                        const minVal = Math.min(...values) || 0;
+                        const range = maxVal - minVal || 1;
+
                         window[chartRef] = new Chart(ctx, {
                             type: 'treemap',
                             data: {
@@ -324,8 +311,12 @@
                                     groups: ['g'],
                                     backgroundColor: (ctx) => {
                                         const value = ctx.raw && ctx.raw.v;
-                                        if (!value) return '#3b82f6';
-                                        return `rgba(59, 130, 246, ${0.4 + (value / 150) * 0.6})`;
+                                        if (!value) return '#f8fafc';
+                                        // Normalize ratio based on the actual range of the data
+                                        const normRatio = (value - minVal) / range;
+                                        // Lightness: 90% (very light) -> 30% (very dark)
+                                        const l = 90 - (normRatio * 60);
+                                        return `hsl(217, 91%, ${l}%)`;
                                     },
                                     borderColor: '#1e3a8a',
                                     borderWidth: 1,
@@ -333,7 +324,11 @@
                                     labels: {
                                         display: true,
                                         formatter: (ctx) => [ctx.raw.g, ctx.raw.v.toLocaleString()],
-                                        color: '#fff',
+                                        color: (ctx) => {
+                                            const value = ctx.raw && ctx.raw.v;
+                                            const normRatio = (value - minVal) / range;
+                                            return normRatio > 0.35 ? '#fff' : '#1e3a8a'; // Dynamic text color for readability
+                                        },
                                         font: { size: 11, weight: 'bold' }
                                     },
                                     captions: { display: false }

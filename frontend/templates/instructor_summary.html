@@ -4,48 +4,43 @@
 <div class="row">
     <!-- Left Column: Filter Slicers -->
     <div class="col-md-2 mb-3">
-        <div class="card card-outline card-primary h-100">
+        <div class="card filter-card shadow-lg">
             <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-filter mr-1"></i> Filters</h3>
+                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
             </div>
             <div class="card-body">
-                <div class="form-group">
-                    <label>Region</label>
-                    <select id="regionFilter" class="form-control select2">
-                        <option value="">All Regions</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Region</label>
+                    <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Area</label>
-                    <select id="areaFilter" class="form-control select2">
-                        <option value="">All Areas</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Area</label>
+                    <select id="areaFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="area" data-placeholder="Select Area">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Select Year</label>
-                    <select id="yearFilter" class="form-control select2">
-                        <option value="">All Years</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Year</label>
+                    <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year" data-placeholder="Select Year">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Month</label>
-                    <select id="monthFilter" class="form-control select2">
-                        <option value="">All Months</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Month</label>
+                    <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month">
                     </select>
                 </div>
-                <hr>
-                <button id="seeReport" class="btn btn-primary btn-block mb-2">
-                    <i class="fas fa-sync-alt mr-1"></i> See Report
-                </button>
-                <button id="resetFilters" class="btn btn-block btn-reset-filters mb-2">
-                    <i class="fas fa-undo mr-1"></i> Reset All
-                </button>
-                <button id="exportXlsx" class="btn btn-export btn-block mb-2">
-                    <i class="fas fa-file-excel mr-1"></i> Export to XLSX
-                </button>
-                <button id="inactiveUserReport" class="btn btn-outline-dark btn-block">
-                    <i class="fas fa-user-slash mr-1"></i> Inactive Users
-                </button>
+                
+                <div class="mt-5">
+                    <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-3">
+                        <i class="fas fa-sync-alt mr-2"></i>See Report
+                    </button>
+                    <button id="resetFilters" class="btn btn-outline-light btn-block btn-premium mb-3" style="border-color: rgba(255,255,255,0.2)">
+                        <i class="fas fa-undo mr-2"></i>Reset All
+                    </button>
+                    <button id="exportXlsx" class="btn btn-success btn-block btn-premium mb-3">
+                        <i class="fas fa-file-excel mr-2"></i>Export XLSX
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -53,71 +48,99 @@
     <!-- Right Column: Dashboard Content -->
     <div class="col-md-10">
         <!-- Dynamic KPI Cards -->
-        <div class="row mb-4">
+        <div class="row mb-3">
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-info">
+                <div class="small-box bg-info shadow-sm">
                     <div class="inner">
-                        <h3 id="kpiDaysWorked">0</h3>
+                        <h3 id="kpiDaysWorked" class="text-bold">0</h3>
                         <p>Days worked</p>
                     </div>
-                    <div class="icon">
-                        <i class="fas fa-calendar-alt"></i>
-                    </div>
+                    <div class="icon"><i class="fas fa-calendar-alt"></i></div>
                 </div>
             </div>
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-success">
+                <div class="small-box bg-success shadow-sm">
                     <div class="inner">
-                        <h3 id="kpiNoOfSessions">0</h3>
+                        <h3 id="kpiNoOfSessions" class="text-bold">0</h3>
                         <p>No of sessions</p>
                     </div>
-                    <div class="icon">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
+                    <div class="icon"><i class="fas fa-calendar-check"></i></div>
                 </div>
             </div>
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-navy-blue">
+                <div class="small-box bg-primary shadow-sm" style="background-color: #1a237e !important;">
                     <div class="inner">
-                        <h3 id="kpiSchoolExposures">0</h3>
+                        <h3 id="kpiSchoolExposures" class="text-bold">0</h3>
                         <p>School Exposures</p>
                     </div>
-                    <div class="icon">
-                        <i class="fas fa-school"></i>
-                    </div>
+                    <div class="icon"><i class="fas fa-school"></i></div>
                 </div>
             </div>
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-danger">
+                <div class="small-box bg-danger shadow-sm">
                     <div class="inner">
-                        <h3 id="kpiCombinedExposures">0</h3>
+                        <h3 id="kpiCombinedExposures" class="text-bold">0</h3>
                         <p>Total Exposures (YIL, SF, CV)</p>
                     </div>
-                    <div class="icon">
-                        <i class="fas fa-users"></i>
-                    </div>
+                    <div class="icon"><i class="fas fa-users"></i></div>
                 </div>
             </div>
         </div>
 
         <!-- Table -->
-        <div class="card mt-2">
+        <style>
+            .instructor-table-container {
+                overflow-x: auto;
+                position: relative;
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 8px;
+                background: #fff;
+            }
+            #instructorTable {
+                font-size: 0.85rem;
+                white-space: nowrap;
+                margin-bottom: 0 !important;
+            }
+            #instructorTable th {
+                background: #001f3f !important;
+                color: #fff !important;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                border-bottom: 2px solid #dee2e6;
+                padding: 12px 15px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            #instructorTable td {
+                padding: 12px 15px;
+                vertical-align: middle;
+            }
+            .small-box {
+                border-radius: 12px;
+                transition: transform 0.2s;
+            }
+            .small-box:hover {
+                transform: translateY(-5px);
+            }
+        </style>
+        <div class="card shadow-lg border-0">
             <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table id="instructorTable" class="table table-striped table-hover mb-0 high-contrast-table">
+                <div class="instructor-table-container">
+                    <table id="instructorTable" class="table table-hover mb-0 high-contrast-table table-striped">
                         <thead>
                             <tr>
                                 <th>Instructor</th>
-                                <th>Days worked</th>
-                                <th>School Session</th>
-                                <th>School Exposures</th>
-                                <th>No.of Fair</th>
-                                <th>YIExp Training</th>
-                                <th>SF Expo</th>
-                                <th>YIL Session</th>
-                                <th>YIL Expo</th>
-                                <th>CV visit</th>
-                                <th>CV Exps</th>
+                                <th class="text-center">Days worked</th>
+                                <th class="text-center">School Session</th>
+                                <th class="text-center">School Exposures</th>
+                                <th class="text-center">No.of Fair</th>
+                                <th class="text-center">YIExp Training</th>
+                                <th class="text-center">SF Expo</th>
+                                <th class="text-center">YIL Session</th>
+                                <th class="text-center">YIL Expo</th>
+                                <th class="text-center">CV visit</th>
+                                <th class="text-center">CV Exps</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -137,7 +160,8 @@ $(function () {
     const pagination = window.PramanaPagination;
 
     if ($.fn.select2) {
-        $('.select2').select2({ theme: 'bootstrap4' });
+        $('.select2:not(.filter-multi)').select2({ theme: 'bootstrap4' });
+        window.PramanaDashboard.initMultiFilters();
     }
 
     fetch('/instructor-summary/filters')
@@ -160,12 +184,7 @@ $(function () {
         window.PramanaDashboard.initDataTable('#instructorTable', {
             ajaxUrl: '/instructor-summary/data',
             getFilters: function() {
-                return {
-                    region: $('#regionFilter').val(),
-                    area: $('#areaFilter').val(),
-                    year: $('#yearFilter').val(),
-                    month: $('#monthFilter').val()
-                };
+                return window.PramanaDashboard.collectFilters();
             },
             onDataLoad: function(data) {
                 // Update KPIs
@@ -201,13 +220,8 @@ $(function () {
     });
 
     $('#exportXlsx').click(function() {
-        const filters = {
-            region: $('#regionFilter').val(),
-            area: $('#areaFilter').val(),
-            year: $('#yearFilter').val(),
-            month: $('#monthFilter').val()
-        };
-        const query = new URLSearchParams(filters).toString();
+        const filters = window.PramanaDashboard.collectFilters();
+        const query = $.param(filters);
         window.exportToXLSX(`/instructor-summary/export?${query}`, 'instructor_summary.xlsx');
     });
 

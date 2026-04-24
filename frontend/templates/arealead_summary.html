@@ -4,45 +4,43 @@
 <div class="row">
     <!-- Left Column: Filter Slicers -->
     <div class="col-md-2 mb-3">
-        <div class="card card-outline card-primary h-100">
+        <div class="card filter-card shadow-lg">
             <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-filter mr-1"></i> Filters</h3>
+                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
             </div>
             <div class="card-body">
-                <div class="form-group">
-                    <label>Region</label>
-                    <select id="regionFilter" class="form-control select2">
-                        <option value="">All Regions</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Region</label>
+                    <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Area</label>
-                    <select id="areaFilter" class="form-control select2">
-                        <option value="">All Areas</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Area</label>
+                    <select id="areaFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="area" data-placeholder="Select Area">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Select Year</label>
-                    <select id="yearFilter" class="form-control select2">
-                        <option value="">All Years</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Year</label>
+                    <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year" data-placeholder="Select Year">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Month</label>
-                    <select id="monthFilter" class="form-control select2">
-                        <option value="">All Months</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Month</label>
+                    <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month">
                     </select>
                 </div>
-                <hr>
-                <button id="seeReport" class="btn btn-primary btn-block mb-2">
-                    <i class="fas fa-sync-alt mr-1"></i> See Report
-                </button>
-                <button id="resetFilters" class="btn btn-block btn-reset-filters mb-2">
-                    <i class="fas fa-undo mr-1"></i> Reset All
-                </button>
-                <button id="exportXlsx" class="btn btn-export btn-block">
-                    <i class="fas fa-file-excel mr-1"></i> Export to XLSX
-                </button>
+                
+                <div class="mt-5">
+                    <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-3">
+                        <i class="fas fa-sync-alt mr-2"></i>See Report
+                    </button>
+                    <button id="resetFilters" class="btn btn-outline-light btn-block btn-premium mb-3" style="border-color: rgba(255,255,255,0.2)">
+                        <i class="fas fa-undo mr-2"></i>Reset All
+                    </button>
+                    <button id="exportXlsx" class="btn btn-success btn-block btn-premium mb-3">
+                        <i class="fas fa-file-excel mr-2"></i>Export XLSX
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -127,8 +125,9 @@
 $(function () {
     const pagination = window.PramanaPagination;
 
+    // Premium Multi-filter initialization
     if ($.fn.select2) {
-        $('.select2').select2({ theme: 'bootstrap4' });
+        window.PramanaDashboard.initMultiFilters();
     }
 
     fetch('/arealead-summary/filters')
@@ -146,15 +145,11 @@ $(function () {
         });
 
     function loadData() {
+        window.loadReportData = loadData;
         window.PramanaDashboard.initDataTable('#areaTable', {
             ajaxUrl: '/arealead-summary/data',
             getFilters: function() {
-                return {
-                    region: $('#regionFilter').val(),
-                    area: $('#areaFilter').val(),
-                    year: $('#yearFilter').val(),
-                    month: $('#monthFilter').val()
-                };
+                return window.PramanaDashboard.collectFilters();
             },
             onDataLoad: function(data) {
                 if (data.kpis && data.kpis.length >= 4) {
@@ -191,13 +186,8 @@ $(function () {
     });
 
     $('#exportXlsx').click(function() {
-        const filters = {
-            region: $('#regionFilter').val(),
-            area: $('#areaFilter').val(),
-            year: $('#yearFilter').val(),
-            month: $('#monthFilter').val()
-        };
-        const query = new URLSearchParams(filters).toString();
+        const filters = window.PramanaDashboard.collectFilters();
+        const query = $.param(filters, true);
         window.exportToXLSX(`/arealead-summary/export?${query}`, 'arealead_summary.xlsx');
     });
 

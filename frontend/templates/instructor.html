@@ -67,8 +67,8 @@
         <div class="row align-items-end">
             <div class="col-md-2">
                 <div class="form-group mb-0">
-                    <label>Start Year</label>
-                    <select id="startYear" class="form-control select2">
+                    <label>Years</label>
+                    <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year">
                         <option value="2020">2020</option>
                         <option value="2021">2021</option>
                         <option value="2022">2022</option>
@@ -81,22 +81,8 @@
             </div>
             <div class="col-md-2">
                 <div class="form-group mb-0">
-                    <label>End Year</label>
-                    <select id="endYear" class="form-control select2">
-                        <option value="2020">2020</option>
-                        <option value="2021">2021</option>
-                        <option value="2022">2022</option>
-                        <option value="2023">2023</option>
-                        <option value="2024">2024</option>
-                        <option value="2025">2025</option>
-                        <option value="2026" selected>2026</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="form-group mb-0">
                     <label>Region</label>
-                    <select id="regionFilter" class="form-control select2">
+                    <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region">
                         <option value="">All Regions</option>
                     </select>
                 </div>
@@ -104,7 +90,7 @@
             <div class="col-md-2">
                 <div class="form-group mb-0">
                     <label>Program</label>
-                    <select id="programFilter" class="form-control select2">
+                    <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program">
                         <option value="">All Programs</option>
                     </select>
                 </div>
@@ -155,6 +141,19 @@
 </div>
 
 <div class="row">
+    <div class="col-lg-12 mb-3">
+        <section class="card white-chart-card">
+            <div class="card-header border-0"><h3 class="card-title">Monthly Instructor Activity</h3></div>
+            <div class="card-body">
+                <div style="height:300px;">
+                    <canvas id="monthlyActivityChart"></canvas>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="row">
     <div class="col-lg-5 mb-3">
         <section class="card h-100 white-chart-card">
             <div class="card-header border-0"><h3 class="card-title">Sessions by instructor type</h3></div>
@@ -182,7 +181,8 @@ $(function () {
     const pagination = window.PramanaPagination;
 
     if ($.fn.select2) {
-        $('.select2').select2({ theme: 'bootstrap4' });
+        $('.select2:not(.filter-multi)').select2({ theme: 'bootstrap4' });
+        window.PramanaDashboard.initMultiFilters();
     }
 
     const rf = $('#regionFilter');
@@ -199,14 +199,27 @@ $(function () {
 
     rf.on('change', function () {
         const selectedRegion = $(this).val();
-        pf.empty().append(new Option('All Programs', ''));
+        pf.empty();
+        if (!$(this).hasClass('filter-multi')) {
+            pf.append(new Option('All Programs', ''));
+        }
         
-        if (selectedRegion) {
-            fetch(`/dashboard/filters?region_name=${encodeURIComponent(selectedRegion)}`)
+        if (selectedRegion && (Array.isArray(selectedRegion) ? selectedRegion.length > 0 : selectedRegion)) {
+            const params = new URLSearchParams();
+            if (Array.isArray(selectedRegion)) {
+                selectedRegion.forEach(r => { if(r) params.append('region_name', r); });
+            } else {
+                params.append('region_name', selectedRegion);
+            }
+            
+            fetch(`/dashboard/filters?${params.toString()}`)
                 .then(res => res.json())
                 .then(data => {
                     data.programs.forEach(p => pf.append(new Option(p, p)));
                     pf.prop('disabled', false);
+                    if (pf.hasClass('select2-hidden-accessible')) {
+                        pf.trigger('change.select2');
+                    }
                 });
         } else {
             pf.prop('disabled', true);
@@ -218,27 +231,11 @@ $(function () {
         window.PramanaDashboard.initDataTable('#instructorTable', {
             ajaxUrl: '/instructor/session-log',
             getFilters: function() {
-                return {
-                    start_year: $('#startYear').val(),
-                    end_year: $('#endYear').val(),
-                    region: $('#regionFilter').val(),
-                    program: $('#programFilter').val()
-                };
+                return window.PramanaDashboard.collectFilters();
             },
             onDataLoad: function(data) {
-                // Since session-log might not return all KPIs/Charts, we might need a separate call for them
-                // OR we can update the backend to consolidate them if requested.
-                // For now, let's keep the extra fetch for KPIs and charts to avoid breaking other things,
-                // but the table itself will be serverSide.
-                
-                // Fetch the rest of the dashboard data (KPIs, Charts, Multi-program)
-                const filters = {
-                    start_year: $('#startYear').val(),
-                    end_year: $('#endYear').val(),
-                    region: $('#regionFilter').val(),
-                    program: $('#programFilter').val()
-                };
-                const query = new URLSearchParams(filters).toString();
+                const filters = window.PramanaDashboard.collectFilters();
+                const query = $.param(filters);
                 
                 // Update KPIs
                 fetch(`/instructor/kpis?${query}`)
@@ -256,23 +253,19 @@ $(function () {
                 fetch(`/instructor/type-breakdown?${query}`)
                     .then(res => res.json())
                     .then(d => {
-                        const ctxType = document.getElementById('instructorTypeChart').getContext('2d');
-                        if (window.typeChart) window.typeChart.destroy();
-                        window.typeChart = new Chart(ctxType, {
-                            type: 'pie',
-                            data: {
-                                labels: d.data.map(i => i.label),
-                                datasets: [{
-                                    data: d.data.map(i => i.value),
-                                    backgroundColor: ['#17a2b8', '#28a745', '#001f3f', '#dc3545', '#ffc107']
-                                }]
-                            },
-                            options: { 
-                                maintainAspectRatio: false, 
-                                plugins: {
-                                    legend: { display: true, position: 'bottom', labels: { color: '#000000' } }
-                                }
-                            }
+                        window.PramanaDashboard.renderChart('instructorTypeChart', 'pie', d.data || [], 'Instructor Type', {
+                            showLegend: true,
+                            legendPosition: 'bottom'
+                        });
+                    });
+
+                fetch(`/instructor/monthly?${query}`)
+                    .then(res => res.json())
+                    .then(d => {
+                        window.PramanaDashboard.renderChart('monthlyActivityChart', 'line', d.data || [], 'Activity', {
+                            borderRadius: 0,
+                            tension: 0.3,
+                            fill: true
                         });
                     });
 
@@ -324,13 +317,8 @@ $(function () {
     });
 
     $('#exportXlsx').click(function() {
-        const filters = {
-            start_year: $('#startYear').val(),
-            end_year: $('#endYear').val(),
-            region: $('#regionFilter').val(),
-            program: $('#programFilter').val()
-        };
-        const query = new URLSearchParams(filters).toString();
+        const filters = window.PramanaDashboard.collectFilters();
+        const query = $.param(filters);
         window.exportToXLSX(`/instructor/export?${query}`, 'instructor_report.xlsx');
     });
 

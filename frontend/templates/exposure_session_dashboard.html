@@ -2,53 +2,52 @@
 
 {% block content %}
 <div class="row">
-    <!-- Filter Pane -->
+    <!-- Left Column: Filter Slicers -->
     <div class="col-md-2 mb-3">
-        <div class="card card-outline card-primary h-100">
+        <div class="card filter-card shadow-lg">
             <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-filter mr-1"></i> Filters</h3>
+                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
             </div>
             <div class="card-body">
-                <div class="form-group">
-                    <label>Region</label>
-                    <select id="regionFilter" class="form-control select2">
-                        <option value="">All Regions</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Region</label>
+                    <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Program</label>
-                    <select id="programFilter" class="form-control select2">
-                        <option value="">All Programs</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Program</label>
+                    <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program" data-placeholder="Select Program">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Year</label>
-                    <select id="yearFilter" class="form-control select2">
-                        <option value="">All Years</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Year</label>
+                    <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year" data-placeholder="Select Year">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Month</label>
-                    <select id="monthFilter" class="form-control select2">
-                        <option value="">All Months</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Month</label>
+                    <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month">
                     </select>
                 </div>
-                <div class="form-group mb-2">
+                
+                <div class="form-group mb-4">
                     <div class="custom-control custom-switch">
                         <input type="checkbox" class="custom-control-input" id="toggleDataLabels" checked>
-                        <label class="custom-control-label text-sm" for="toggleDataLabels">Show Data Labels</label>
+                        <label class="custom-control-label filter-label" for="toggleDataLabels" style="text-transform: none;">Show Data Labels</label>
                     </div>
                 </div>
-                <hr class="my-2">
-                <button id="seeReport" class="btn btn-primary btn-block mb-2">
-                    <i class="fas fa-sync-alt mr-1"></i> See Report
-                </button>
-                <button id="resetFilters" class="btn btn-block btn-reset-filters mb-2">
-                    <i class="fas fa-undo mr-1"></i> Reset All
-                </button>
-                <button id="exportXlsx" class="btn btn-export btn-block">
-                    <i class="fas fa-file-excel mr-1"></i> Export to XLSX
-                </button>
+
+                <div class="mt-5">
+                    <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-3">
+                        <i class="fas fa-sync-alt mr-2"></i>See Report
+                    </button>
+                    <button id="resetFilters" class="btn btn-outline-light btn-block btn-premium mb-3" style="border-color: rgba(255,255,255,0.2)">
+                        <i class="fas fa-undo mr-2"></i>Reset All
+                    </button>
+                    <button id="exportXlsx" class="btn btn-success btn-block btn-premium mb-3">
+                        <i class="fas fa-file-excel mr-2"></i>Export XLSX
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -165,6 +164,11 @@ $(function () {
         const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
         const intercept = (sumY - slope * sumX) / n;
         return values.map((_, i) => Math.round(intercept + slope * i));
+    }
+
+    // Premium Multi-filter initialization
+    if ($.fn.select2) {
+        window.PramanaDashboard.initMultiFilters();
     }
 
     fetch('/exposure-session-dashboard/filters')
@@ -317,15 +321,11 @@ $(function () {
     }
 
     function loadData() {
+        window.loadReportData = loadData;
         window.PramanaDashboard.initDataTable('#exposureTable', {
             ajaxUrl: '/exposure-session-dashboard/data',
             getFilters: function() {
-                return {
-                    region:  $('#regionFilter').val(),
-                    program: $('#programFilter').val(),
-                    year:    $('#yearFilter').val(),
-                    month:   $('#monthFilter').val()
-                };
+                return window.PramanaDashboard.collectFilters();
             },
             onDataLoad: function(data) {
                 if (data.kpis && data.kpis.length >= 4) {
@@ -359,7 +359,8 @@ $(function () {
         window.PramanaDashboard.resetTable('#exposureTable', loadData);
     });
     $('#exportXlsx').click(() => {
-        const q = new URLSearchParams({ region: $('#regionFilter').val(), program: $('#programFilter').val(), year: $('#yearFilter').val(), month: $('#monthFilter').val() }).toString();
+        const filters = window.PramanaDashboard.collectFilters();
+        const q = $.param(filters, true);
         window.exportToXLSX(`/exposure-session-dashboard/export?${q}`, 'exposure_session.xlsx');
     });
 
