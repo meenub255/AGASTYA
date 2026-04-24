@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query
 
 from backend.models.schemas import CountResponse, KPIBundle, OptionsResponse, SeriesBundle
 from backend.services import session_service
@@ -8,26 +8,26 @@ router = APIRouter(prefix="/session", tags=["session"])
 
 
 @router.get("/count", response_model=CountResponse)
-def session_count(start: str | None = Query(default=None), end: str | None = Query(default=None)):
+def session_count(start: list[str] | None = Query(default=None), end: list[str] | None = Query(default=None)):
     return {"count": session_service.get_session_count(start=start, end=end)}
 
 
 @router.get("/kpis", response_model=KPIBundle)
 def session_kpis(
-    start: str | None = Query(default=None),
-    end: str | None = Query(default=None),
-    region: str | None = Query(default=None),
-    program: str | None = Query(default=None),
+    start: list[str] | None = Query(default=None),
+    end: list[str] | None = Query(default=None),
+    region: list[str] | None = Query(default=None),
+    program: list[str] | None = Query(default=None),
 ):
     return {"metrics": session_service.get_session_kpis(start=start, end=end, region=region, program=program)}
 
 
 @router.get("/monthly", response_model=SeriesBundle)
 def monthly_sessions(
-    start: str | None = Query(default=None),
-    end: str | None = Query(default=None),
-    region: str | None = Query(default=None),
-    program: str | None = Query(default=None),
+    start: list[str] | None = Query(default=None),
+    end: list[str] | None = Query(default=None),
+    region: list[str] | None = Query(default=None),
+    program: list[str] | None = Query(default=None),
 ):
     return {
         "title": "Monthly Sessions",
@@ -37,10 +37,10 @@ def monthly_sessions(
 
 @router.get("/by-region", response_model=SeriesBundle)
 def sessions_by_region(
-    start: str | None = Query(default=None),
-    end: str | None = Query(default=None),
-    region: str | None = Query(default=None),
-    program: str | None = Query(default=None),
+    start: list[str] | None = Query(default=None),
+    end: list[str] | None = Query(default=None),
+    region: list[str] | None = Query(default=None),
+    program: list[str] | None = Query(default=None),
 ):
     return {
         "title": "Sessions by Region",

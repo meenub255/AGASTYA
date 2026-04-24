@@ -4,16 +4,16 @@ from backend.services import regionwise_service
 router = APIRouter(prefix="/regionwise-dashboard", tags=["regionwise-dashboard"])
 
 @router.get("/filters")
-def get_filters(region: str | None = Query(None)):
+def get_filters(region: list[str] | None = Query(None)):
     return regionwise_service.get_regionwise_filters(region_name=region)
 
 @router.get("/data")
 def get_data(
     request: Request,
-    region: str | None = Query(None),
-    area:   str | None = Query(None),
-    year:   str | None = Query(None),
-    month:  str | None = Query(None),
+    region: list[str] | None = Query(None),
+    area:   list[str] | None = Query(None),
+    year:   list[str] | None = Query(None),
+    month:  list[str] | None = Query(None),
     limit:  int        = Query(default=15),
     offset: int        = Query(default=0),
 ):
@@ -28,10 +28,10 @@ def get_data(
 
 @router.get("/export")
 def export_data(
-    region: str | None = Query(None),
-    area:   str | None = Query(None),
-    year:   str | None = Query(None),
-    month:  str | None = Query(None),
+    region: list[str] | None = Query(None),
+    area:   list[str] | None = Query(None),
+    year:   list[str] | None = Query(None),
+    month:  list[str] | None = Query(None),
 ):
     from backend.services.export_utils import json_to_excel_streaming_response
     data = regionwise_service.get_regionwise_data(region, area, year, month, limit=100000, offset=0)

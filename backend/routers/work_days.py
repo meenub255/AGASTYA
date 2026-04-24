@@ -2,27 +2,30 @@ from fastapi import APIRouter, Query, Request
 from backend.services.work_days_service import get_work_days_filters, get_work_days_data
 from typing import Optional
 
-router = APIRouter(prefix="/api/work-days", tags=["Work Days Report"])
+router = APIRouter(prefix="/work-days", tags=["Work Days Report"])
 
 @router.get("/filters")
-async def work_days_filters(region_id: Optional[str] = Query(None)):
-    # Handle empty string from frontend
-    reg_id = int(region_id) if region_id and region_id.strip() else None
-    return get_work_days_filters(reg_id)
+async def work_days_filters(region: list[str] | None = Query(None)):
+    return get_work_days_filters(region)
 
 @router.get("/data")
 async def work_days_data(
-    region: Optional[str] = Query(None),
-    area: Optional[str] = Query(None),
-    year: Optional[str] = Query(None),
-    month: Optional[str] = Query(None),
+    region: list[str] | None = Query(None),
+    area: list[str] | None = Query(None),
+    year: list[str] | None = Query(None),
+    month: list[str] | None = Query(None),
     limit: int = 15,
     offset: int = 0
 ):
-    # Safe conversion of parameters
-    reg_id = int(region) if region and region.strip() else None
-    ar_id = int(area) if area and area.strip() else None
-    yr = int(year) if year and year.strip() else None
-    mn = int(month) if month and month.strip() else None
-    
-    return get_work_days_data(reg_id, ar_id, yr, mn, limit, offset)
+    return get_work_days_data(region, area, year, month, limit, offset)
+
+@router.get("/export")
+async def work_days_export(
+    region: list[str] | None = Query(None),
+    area: list[str] | None = Query(None),
+    year: list[str] | None = Query(None),
+    month: list[str] | None = Query(None)
+):
+    from backend.services.export_utils import json_to_excel_streaming_response
+    data = get_work_days_data(region, area, year, month, limit=100000, offset=0)
+    return json_to_excel_streaming_response(data["table"], "work_days.xlsx")

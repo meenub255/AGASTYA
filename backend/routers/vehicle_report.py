@@ -1,16 +1,20 @@
 from fastapi import APIRouter, Query, HTTPException, Request
 from typing import Optional
-from backend.services.vehicle_report_service import get_vehicle_report_data
+from backend.services.vehicle_report_service import get_vehicle_report_data, get_vehicle_report_filters
 
-router = APIRouter(prefix="/api/vehicle-report", tags=["Vehicle Report"])
+router = APIRouter(prefix="/vehicle-report", tags=["Vehicle Report"])
+
+@router.get("/filters")
+def vehicle_filters(region_name: list[str] | None = Query(None)):
+    return get_vehicle_report_filters(region_name)
 
 @router.get("/data")
 def vehicle_data(
     request: Request,
-    region: Optional[str] = Query(None),
-    area: Optional[str] = Query(None),
-    year: Optional[str] = Query(None),
-    month: Optional[str] = Query(None),
+    region: list[str] | None = Query(None),
+    area: list[str] | None = Query(None),
+    year: list[str] | None = Query(None),
+    month: list[str] | None = Query(None),
     limit: int = Query(15),
     offset: int = Query(0)
 ):
@@ -21,14 +25,18 @@ def vehicle_data(
         limit = dt_params["length"]
         offset = dt_params["start"]
 
-    y = int(year) if year and year.strip() else None
-    m = int(month) if month and month.strip() else None
-    
-    res = get_vehicle_report_data(region, area, y, m, limit, offset, dt_params)
+    res = get_vehicle_report_data(region, area, year, month, limit, offset, dt_params)
     if "error" in res:
         raise HTTPException(status_code=500, detail=res["error"])
     return res
 
-@router.get("/debug")
-def vehicle_debug():
-    return get_vehicle_report_data()
+@router.get("/export")
+def vehicle_export(
+    region: list[str] | None = Query(None),
+    area: list[str] | None = Query(None),
+    year: list[str] | None = Query(None),
+    month: list[str] | None = Query(None)
+):
+    from backend.services.export_utils import json_to_excel_streaming_response
+    data = get_vehicle_report_data(region, area, year, month, limit=100000, offset=0)
+    return json_to_excel_streaming_response(data["table"], "vehicle_report.xlsx")

@@ -10,10 +10,10 @@ def get_filters():
 @router.get("/data")
 def get_data(
     request: Request,
-    region: str | None = Query(default=None),
-    program_type: str | None = Query(default=None),
-    year: str | None = Query(default=None),
-    month: str | None = Query(default=None),
+    region: list[str] | None = Query(default=None),
+    program_type: list[str] | None = Query(default=None),
+    year: list[str] | None = Query(default=None),
+    month: list[str] | None = Query(default=None),
     limit: int = Query(default=15),
     offset: int = Query(default=0)
 ):
@@ -36,10 +36,10 @@ def get_data(
 
 @router.get("/export")
 def export_data(
-    region: str | None = Query(None),
-    program_type: str | None = Query(None),
-    year: str | None = Query(None),
-    month: str | None = Query(None)
+    region: list[str] | None = Query(None),
+    program_type: list[str] | None = Query(None),
+    year: list[str] | None = Query(None),
+    month: list[str] | None = Query(None)
 ):
     from backend.services.export_utils import json_to_excel_streaming_response
     data = region_summary_service.get_region_summary_data(region, program_type, year, month, limit=100000, offset=0)
