@@ -9,33 +9,38 @@ DW = DATAMART_SCHEMA_NAME
 
 def get_nationwide_filters():
     try:
-        regions = [r["region_name"] for r in fetch_all(
-            f"SELECT DISTINCT region_name FROM {DW}.dim_geography WHERE region_name IS NOT NULL ORDER BY region_name"
-        )]
-        years = [r["year_actual"] for r in fetch_all(
-            f"SELECT DISTINCT year_actual FROM {DW}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC"
-        )]
+        # Fetch only regions and years that actually have session data
+        regions = [r["region_name"] for r in fetch_all(f"""
+            SELECT DISTINCT g.region_name 
+            FROM {DW}.dim_geography g
+            INNER JOIN {DW}.fact_session f ON g.sk_geography_id = f.sk_geography_id
+            WHERE g.region_name IS NOT NULL ORDER BY g.region_name
+        """)]
+        years = [r["year_actual"] for r in fetch_all(f"""
+            SELECT DISTINCT d.year_actual 
+            FROM {DW}.dim_date d
+            INNER JOIN {DW}.fact_session f ON d.date_id = f.date_id
+            WHERE d.year_actual IS NOT NULL ORDER BY d.year_actual DESC
+        """)]
         return {"regions": regions, "years": years}
     except Exception as e:
         logger.error(f"nationwide filters error: {e}")
         return {"regions": [], "years": []}
 
 
-def get_nationwide_data(start_year=None, end_year=None, region=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
+def get_nationwide_data(year=None, region=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
     try:
-        where_clauses = ["TRUE"]
+        clauses = []
         params = []
-        if start_year:
-            where_clauses.append("d.year_actual >= %s")
-            params.append(int(start_year))
-        if end_year:
-            where_clauses.append("d.year_actual <= %s")
-            params.append(int(end_year))
-        if region:
-            where_clauses.append("g.region_name = %s")
-            params.append(region)
-        where_sql = " AND ".join(where_clauses)
+        
+        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int")
+        clauses.append(c); params.extend(p)
+        
+        c, p = get_list_filter_clause("g.region_name", region)
+        clauses.append(c); params.extend(p)
+        
+        where_sql = " AND ".join(clauses)
 
         # KPIs
         kpi_row = fetch_one(f"""
@@ -50,7 +55,7 @@ def get_nationwide_data(start_year=None, end_year=None, region=None, limit=15, o
             LEFT JOIN {DW}.dim_geography g   ON f.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DW}.dim_program p     ON f.sk_program_id = p.sk_program_id
             LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-            WHERE {where_sql}
+            WHERE {where_sql or 'TRUE'}
         """, params)
 
         # Separate query for drivers
@@ -121,8 +126,8 @@ def get_nationwide_data(start_year=None, end_year=None, region=None, limit=15, o
         """
         total_count = fetch_one(count_sql, params + search_params).get("count", 0)
 
-        # Table — region rollup
-        table_params = params + search_params + params + [limit, offset]
+        # Get paginated data
+        table_params = params + params + search_params + [limit, offset]
         table = fetch_all(f"""
             SELECT
                 COALESCE(g.region_name,'Unknown')              AS region_name,
