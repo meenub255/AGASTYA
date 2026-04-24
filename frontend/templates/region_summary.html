@@ -4,45 +4,43 @@
 <div class="row">
     <!-- Left Column: Filter Slicers -->
     <div class="col-md-2 mb-3">
-        <div class="card card-outline card-primary h-100">
+        <div class="card filter-card shadow-lg">
             <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-filter mr-1"></i> Filters</h3>
+                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
             </div>
             <div class="card-body">
-                <div class="form-group">
-                    <label>Region</label>
-                    <select id="regionFilter" class="form-control select2">
-                        <option value="">Select Region</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Region</label>
+                    <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Program Type</label>
-                    <select id="programTypeFilter" class="form-control select2" disabled>
-                        <option value="">Select Program</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Program Type</label>
+                    <select id="programTypeFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program_type" data-placeholder="Select Program">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Select Year</label>
-                    <select id="yearFilter" class="form-control select2">
-                        <option value="">Select Year</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Year</label>
+                    <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year" data-placeholder="Select Year">
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Month</label>
-                    <select id="monthFilter" class="form-control select2">
-                        <option value="">Select Month</option>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Month</label>
+                    <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month">
                     </select>
                 </div>
-                <hr>
-                <button id="seeReportBtn" class="btn btn-primary btn-block mb-2">
-                    <i class="fas fa-sync-alt mr-1"></i> See Report
-                </button>
-                <button id="resetFilters" class="btn btn-block btn-reset-filters mb-2">
-                    <i class="fas fa-undo mr-1"></i> Reset All
-                </button>
-                <button id="exportXlsx" class="btn btn-export btn-block">
-                    <i class="fas fa-file-excel mr-1"></i> Export to XLSX
-                </button>
+                
+                <div class="mt-5">
+                    <button id="seeReportBtn" class="btn btn-primary btn-block btn-premium mb-3">
+                        <i class="fas fa-sync-alt mr-2"></i>See Report
+                    </button>
+                    <button id="resetFilters" class="btn btn-outline-light btn-block btn-premium mb-3" style="border-color: rgba(255,255,255,0.2)">
+                        <i class="fas fa-undo mr-2"></i>Reset All
+                    </button>
+                    <button id="exportXlsx" class="btn btn-success btn-block btn-premium">
+                        <i class="fas fa-file-excel mr-2"></i>Export XLSX
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -131,33 +129,43 @@
         const pagination = window.PramanaPagination;
 
         if ($.fn.select2) {
-            $('.select2').select2({ theme: 'bootstrap4' });
+            $('.select2:not(.filter-multi)').select2({ theme: 'bootstrap4' });
+            window.PramanaDashboard.initMultiFilters();
         }
 
         // Load initial filter options (Regions, Years, Months)
-        function loadFilters(regionName = null) {
-            const url = regionName ? `/region-summary/filters?region=${encodeURIComponent(regionName)}` : '/region-summary/filters';
-            fetch(url)
+        function loadFilters() {
+            const filters = window.PramanaDashboard.collectFilters();
+            const query = $.param(filters, true);
+            fetch(`/region-summary/filters?${query}`)
                 .then(response => response.json())
                 .then(data => {
-                    if (!regionName) {
-                        // Initial load of static filters
-                        const r = $('#regionFilter');
+                    // Update Regions if empty
+                    const r = $('#regionFilter');
+                    if (r.children().length === 0) {
                         data.regions.forEach(reg => r.append(new Option(reg, reg)));
-                        
-                        const y = $('#yearFilter');
+                    }
+                    
+                    // Update Years if empty
+                    const y = $('#yearFilter');
+                    if (y.children().length === 0) {
                         data.years.forEach(yr => y.append(new Option(yr, yr)));
-                        
-                        const m = $('#monthFilter');
+                    }
+                    
+                    // Update Months if empty
+                    const m = $('#monthFilter');
+                    if (m.children().length === 0) {
                         data.months.forEach(mo => m.append(new Option(mo.name, mo.id)));
                     }
 
                     // Update Program Type dropdown dependent on Region
                     const pt = $('#programTypeFilter');
-                    pt.empty().append(new Option('Select Program', ''));
+                    const selectedPrograms = pt.val() || [];
+                    pt.empty();
                     
                     if (data.programs && data.programs.length > 0) {
                         data.programs.forEach(p => pt.append(new Option(p, p)));
+                        pt.val(selectedPrograms).trigger('change.select2');
                         pt.prop('disabled', false);
                     } else {
                         pt.prop('disabled', true);
@@ -169,20 +177,14 @@
 
         // Dependent filter logic: Region -> Program
         $('#regionFilter').on('change', function() {
-            const region = $(this).val();
-            loadFilters(region);
+            loadFilters();
         });
 
         function loadData() {
             window.PramanaDashboard.initDataTable('#regionTable', {
                 ajaxUrl: '/region-summary/data',
                 getFilters: function() {
-                    return {
-                        region: $('#regionFilter').val(),
-                        program_type: $('#programTypeFilter').val(),
-                        year: $('#yearFilter').val(),
-                        month: $('#monthFilter').val()
-                    };
+                    return window.PramanaDashboard.collectFilters();
                 },
                 onDataLoad: function(data) {
                     // Update KPIs (4 cards)
@@ -196,21 +198,20 @@
                 columns: [
                     { data: 'region' },
                     { data: 'sessions', render: function(data) {
-                        return data.toLocaleString();
+                        return (data||0).toLocaleString();
                     }},
                     { data: 'students_reached', render: function(data) {
-                        return data.toLocaleString();
+                        return (data||0).toLocaleString();
                     }},
                     { data: 'teachers_trained', render: function(data) {
-                        return data.toLocaleString();
+                        return (data||0).toLocaleString();
                     }},
                     { data: 'schools_covered', render: function(data) {
-                        return data.toLocaleString();
+                        return (data||0).toLocaleString();
                     }}
                 ]
             });
         }
-
 
         $('#seeReportBtn').on('click', function () {
             loadData();
@@ -221,12 +222,8 @@
         });
 
         $('#exportXlsx').click(function () {
-            const filters = {
-                program_type: $('#programTypeFilter').val(),
-                year: $('#yearFilter').val(),
-                month: $('#monthFilter').val()
-            };
-            const query = new URLSearchParams(filters).toString();
+            const filters = window.PramanaDashboard.collectFilters();
+            const query = $.param(filters, true);
             window.exportToXLSX(`/region-summary/export?${query}`, 'region_summary.xlsx');
         });
 
