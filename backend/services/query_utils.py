@@ -2,50 +2,98 @@ from collections.abc import Sequence
 
 from backend.db import get_datamart_conn
 
+def get_list_filter_clause(column: str, value: str | list[str] | None, cast_type: str | None = None) -> tuple[str, list]:
+    """
+    Returns a SQL clause and params for both single values and lists.
+    Uses ANY() for PostgreSQL lists.
+    """
+    if value is None or value == "" or (isinstance(value, list) and not value):
+        return "TRUE", []
+    
+    if isinstance(value, list):
+        # Filter out empty strings from list
+        clean_values = [v for v in value if v and v != ""]
+        if not clean_values:
+            return "TRUE", []
+        
+        if cast_type == "int":
+            clean_values = [int(v) for v in clean_values if str(v).isdigit()]
+            if not clean_values: return "TRUE", []
+
+        return f"{column} = ANY(%s)", [clean_values]
+    
+    if cast_type == "int" and str(value).isdigit():
+        value = int(value)
+        
+    return f"{column} = %s", [value]
+
 
 def build_dimension_filters(
     *,
-    start: int | None,
-    end: int | None,
-    region: str | None,
-    program: str | None,
+    start: int | list[int] | str | list[str] | None = None,
+    end: int | list[int] | str | list[str] | None = None,
+    year: int | list[int] | str | list[str] | None = None,
+    region: str | list[str] | None = None,
+    program: str | list[str] | None = None,
     date_expression: str | None = None,
     year_expression: str | None = None,
     location_expression: str | None = None,
     program_expression: str | None = None,
-    instructor: str | None = None,
+    instructor: str | list[str] | None = None,
     instructor_expression: str | None = None,
 ) -> tuple[str, list[object]]:
     clauses: list[str] = []
     params: list[object] = []
 
+    def add_list_filter(col, val, cast_type=None):
+        if val is None or val == "" or (isinstance(val, list) and not val):
+            return
+        if isinstance(val, list):
+            clean = [v for v in val if v and v != ""]
+            if not clean: return
+            if cast_type == "int":
+                clean = [int(v) for v in clean if str(v).isdigit()]
+                if not clean: return
+            clauses.append(f"{col} = ANY(%s)")
+            params.append(clean)
+        else:
+            if cast_type == "int" and str(val).isdigit():
+                val = int(val)
+            clauses.append(f"{col} = %s")
+            params.append(val)
+
+    # Support 'year' as an alternative to start/end if multi-select is used
+    if year is not None:
+        add_list_filter(year_expression or f"EXTRACT(YEAR FROM {date_expression})", year, cast_type="int")
+
     if start is not None:
-        if year_expression:
-            clauses.append(f"{year_expression} >= %s")
-            params.append(start)
-        elif date_expression:
-            clauses.append(f"EXTRACT(YEAR FROM {date_expression}) >= %s")
-            params.append(start)
+        if isinstance(start, list):
+            add_list_filter(year_expression or f"EXTRACT(YEAR FROM {date_expression})", start, cast_type="int")
+        else:
+            if year_expression:
+                clauses.append(f"{year_expression} >= %s")
+                params.append(int(start) if str(start).isdigit() else start)
+            elif date_expression:
+                clauses.append(f"EXTRACT(YEAR FROM {date_expression}) >= %s")
+                params.append(int(start) if str(start).isdigit() else start)
 
     if end is not None:
-        if year_expression:
-            clauses.append(f"{year_expression} <= %s")
-            params.append(end)
-        elif date_expression:
-            clauses.append(f"EXTRACT(YEAR FROM {date_expression}) <= %s")
-            params.append(end)
+        if not isinstance(end, list):
+            if year_expression:
+                clauses.append(f"{year_expression} <= %s")
+                params.append(int(end) if str(end).isdigit() else end)
+            elif date_expression:
+                clauses.append(f"EXTRACT(YEAR FROM {date_expression}) <= %s")
+                params.append(int(end) if str(end).isdigit() else end)
 
-    if region and location_expression:
-        clauses.append(f"{location_expression} = %s")
-        params.append(region)
+    if location_expression:
+        add_list_filter(location_expression, region)
 
-    if program and program_expression:
-        clauses.append(f"{program_expression} = %s")
-        params.append(program)
+    if program_expression:
+        add_list_filter(program_expression, program)
 
-    if instructor and instructor_expression:
-        clauses.append(f"{instructor_expression} = %s")
-        params.append(instructor)
+    if instructor_expression:
+        add_list_filter(instructor_expression, instructor)
 
     if not clauses:
         return "", params
