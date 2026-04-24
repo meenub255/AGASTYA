@@ -26,24 +26,23 @@ def get_arealead_summary_filters():
 
 
 def get_arealead_summary_data(region=None, area=None, year=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
-    where_clauses = ["TRUE"]
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
+    clauses = []
     params = []
     
-    if region:
-        where_clauses.append("g.region_name = %s")
-        params.append(region)
-    if area:
-        where_clauses.append("g.area_name = %s")
-        params.append(area)
-    if year:
-        where_clauses.append("d.year_actual = %s")
-        params.append(int(year))
-    if month:
-        where_clauses.append("d.month_actual = %s")
-        params.append(int(month))
+    c, p = get_list_filter_clause("g.region_name", region)
+    clauses.append(c); params.extend(p)
     
-    where_sql = " AND ".join(where_clauses)
+    c, p = get_list_filter_clause("g.area_name", area)
+    clauses.append(c); params.extend(p)
+    
+    c, p = get_list_filter_clause("d.year_actual", year, cast_type="int")
+    clauses.append(c); params.extend(p)
+    
+    c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
+    clauses.append(c); params.extend(p)
+    
+    where_sql = " AND ".join(clauses)
     
     # 1. KPI Query (sidebar filters only)
     kpi_sql = f"""
