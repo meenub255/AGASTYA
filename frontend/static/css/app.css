@@ -2256,397 +2256,461 @@ table.dataTable thead th {
     color: #fff;
 }
 
+
 /* ==========================================================================
-   SIDEBAR REDESIGN - PREMIUM DASHBOARD UI
+   PRAMANA SIDEBAR — Premium Rail Design  (All new from scratch)
    ========================================================================== */
 
-/* Main Sidebar Core */
-.main-sidebar {
-    background-color: var(--sb-bg) !important;
-    width: var(--sb-width) !important;
-    height: 100vh !important;
-    position: fixed !important;
+:root {
+    --ps-rail-w:     68px;
+    --ps-expanded-w: 268px;
+    --ps-bg:         #0f172a;
+    --ps-border:     rgba(255,255,255,0.07);
+    --ps-text:       rgba(255,255,255,0.55);
+    --ps-text-hover: #ffffff;
+    --ps-accent:     #f59e0b;     /* amber */
+    --ps-accent-glow:rgba(245,158,11,0.18);
+    --ps-active-bg:  rgba(245,158,11,0.12);
+    --ps-hover-bg:   rgba(255,255,255,0.05);
+    --ps-group-bg:   rgba(255,255,255,0.03);
+    --ps-sub-bg:     rgba(0,0,0,0.25);
+    --ps-radius:     12px;
+    --ps-transition: 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ── Shell ─────────────────────────────────────────────────── */
+.pramana-sidebar {
+    position: fixed;
     top: 0;
     left: 0;
+    height: 100vh;
+    width: var(--ps-rail-w);
+    background: var(--ps-bg);
+    border-right: 1px solid var(--ps-border);
     display: flex;
     flex-direction: column;
+    z-index: 1050;
     overflow: hidden;
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
-    z-index: 1038;
+    transition: width var(--ps-transition),
+                box-shadow var(--ps-transition);
+    /* Subtle inner depth */
+    background-image:
+        radial-gradient(ellipse at 0% 0%, rgba(59,130,246,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 100% 100%, rgba(245,158,11,0.06) 0%, transparent 55%);
 }
 
-/* Sidebar Wrapper for Scroll */
-.sidebar {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 0 !important;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+.pramana-sidebar.ps-expanded {
+    width: var(--ps-expanded-w);
+    box-shadow: 8px 0 40px rgba(0,0,0,0.45);
 }
 
-.sidebar::-webkit-scrollbar {
-    width: 4px;
-}
-
-.sidebar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-}
-
-/* Brand Container */
-.brand-container {
-    height: 72px;
-    display: flex;
-    align-items: center;
-    padding: 0 24px;
-    background: var(--sb-brand-bg);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    flex-shrink: 0;
-}
-
-.brand-link {
+/* ── Brand ─────────────────────────────────────────────────── */
+.ps-brand {
+    height: 64px;
+    min-height: 64px;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 0 !important;
-    border: none !important;
-    width: auto !important;
+    padding: 0 16px;
+    text-decoration: none !important;
+    border-bottom: 1px solid var(--ps-border);
+    overflow: hidden;
+    flex-shrink: 0;
 }
 
-.brand-logo-wrapper {
+.ps-brand-icon {
     width: 36px;
+    min-width: 36px;
     height: 36px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
     border-radius: 10px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+    border: 1px solid rgba(255,255,255,0.12);
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 14px rgba(245,158,11,0.2);
 }
 
-.brand-image {
+.ps-brand-icon img {
     width: 22px;
     height: 22px;
     object-fit: contain;
 }
 
-.brand-text {
-    font-size: 1.1rem;
+.ps-brand-name {
+    font-size: 1rem;
     font-weight: 700;
-    color: #fff;
+    color: #ffffff;
     letter-spacing: -0.01em;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity var(--ps-transition), transform var(--ps-transition);
 }
 
-.brand-text .text-accent {
-    color: var(--brand-amber);
+.ps-brand-name em {
+    font-style: normal;
+    color: var(--ps-accent);
 }
 
-/* Navigation Menu */
-.sidebar-nav-wrapper {
-    padding: 16px 0;
+.ps-expanded .ps-brand-name {
+    opacity: 1;
+    transform: translateX(0);
 }
 
-.nav-header {
-    padding: 24px 24px 8px 24px !important;
-    font-size: 0.7rem !important;
-    font-weight: 700 !important;
-    color: rgba(255, 255, 255, 0.3) !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.1em !important;
-    background: transparent !important;
+/* ── Pin Button ────────────────────────────────────────────── */
+.ps-pin {
+    position: absolute;
+    top: 16px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid var(--ps-border);
+    color: var(--ps-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s, color 0.2s, transform 0.3s;
+    transform: rotate(0deg);
 }
 
-.nav-sidebar .nav-item {
-    margin: 6px 12px !important;
+.ps-pin i { pointer-events: none; }
+
+.ps-expanded .ps-pin {
+    opacity: 1;
 }
 
-.nav-sidebar .nav-link {
-    border-radius: 10px !important;
-    padding: 10px 14px !important;
-    color: var(--sb-text) !important;
-    transition: all 0.2s ease;
+.ps-pin:hover {
+    background: var(--ps-hover-bg);
+    color: var(--ps-text-hover);
+}
+
+.ps-pin.active {
+    background: var(--ps-accent-glow);
+    color: var(--ps-accent);
+    border-color: rgba(245,158,11,0.3);
+    transform: rotate(45deg);
+}
+
+/* ── Nav Scrollable ────────────────────────────────────────── */
+.ps-nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px 8px 12px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
+}
+
+.ps-nav::-webkit-scrollbar { width: 3px; }
+.ps-nav::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+}
+
+/* ── Section Label ─────────────────────────────────────────── */
+.ps-section-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.22);
+    padding: 18px 10px 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    opacity: 0;
+    max-height: 0;
+    transition: opacity var(--ps-transition), max-height var(--ps-transition), padding var(--ps-transition);
+}
+
+.ps-expanded .ps-section-label {
+    opacity: 1;
+    max-height: 40px;
+}
+
+/* ── Nav Item (top-level link) ─────────────────────────────── */
+.ps-item {
     display: flex;
     align-items: center;
     gap: 12px;
+    padding: 10px 10px;
+    border-radius: var(--ps-radius);
+    color: var(--ps-text);
+    text-decoration: none !important;
+    transition: background 0.2s, color 0.2s;
     position: relative;
     overflow: hidden;
+    margin: 2px 0;
+    cursor: pointer;
 }
 
-.nav-sidebar .nav-link:hover {
-    background: var(--sb-item-hover) !important;
-    color: #fff !important;
+.ps-item:hover {
+    background: var(--ps-hover-bg);
+    color: var(--ps-text-hover);
 }
 
-.nav-sidebar .nav-link.active {
-    background: var(--sb-item-active) !important;
-    color: #fff !important;
-    font-weight: 600;
+.ps-item.ps-active {
+    background: var(--ps-active-bg);
+    color: #ffffff;
 }
 
-.nav-sidebar .nav-link.active::before {
+.ps-item.ps-active::after {
     content: '';
     position: absolute;
     left: 0;
     top: 20%;
     bottom: 20%;
     width: 3px;
-    background: var(--brand-amber);
-    border-radius: 0 4px 4px 0;
+    border-radius: 0 3px 3px 0;
+    background: var(--ps-accent);
+    box-shadow: 0 0 10px var(--ps-accent);
 }
 
-.nav-icon {
-    width: 20px !important;
-    font-size: 1.05rem !important;
-    margin: 0 !important;
-    opacity: 0.8;
-}
-
-.nav-link.active .nav-icon {
-    color: var(--brand-amber);
-    opacity: 1;
-}
-
-/* Treeview Arrows */
-.nav-sidebar .right {
-    margin-left: auto !important;
-    font-size: 0.75rem !important;
-    transition: transform 0.3s ease;
-    opacity: 0.5;
-}
-
-.menu-open > .nav-link .right {
-    transform: rotate(-90deg);
-}
-
-/* Sub-menus */
-.nav-treeview {
-    margin-top: 4px;
-    padding-left: 0 !important;
-}
-
-.nav-treeview .nav-item {
-    margin: 1px 0 !important;
-}
-
-.nav-treeview .nav-link {
-    padding: 8px 14px 8px 46px !important;
-    font-size: 0.88rem !important;
-    opacity: 0.85;
-}
-
-.nav-treeview .nav-link:hover {
-    opacity: 1;
-}
-
-.nav-treeview .nav-icon {
-    font-size: 0.85rem !important;
-    position: absolute;
-    left: 18px;
-}
-
-/* Premium Status Card */
-.sidebar-status-card {
-    padding: 16px;
-    margin-top: auto;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.status-card-inner {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
-    padding: 16px;
-    position: relative;
-    overflow: hidden;
-}
-
-.status-icon-glow {
-    width: 32px;
-    height: 32px;
-    background: rgba(56, 189, 248, 0.1);
-    color: var(--sb-accent);
-    border-radius: 8px;
+/* ── Icons ─────────────────────────────────────────────────── */
+.ps-icon {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem;
-    margin-bottom: 12px;
-    box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+    font-size: 0.95rem;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.04);
+    transition: background 0.2s, color 0.2s;
 }
 
-.status-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 12px;
-}
-
-.status-label {
-    font-size: 0.82rem;
-    font-weight: 600;
+.ps-item:hover .ps-icon,
+.ps-group-trigger:hover .ps-icon {
+    background: rgba(255,255,255,0.08);
     color: #fff;
 }
 
-.status-badge {
-    font-size: 0.6rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    padding: 2px 6px;
-    background: rgba(16, 185, 129, 0.15);
-    color: #10b981;
-    border-radius: 4px;
+.ps-item.ps-active .ps-icon,
+.ps-group-trigger.ps-active .ps-icon {
+    background: var(--ps-accent-glow);
+    color: var(--ps-accent);
 }
 
-.status-footer {
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    padding-top: 12px;
-}
-
-.progress-mini {
-    height: 4px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-    overflow: hidden;
-    margin-bottom: 8px;
-}
-
-.progress-bar-glow {
-    height: 100%;
-    background: linear-gradient(90deg, var(--sb-accent), #818cf8);
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
-    border-radius: 2px;
-}
-
-.status-meta {
-    font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.4);
-}
-
-/* Collapsed State Overrides */
-.sidebar-collapse .main-sidebar {
-    width: 72px !important;
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow-x: hidden !important;
-}
-
-/* Hover Expansion for Collapsed Sidebar */
-.sidebar-mini.sidebar-collapse .main-sidebar:hover {
-    width: var(--sb-width) !important;
-    box-shadow: 12px 0 35px rgba(0, 0, 0, 0.4);
-    overflow-x: visible !important; /* Allow expansion to feel natural */
-}
-
-.sidebar-collapse .brand-text,
-.sidebar-collapse .nav-link p,
-.sidebar-collapse .nav-header,
-.sidebar-collapse .status-content,
-.sidebar-collapse .status-footer,
-.sidebar-collapse .right {
-    opacity: 0;
-    visibility: hidden;
+/* ── Label (hidden when collapsed) ────────────────────────── */
+.ps-label {
+    font-size: 0.875rem;
+    font-weight: 500;
     white-space: nowrap;
-    display: none; /* Return to display none for absolute safety in collapsed state */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    width: 0;
+    transition: opacity var(--ps-transition), width var(--ps-transition);
+    color: inherit;
 }
 
-.sidebar-mini.sidebar-collapse .main-sidebar:hover .brand-text,
-.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-link p,
-.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-header,
-.sidebar-mini.sidebar-collapse .main-sidebar:hover .status-content,
-.sidebar-mini.sidebar-collapse .main-sidebar:hover .status-footer,
-.sidebar-mini.sidebar-collapse .main-sidebar:hover .right {
+.ps-expanded .ps-label {
     opacity: 1;
-    visibility: visible;
-    display: block; /* Show them back on hover */
+    width: auto;
 }
 
-/* Specific fix for nav-link p to avoid layout jump */
-.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-link p {
-    display: inline-block;
+/* ── Group (accordion trigger) ─────────────────────────────── */
+.ps-group-trigger {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 10px;
+    border-radius: var(--ps-radius);
+    color: var(--ps-text);
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    position: relative;
+    margin: 2px 0;
+    transition: background 0.2s, color 0.2s;
 }
 
-.sidebar-collapse .brand-container {
-    padding: 0;
-    justify-content: center;
-    transition: padding 0.3s ease;
+.ps-group-trigger:hover {
+    background: var(--ps-hover-bg);
+    color: var(--ps-text-hover);
+}
+
+.ps-group-trigger.ps-active {
+    background: var(--ps-active-bg);
+    color: #ffffff;
+}
+
+.ps-group-trigger.ps-active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--ps-accent);
+    box-shadow: 0 0 10px var(--ps-accent);
+}
+
+/* ── Chevron ───────────────────────────────────────────────── */
+.ps-chevron {
+    margin-left: auto;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.3);
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity var(--ps-transition), transform 0.3s ease;
+}
+
+.ps-expanded .ps-chevron {
+    opacity: 1;
+}
+
+.ps-group-open > .ps-group-trigger .ps-chevron {
+    transform: rotate(90deg);
+    color: var(--ps-accent);
+}
+
+/* ── Group Items (sub-menu) ────────────────────────────────── */
+.ps-group-items {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1);
+    background: var(--ps-sub-bg);
+    border-radius: 0 0 var(--ps-radius) var(--ps-radius);
+    margin: 0 0 2px 0;
+}
+
+.ps-group-open > .ps-group-items {
+    max-height: 400px; /* tall enough for any group */
+}
+
+/* Hide sub-menu when sidebar is collapsed */
+.pramana-sidebar:not(.ps-expanded) .ps-group-items {
+    max-height: 0 !important;
+}
+
+/* ── Sub Item ──────────────────────────────────────────────── */
+.ps-sub-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px 9px 20px;
+    color: var(--ps-text);
+    text-decoration: none !important;
+    font-size: 0.83rem;
+    font-weight: 400;
+    border-radius: 8px;
+    transition: background 0.18s, color 0.18s;
+    position: relative;
+    margin: 1px 4px;
+}
+
+.ps-sub-item:hover {
+    background: var(--ps-hover-bg);
+    color: var(--ps-text-hover);
+}
+
+.ps-sub-item.ps-active {
+    color: var(--ps-accent);
+    font-weight: 600;
+}
+
+/* ── Sub dot ───────────────────────────────────────────────── */
+.ps-sub-dot {
+    width: 6px;
+    min-width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    flex-shrink: 0;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+
+.ps-sub-item.ps-active .ps-sub-dot {
+    background: var(--ps-accent);
+    box-shadow: 0 0 6px var(--ps-accent);
+}
+
+.ps-sub-item:hover .ps-sub-dot {
+    background: rgba(255,255,255,0.5);
+}
+
+/* ── Footer ────────────────────────────────────────────────── */
+.ps-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-top: 1px solid var(--ps-border);
+    flex-shrink: 0;
     overflow: hidden;
 }
 
-.sidebar-mini.sidebar-collapse .main-sidebar:hover .brand-container {
-    padding: 0 24px;
-    justify-content: flex-start;
-    overflow: visible;
+.ps-footer-dot {
+    width: 8px;
+    min-width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16,185,129,0.6);
+    flex-shrink: 0;
+    animation: ps-pulse 2.5s ease infinite;
 }
 
-.sidebar-collapse .nav-item {
-    margin: 4px 8px !important;
-    transition: margin 0.3s ease;
+@keyframes ps-pulse {
+    0%,100% { box-shadow: 0 0 5px rgba(16,185,129,0.4); }
+    50%      { box-shadow: 0 0 12px rgba(16,185,129,0.8); }
 }
 
-.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-item {
-    margin: 4px 12px !important;
+.ps-footer-text {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: rgba(255,255,255,0.3);
 }
 
-.sidebar-collapse .nav-link {
-    justify-content: center;
-    padding: 12px !important;
-    transition: all 0.3s ease;
+/* ── Tooltip on collapsed state ───────────────────────────── */
+.pramana-sidebar:not(.ps-expanded) .ps-item,
+.pramana-sidebar:not(.ps-expanded) .ps-group-trigger {
+    position: relative;
 }
 
-.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-link {
-    justify-content: flex-start;
-    padding: 10px 14px !important;
+.pramana-sidebar:not(.ps-expanded) .ps-item:hover::before,
+.pramana-sidebar:not(.ps-expanded) .ps-group-trigger:hover::before {
+    content: attr(data-tip);
+    position: absolute;
+    left: calc(var(--ps-rail-w) + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(15,23,42,0.95);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 2000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
 }
 
-/* Ensure sub-menu items maintain indentation during hover */
-.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-treeview .nav-link {
-    padding-left: 46px !important;
+/* ── Body layout adjustment ────────────────────────────────── */
+.content-wrapper,
+.main-footer,
+.main-header {
+    margin-left: var(--ps-rail-w) !important;
+    transition: margin-left var(--ps-transition);
 }
 
-.sidebar-collapse .nav-link .nav-icon {
-    font-size: 1.2rem !important;
-    margin-right: 0 !important;
-    transition: all 0.3s ease;
+/* ── Suppress AdminLTE's own aside/sidebar so it doesn't conflict ─── */
+.main-sidebar {
+    display: none !important;
 }
 
-.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-icon {
-    font-size: 1.05rem !important;
-    margin-right: 12px !important;
-}
-
-.sidebar-collapse .sidebar-status-card {
-    padding: 10px;
-    border-top: none;
-}
-
-.sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar-status-card {
-    padding: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.sidebar-collapse .status-icon-glow {
-    margin-bottom: 0;
-    transition: margin 0.3s ease;
-}
-
-.sidebar-mini.sidebar-collapse .main-sidebar:hover .status-icon-glow {
-    margin-bottom: 12px;
-}
-
-/* Body adjustments */
-body:not(.sidebar-collapse) .content-wrapper,
-body:not(.sidebar-collapse) .main-footer,
-body:not(.sidebar-collapse) .main-header {
-    margin-left: var(--sb-width) !important;
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar-collapse .content-wrapper,
-.sidebar-collapse .main-footer,
-.sidebar-collapse .main-header {
-    margin-left: 72px !important;
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-
+/* (old sidebar CSS removed — replaced by pramana-sidebar above) */
