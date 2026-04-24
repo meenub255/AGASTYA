@@ -82,6 +82,14 @@ def get_data(
         "charts": formatted_charts
     }
 
+@router.get("/drill-down")
+def get_drilldown(
+    region: str = Query(...),
+    years: list[str] | None = Query(None),
+    program: list[str] | None = Query(None),
+):
+    return overview_service.get_drilldown_data(region=region, year=years, program=program)
+
 @router.get("/export")
 def export_data(
     years: list[str] | None = Query(None),
