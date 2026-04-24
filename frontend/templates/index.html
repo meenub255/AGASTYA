@@ -42,20 +42,26 @@
         <!-- KPI Grid -->
         {% include "partials/overview_kpis.html" %}
 
+        <!-- Charts Row -->
         <section class="overview-content-stack mt-2">
             <div class="row">
                 <div class="col-md-6 mb-2">
                     <div class="card h-100 white-chart-card">
-                        <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
-                            <h3 class="card-title text-sm uppercase">Number of Programs by Region</h3>
-                            <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
-                               style="cursor: pointer;"
-                               data-toggle="popover" 
-                               data-trigger="click" 
-                               data-html="true"
-                               tabindex="0"
-                               title="Region Code Legend" 
-                               data-content="Loading..."></i>
+                        <div class="card-header border-0 pb-1 d-flex align-items-center" style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
+                            <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Number of Programs by Region</h3>
+                            <div class="d-flex align-items-center ml-auto">
+                                <i class="fas fa-info-circle text-muted region-legend-trigger mr-2" 
+                                   style="cursor: pointer;"
+                                   data-toggle="popover" 
+                                   data-trigger="click" 
+                                   data-html="true"
+                                   tabindex="0"
+                                   title="Region Code Legend" 
+                                   data-content="Loading..."></i>
+                                <span id="programChartHint" class="text-muted" style="font-size:11px; display:none;">
+                                    <i class="fas fa-hand-pointer mr-1"></i>Click a bar to drill down
+                                </span>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div style="height:380px;">
@@ -67,8 +73,8 @@
 
                 <div class="col-md-6 mb-2">
                     <div class="card h-100 white-chart-card">
-                        <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
-                            <h3 class="card-title text-sm uppercase">Number of Instructors per Region</h3>
+                        <div class="card-header border-0 pb-1 d-flex align-items-center" style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
+                            <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Number of Instructors per Region</h3>
                             <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
                                style="cursor: pointer;"
                                data-toggle="popover" 
@@ -87,17 +93,131 @@
                 </div>
             </div>
         </section>
-    </div>
-</div>
+
+        <!-- ============================================================
+             DRILL-DOWN PANEL (hidden by default)
+        ============================================================ -->
+        <div id="drilldownPanel" style="display:none; margin-top: 16px;">
+
+            <!-- Breadcrumb bar -->
+            <div id="drilldownBreadcrumb" class="d-flex align-items-center mb-3 px-1" style="gap: 8px;">
+                <span class="text-muted" style="font-size:13px; cursor:pointer;" onclick="clearDrilldown()">
+                    <i class="fas fa-th-large mr-1"></i>All Regions
+                </span>
+                <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
+                <span id="drilldownRegionLabel" style="font-size:13px; font-weight:600; color:#1e3a8a;"></span>
+                <button onclick="clearDrilldown()" class="btn btn-sm ml-auto"
+                    style="background: #f1f5f9; border:1px solid #e2e8f0; color:#64748b; font-size:11px; padding:3px 10px; border-radius:20px;">
+                    <i class="fas fa-times mr-1"></i>Clear Selection
+                </button>
+            </div>
+
+            <!-- Extra stat mini-cards (sessions, students, schools) -->
+            <div class="row mb-3" id="drilldownStats">
+                <div class="col-md-4 mb-2">
+                    <div class="card shadow-sm" style="border-left: 4px solid #6366f1; border-radius:10px; background: white;">
+                        <div class="card-body py-3 px-4">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p class="mb-0" style="font-size:11px; text-transform:uppercase; letter-spacing:.05em; color: #64748b;">Total Sessions</p>
+                                    <h3 id="ddSessions" class="mb-0 font-weight-bold" style="color:#1e293b; font-size:1.6rem;">—</h3>
+                                </div>
+                                <div style="width:40px; height:40px; background:#ede9fe; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                                    <i class="fas fa-chalkboard" style="color:#6366f1; font-size:16px;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="card shadow-sm" style="border-left: 4px solid #10b981; border-radius:10px; background: white;">
+                        <div class="card-body py-3 px-4">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p class="mb-0" style="font-size:11px; text-transform:uppercase; letter-spacing:.05em; color: #64748b;">Students Reached</p>
+                                    <h3 id="ddStudents" class="mb-0 font-weight-bold" style="color:#1e293b; font-size:1.6rem;">—</h3>
+                                </div>
+                                <div style="width:40px; height:40px; background:#d1fae5; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                                    <i class="fas fa-user-graduate" style="color:#10b981; font-size:16px;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="card shadow-sm" style="border-left: 4px solid #f59e0b; border-radius:10px; background: white;">
+                        <div class="card-body py-3 px-4">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p class="mb-0" style="font-size:11px; text-transform:uppercase; letter-spacing:.05em; color: #64748b;">Schools Visited</p>
+                                    <h3 id="ddSchools" class="mb-0 font-weight-bold" style="color:#1e293b; font-size:1.6rem;">—</h3>
+                                </div>
+                                <div style="width:40px; height:40px; background:#fef3c7; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                                    <i class="fas fa-school" style="color:#f59e0b; font-size:16px;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Program Breakdown Table -->
+            <div class="card white-chart-card shadow-sm">
+                <div class="card-header d-flex align-items-center" style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+                    <i class="fas fa-table mr-2" style="color:#6366f1;"></i>
+                    <h3 class="card-title mb-0" style="font-size:13px; font-weight:700; color:#334155;">
+                        Program Breakdown — <span id="ddTableRegionLabel" style="color:#6366f1;"></span>
+                    </h3>
+                    <span id="ddProgramCount" class="badge badge-pill ml-2" style="background:#ede9fe; color:#6366f1; font-size:11px;"></span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table id="drilldownTable" class="table table-hover mb-0" style="font-size:13px;">
+                            <thead style="background:#f1f5f9; color:#475569;">
+                                <tr>
+                                    <th class="px-3 py-2">Program</th>
+                                    <th class="px-3 py-2">Donor</th>
+                                    <th class="px-3 py-2 text-right">Sessions</th>
+                                    <th class="px-3 py-2 text-right">Students Reached</th>
+                                    <th class="px-3 py-2 text-right">Schools</th>
+                                    <th class="px-3 py-2 text-right">Instructors</th>
+                                </tr>
+                            </thead>
+                            <tbody id="drilldownTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /.col-md-10 -->
+</div><!-- /.row -->
+
+<style>
+    #drilldownPanel {
+        animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-12px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    #drilldownTable tbody tr:hover { background: #f8fafc; }
+    .bar-selected { outline: 3px solid #f59e0b; }
+    .dd-stat-number { transition: all 0.4s ease; }
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
     $(function () {
-        const pagination = window.PramanaPagination;
-        let regionMapping = {};
+        let regionMapping    = {};
+        let programChartInst = null;
+        let fullKpis         = null;   // cached full KPIs for restore
+        let selectedRegion   = null;   // currently drilled-in region
+        let programChartData = null;   // raw labels/colors for reset
 
-        // Register Global Plugins
+        // Register Chart plugins
         if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
             Chart.register(ChartDataLabels);
         }
@@ -106,7 +226,6 @@
             $('.select2').select2({ theme: 'bootstrap4' });
         }
 
-        // Initialize popovers with sanitization disabled to allow tables
         $('.region-legend-trigger').popover({
             html: true,
             sanitize: false,
@@ -114,254 +233,326 @@
             placement: 'bottom'
         });
 
+        // ── Acronym helper ──────────────────────────────────────────────
         function getAcronym(str) {
             if (!str) return '';
             const parts = str.split('_');
-            if (parts.length === 1 && str.length > 5) {
-                return str.substring(0, 3).toUpperCase();
-            }
+            if (parts.length === 1 && str.length > 5) return str.substring(0, 3).toUpperCase();
             let acronym = '';
-            parts.forEach(p => {
-                if (p.length > 0) {
-                    acronym += p[0].toUpperCase();
-                }
-            });
+            parts.forEach(p => { if (p.length > 0) acronym += p[0].toUpperCase(); });
             return acronym;
         }
 
         function updateLegendPopover() {
-            let content = '<div class="small" style="max-height: 200px; overflow-y: auto;"><table class="table table-sm mb-0">';
+            let content = '<div class="small" style="max-height:200px;overflow-y:auto;"><table class="table table-sm mb-0">';
             const sortedKeys = Object.keys(regionMapping).sort();
-            if (sortedKeys.length === 0) {
-                content = "No regions displayed";
+            if (!sortedKeys.length) {
+                content = 'No regions displayed';
             } else {
                 sortedKeys.forEach(code => {
                     content += `<tr><td class="font-weight-bold pr-2" style="border-top:0">${code}</td><td style="border-top:0">: ${regionMapping[code]}</td></tr>`;
                 });
                 content += '</table></div>';
             }
-            
-            $('.region-legend-trigger').each(function() {
-                // Set the attribute for persistence
+            $('.region-legend-trigger').each(function () {
                 $(this).attr('data-content', content);
-                
-                // Update the active popover instance configuration
-                const popover = $(this).data('bs.popover');
-                if (popover) {
-                    popover.config.content = content;
-                }
+                const pop = $(this).data('bs.popover');
+                if (pop) pop.config.content = content;
             });
         }
 
-        // Global multi-filter initialization
-        if ($.fn.select2) {
-            window.PramanaDashboard.initMultiFilters();
-        }
+        // ── Filters ─────────────────────────────────────────────────────
+        if ($.fn.select2) window.PramanaDashboard.initMultiFilters();
 
-        const rf = $('#regionFilter');
-        const pf = $('#programFilter');
-        const yf = $('#yearFilter');
+        const rf = $('#regionFilter'), pf = $('#programFilter'), yf = $('#yearFilter');
 
-        // Initial filters load
         fetch('/dashboard/filters')
-            .then(res => res.json())
+            .then(r => r.json())
             .then(data => {
                 data.regions.forEach(r => rf.append(new Option(r, r)));
                 data.years.forEach(y => yf.append(new Option(y, y)));
             });
 
-        // Dynamic Program Filter based on Region
         rf.on('change', function () {
-            const regions = $(this).val(); // This is now an array
+            const regions = $(this).val();
             pf.empty().append(new Option('All Programs', ''));
-            
             if (regions && regions.length > 0) {
                 const query = $.param({ region_name: regions }, true);
                 fetch(`/dashboard/filters?${query}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        data.programs.forEach(p => pf.append(new Option(p, p)));
-                    });
+                    .then(r => r.json())
+                    .then(data => data.programs.forEach(p => pf.append(new Option(p, p))));
             }
         });
 
-        function loadData() {
-            const filters = window.PramanaDashboard.collectFilters();
-            
-            // Sync with backend naming if necessary
-            if (filters.year) filters.years = filters.year; 
-            
-            const query = $.param(filters, true);
-            fetch(`/dashboard/data?${query}`)
-                .then(res => res.json())
-                .then(data => {
-                    // KPIs
-                    $('#kpiInstructors').text(data.kpis.total_instructors.toLocaleString());
-                    $('#kpiDrivers').text(data.kpis.total_drivers.toLocaleString());
-                    $('#kpiStates').text(data.kpis.total_states.toLocaleString());
-                    $('#kpiPrograms').text(data.kpis.total_programs.toLocaleString());
+        // ── KPI counter animation ────────────────────────────────────────
+        function animateNumber(el, target) {
+            const start = parseInt(el.text().replace(/,/g, '')) || 0;
+            const duration = 500, steps = 20, stepTime = duration / steps;
+            let step = 0;
+            const inc = (target - start) / steps;
+            const timer = setInterval(() => {
+                step++;
+                const val = Math.round(start + inc * step);
+                el.text(val.toLocaleString());
+                if (step >= steps) { el.text(target.toLocaleString()); clearInterval(timer); }
+            }, stepTime);
+        }
 
-                    // Reset mapping for this data load
-                    regionMapping = {};
+        function updateKpis(kpis) {
+            animateNumber($('#kpiInstructors'), kpis.total_instructors);
+            animateNumber($('#kpiDrivers'),     kpis.total_drivers);
+            animateNumber($('#kpiStates'),      kpis.total_states);
+            animateNumber($('#kpiPrograms'),    kpis.total_programs);
+        }
 
-                    // Charts
-                    function renderBarChart(canvasId, chartData, chartRef) {
-                        const el = document.getElementById(canvasId);
-                        if (!el) return;
-                        const ctx = el.getContext('2d');
-                        
-                        // Process labels for acronyms
-                        if (chartData.labels) {
-                            chartData.labels = chartData.labels.map(label => {
-                                const code = getAcronym(label);
-                                regionMapping[code] = label;
-                                return code;
-                            });
+        // ── Bar Chart ────────────────────────────────────────────────────
+        const BASE_BAR_COLOR     = '#f59e0b';
+        const DIMMED_BAR_COLOR   = 'rgba(245,158,11,0.25)';
+        const SELECTED_BAR_COLOR = '#f59e0b';
+
+        function renderBarChart(chartData) {
+            const el = document.getElementById('programChart');
+            if (!el) return;
+
+            regionMapping = {};
+            if (chartData.labels) {
+                chartData.labels = chartData.labels.map(label => {
+                    const code = getAcronym(label);
+                    regionMapping[code] = label;
+                    return code;
+                });
+            }
+
+            // Store original data for drill-down reset
+            programChartData = {
+                labels: [...chartData.labels],
+                data:   [...chartData.datasets[0].data]
+            };
+
+            if (programChartInst) programChartInst.destroy();
+
+            const originalColors = chartData.labels.map(() => BASE_BAR_COLOR);
+
+            programChartInst = new Chart(el.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Programs',
+                        data: chartData.datasets[0].data,
+                        backgroundColor: originalColors,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    onClick: function (evt) {
+                        const points = programChartInst.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
+                        if (!points.length) return;
+                        const idx = points[0].index;
+                        const code = programChartInst.data.labels[idx];
+                        const fullName = regionMapping[code] || code;
+                        handleBarClick(idx, fullName);
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            align: 'start',
+                            labels: { color: '#000000' }
+                        },
+                        datalabels: {
+                            anchor: 'end', align: 'top', offset: 4,
+                            color: '#666666',
+                            font: { weight: 'bold', size: 11 },
+                            formatter: v => v.toLocaleString()
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: ctx => regionMapping[ctx[0].label] || ctx[0].label
+                            }
                         }
-
-                        if (window[chartRef]) window[chartRef].destroy();
-
-                        window[chartRef] = new Chart(ctx, {
-                            type: 'bar',
-                            data: chartData,
-                            options: {
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        display: true,
-                                        position: 'bottom',
-                                        align: 'start',
-                                        labels: { color: '#000000' }
-                                    },
-                                    datalabels: {
-                                        anchor: 'end',
-                                        align: 'top',
-                                        offset: 4,
-                                        color: '#666666',
-                                        font: {
-                                            weight: 'bold',
-                                            size: 11
-                                        },
-                                        formatter: function(value) {
-                                            return value.toLocaleString();
-                                        }
-                                    },
-                                    tooltip: {
-                                        callbacks: {
-                                            title: function(context) {
-                                                // Tooltip still shows original name
-                                                const code = context[0].label;
-                                                return regionMapping[code] || code;
-                                            }
-                                        }
-                                    }
-                                },
-                                scales: {
-                                    y: {
-                                        beginAtZero: true,
-                                        grid: { display: false },
-                                        ticks: {
-                                            color: '#000000',
-                                            precision: 0
-                                        }
-                                    },
-                                    x: {
-                                        grid: { display: false },
-                                        ticks: { 
-                                            color: '#000000',
-                                            autoSkip: false,
-                                            maxRotation: 0, // No rotation needed if labels are small
-                                            minRotation: 0
-                                        }
-                                    }
-                                }
-                            }
-                        });
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false }, ticks: { color: '#000', precision: 0 } },
+                        x: { grid: { display: false }, ticks: { color: '#000', autoSkip: false, maxRotation: 0, minRotation: 0 } }
                     }
+                }
+            });
 
-                    function renderTreemap(canvasId, chartData, chartRef) {
-                        const el = document.getElementById(canvasId);
-                        if (!el) return;
-                        const ctx = el.getContext('2d');
+            // Show click hint
+            $('#programChartHint').show();
+        }
 
-                        if (window[chartRef]) window[chartRef].destroy();
+        // ── Handle bar click ─────────────────────────────────────────────
+        function handleBarClick(idx, regionFullName) {
+            // Highlight selected, dim others
+            const colors = programChartData.labels.map((_, i) => i === idx ? SELECTED_BAR_COLOR : DIMMED_BAR_COLOR);
+            programChartInst.data.datasets[0].backgroundColor = colors;
+            programChartInst.update();
 
-                        // Transform labels and data into treemap format: [{v: value, g: group}]
-                        const treeData = chartData.labels.map((label, i) => {
-                            const code = getAcronym(label);
-                            regionMapping[code] = label;
-                            return {
-                                v: chartData.datasets[0].data[i],
-                                g: code
-                            };
-                        });
+            selectedRegion = regionFullName;
+            loadDrilldown(regionFullName);
+        }
 
-                        const values = treeData.map(d => d.v);
-                        const maxVal = Math.max(...values) || 1;
-                        const minVal = Math.min(...values) || 0;
-                        const range = maxVal - minVal || 1;
+        // ── Treemap (unchanged, no drill-down) ───────────────────────────
+        function renderTreemap(chartData) {
+            const el = document.getElementById('instructorRegionChart');
+            if (!el) return;
 
-                        window[chartRef] = new Chart(ctx, {
-                            type: 'treemap',
-                            data: {
-                                datasets: [{
-                                    label: 'Instructors',
-                                    tree: treeData,
-                                    key: 'v',
-                                    groups: ['g'],
-                                    backgroundColor: (ctx) => {
-                                        const value = ctx.raw && ctx.raw.v;
-                                        if (!value) return '#f8fafc';
-                                        // Normalize ratio based on the actual range of the data
-                                        const normRatio = (value - minVal) / range;
-                                        // Lightness: 90% (very light) -> 30% (very dark)
-                                        const l = 90 - (normRatio * 60);
-                                        return `hsl(217, 91%, ${l}%)`;
-                                    },
-                                    borderColor: '#1e3a8a',
-                                    borderWidth: 1,
-                                    spacing: 1,
-                                    labels: {
-                                        display: true,
-                                        formatter: (ctx) => [ctx.raw.g, ctx.raw.v.toLocaleString()],
-                                        color: (ctx) => {
-                                            const value = ctx.raw && ctx.raw.v;
-                                            const normRatio = (value - minVal) / range;
-                                            return normRatio > 0.35 ? '#fff' : '#1e3a8a'; // Dynamic text color for readability
-                                        },
-                                        font: { size: 11, weight: 'bold' }
-                                    },
-                                    captions: { display: false }
-                                }]
+            const treeData = chartData.labels.map((label, i) => {
+                const code = getAcronym(label);
+                regionMapping[code] = label;
+                return { v: chartData.datasets[0].data[i], g: code };
+            });
+
+            const values  = treeData.map(d => d.v);
+            const maxVal  = Math.max(...values) || 1;
+            const minVal  = Math.min(...values) || 0;
+            const range   = maxVal - minVal || 1;
+
+            if (window.instructorChartInst) window.instructorChartInst.destroy();
+
+            window.instructorChartInst = new Chart(el.getContext('2d'), {
+                type: 'treemap',
+                data: {
+                    datasets: [{
+                        label: 'Instructors',
+                        tree: treeData,
+                        key: 'v',
+                        groups: ['g'],
+                        backgroundColor: ctx => {
+                            const v = ctx.raw && ctx.raw.v;
+                            if (!v) return '#f8fafc';
+                            const l = 90 - ((v - minVal) / range * 60);
+                            return `hsl(217,91%,${l}%)`;
+                        },
+                        borderColor: '#1e3a8a',
+                        borderWidth: 1,
+                        spacing: 1,
+                        labels: {
+                            display: true,
+                            formatter: ctx => [ctx.raw.g, ctx.raw.v.toLocaleString()],
+                            color: ctx => {
+                                const v = ctx.raw && ctx.raw.v;
+                                return ((v - minVal) / range) > 0.35 ? '#fff' : '#1e3a8a';
                             },
-                            options: {
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: { display: false },
-                                    datalabels: { display: false }, // Disable to avoid conflict with treemap labels
-                                    tooltip: {
-                                        callbacks: {
-                                            title: (items) => {
-                                                const code = items[0].raw.g;
-                                                return regionMapping[code] || code;
-                                            },
-                                            label: (item) => `Instructors: ${item.raw.v.toLocaleString()}`
-                                        }
-                                    }
-                                }
+                            font: { size: 11, weight: 'bold' }
+                        },
+                        captions: { display: false }
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title:  items => regionMapping[items[0].raw.g] || items[0].raw.g,
+                                label:  item  => `Instructors: ${item.raw.v.toLocaleString()}`
                             }
-                        });
+                        }
                     }
+                }
+            });
+        }
 
-                    renderTreemap('instructorRegionChart', data.charts.instructors_by_region, 'instructorChartInst');
-                    renderBarChart('programChart', data.charts.programs_by_region, 'programChartInst');
-                    
-                    // Update Legend Popover with all discovered mappings
+        // ── Load main data ───────────────────────────────────────────────
+        function loadData() {
+            clearDrilldown(false);  // reset without re-fetching
+            const filters = window.PramanaDashboard.collectFilters();
+            if (filters.year) filters.years = filters.year;
+            const query = $.param(filters, true);
+
+            fetch(`/dashboard/data?${query}`)
+                .then(r => r.json())
+                .then(data => {
+                    fullKpis = data.kpis;
+                    updateKpis(data.kpis);
+                    regionMapping = {};
+                    renderTreemap(data.charts.instructors_by_region);
+                    renderBarChart(data.charts.programs_by_region);
                     updateLegendPopover();
                 });
         }
 
-        $('#seeReport').click(function () {
+        // ── Drill-down ───────────────────────────────────────────────────
+        function loadDrilldown(regionFullName) {
+            const filters = window.PramanaDashboard.collectFilters();
+            if (filters.year) filters.years = filters.year;
+            const query = $.param({ ...filters, region: regionFullName }, true);
+
+            // Update KPIs to region-filtered view
+            fetch(`/dashboard/data?${query}`)
+                .then(r => r.json())
+                .then(data => updateKpis(data.kpis));
+
+            // Fetch drill-down detail
+            fetch(`/dashboard/drill-down?${query}`)
+                .then(r => r.json())
+                .then(data => renderDrilldown(regionFullName, data));
+        }
+
+        function renderDrilldown(regionFullName, data) {
+            // Breadcrumb
+            $('#drilldownRegionLabel').text(regionFullName);
+            $('#ddTableRegionLabel').text(regionFullName);
+
+            // Mini-stats
+            animateNumber($('#ddSessions'), data.summary.total_sessions);
+            animateNumber($('#ddStudents'), data.summary.total_students);
+            animateNumber($('#ddSchools'),  data.summary.total_schools);
+
+            // Program breakdown table
+            const programs = data.programs || [];
+            $('#ddProgramCount').text(programs.length + ' program' + (programs.length !== 1 ? 's' : ''));
+
+            const tbody = $('#drilldownTableBody').empty();
+            if (!programs.length) {
+                tbody.append('<tr><td colspan="6" class="text-center text-muted py-4">No data found for this region.</td></tr>');
+            } else {
+                programs.forEach(p => {
+                    tbody.append(`
+                        <tr>
+                            <td class="px-3 py-2 font-weight-600" style="color:#1e293b;">${p.program}</td>
+                            <td class="px-3 py-2 text-muted">${p.donor}</td>
+                            <td class="px-3 py-2 text-right">${p.sessions.toLocaleString()}</td>
+                            <td class="px-3 py-2 text-right">${p.students_reached.toLocaleString()}</td>
+                            <td class="px-3 py-2 text-right">${p.schools_visited.toLocaleString()}</td>
+                            <td class="px-3 py-2 text-right">${p.instructors.toLocaleString()}</td>
+                        </tr>
+                    `);
+                });
+            }
+
+            // Show panel with animation
+            $('#drilldownPanel').show();
+            $('html, body').animate({ scrollTop: $('#drilldownPanel').offset().top - 20 }, 400);
+        }
+
+        // ── Clear drill-down ─────────────────────────────────────────────
+        window.clearDrilldown = function (restoreKpis = true) {
+            selectedRegion = null;
+            $('#drilldownPanel').hide();
+            $('#drilldownTableBody').empty();
+
+            // Reset bar colors
+            if (programChartInst && programChartData) {
+                programChartInst.data.datasets[0].backgroundColor =
+                    programChartData.labels.map(() => BASE_BAR_COLOR);
+                programChartInst.update();
+            }
+
+            // Restore full KPIs
+            if (restoreKpis && fullKpis) updateKpis(fullKpis);
+        };
+
+        // ── Button handlers ──────────────────────────────────────────────
+        $('#seeReport').click(() => loadData());
+
+        $('#resetFilters').click(() => {
+            $('#yearFilter, #regionFilter, #programFilter').val(null).trigger('change');
             loadData();
         });
 
