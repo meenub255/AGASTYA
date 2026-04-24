@@ -24,20 +24,21 @@ def get_manpower_vehicle_filters():
 
 
 def get_manpower_vehicle_data(region=None, year=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
     try:
-        where_clauses = ["TRUE"]
+        clauses = []
         params = []
-        if region:
-            where_clauses.append("g.region_name = %s")
-            params.append(region)
-        if year:
-            where_clauses.append("d.year_actual = %s")
-            params.append(int(year))
-        if month:
-            where_clauses.append("d.month_actual = %s")
-            params.append(int(month))
-        where_sql = " AND ".join(where_clauses)
+        
+        c, p = get_list_filter_clause("g.region_name", region)
+        clauses.append(c); params.extend(p)
+        
+        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int")
+        clauses.append(c); params.extend(p)
+        
+        c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
+        clauses.append(c); params.extend(p)
+        
+        where_sql = " AND ".join(clauses)
 
         # KPI Query (sidebar filters only)
         kpi_row = fetch_one(f"""
