@@ -1,65 +1,60 @@
 from backend.db import get_datamart_conn
 import pandas as pd
 from typing import Dict, List, Any, Optional
+from backend.config import DATAMART_SCHEMA_NAME
 
-def get_work_days_filters(region_id: Optional[int] = None):
+def fetch_all(query, params=None):
     conn = get_datamart_conn()
-    filters = {"regions": [], "areas": [], "years": [], "months": []}
-    
     try:
-        # Regions
-        regions_df = pd.read_sql("SELECT ID, NAME FROM MST_REGION WHERE IS_DELETED = 0 OR IS_DELETED IS NULL ORDER BY NAME", conn)
-        filters["regions"] = regions_df.to_dict(orient="records")
-        
-        # Areas (filtered by region if provided)
-        area_query = "SELECT ID, NAME, REGION_ID FROM MST_AREA WHERE (IS_DELETED = 0 OR IS_DELETED IS NULL)"
-        if region_id:
-            area_query += f" AND REGION_ID = {region_id}"
-        area_query += " ORDER BY NAME"
-        areas_df = pd.read_sql(area_query, conn)
-        filters["areas"] = areas_df.to_dict(orient="records")
-        
-        # Fixed Years and Months for simplicity (matches other reports)
-        filters["years"] = [2023, 2024, 2025, 2026]
-        filters["months"] = [
-            {"id": 1, "name": "January"}, {"id": 2, "name": "February"}, {"id": 3, "name": "March"},
-            {"id": 4, "name": "April"}, {"id": 5, "name": "May"}, {"id": 6, "name": "June"},
-            {"id": 7, "name": "July"}, {"id": 8, "name": "August"}, {"id": 9, "name": "September"},
-            {"id": 10, "name": "October"}, {"id": 11, "name": "November"}, {"id": 12, "name": "December"}
-        ]
+        cursor = conn.cursor()
+        cursor.execute(query, params or [])
+        columns = [desc[0].lower() for desc in cursor.description]
+        return [dict(zip(columns, row)) for row in cursor.fetchall()]
     finally:
         conn.close()
-    return filters
 
-def get_work_days_data(region_id: Optional[int] = None, area_id: Optional[int] = None, 
-                       year: Optional[int] = None, month: Optional[int] = None,
-                       limit: int = 15, offset: int = 0, dt_params: Dict = None):
-    from backend.services.query_utils import get_datatables_sql
+def get_work_days_filters(region_name: str | list[str] | None = None):
+    from backend.services.query_utils import get_list_filter_clause
+    
+    region_query = f"SELECT DISTINCT region_name FROM {DATAMART_SCHEMA_NAME}.dim_geography WHERE region_name IS NOT NULL ORDER BY region_name"
+    regions = [row["region_name"] for row in fetch_all(region_query)]
+    
+    where_sql, params = get_list_filter_clause("region_name", region_name)
+    area_query = f"SELECT DISTINCT area_name FROM {DATAMART_SCHEMA_NAME}.dim_geography WHERE area_name IS NOT NULL AND {where_sql} ORDER BY area_name"
+    areas = [row["area_name"] for row in fetch_all(area_query, params)]
+    
+    year_query = f"SELECT DISTINCT year_actual FROM {DATAMART_SCHEMA_NAME}.dim_date ORDER BY year_actual DESC"
+    years = [row["year_actual"] for row in fetch_all(year_query)]
+    
+    month_query = f"SELECT DISTINCT month_actual, TO_CHAR(TO_DATE(month_actual::text, 'MM'), 'Month') as month_name FROM {DATAMART_SCHEMA_NAME}.dim_date ORDER BY month_actual"
+    months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(month_query)]
+    
+    return {"regions": regions, "areas": areas, "years": years, "months": months}
+
+def get_work_days_data(region=None, area=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import get_list_filter_clause, get_datatables_sql
     conn = get_datamart_conn()
     
-    where_clauses = ["1=1"]
+    clauses = []
     params = []
     
-    if region_id:
-        where_clauses.append("reg.ID = %s")
-        params.append(region_id)
-    if area_id:
-        where_clauses.append("ar.ID = %s")
-        params.append(area_id)
-    if year:
-        where_clauses.append("EXTRACT(YEAR FROM log.DATE) = %s")
-        params.append(year)
-    if month:
-        where_clauses.append("EXTRACT(MONTH FROM log.DATE) = %s")
-        params.append(month)
-        
-    where_str = " AND ".join(where_clauses)
+    c, p = get_list_filter_clause("g.region_name", region)
+    clauses.append(c); params.extend(p)
+    
+    c, p = get_list_filter_clause("g.area_name", area)
+    clauses.append(c); params.extend(p)
+    
+    c, p = get_list_filter_clause("d.year_actual", year, cast_type="int")
+    clauses.append(c); params.extend(p)
+    
+    c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
+    clauses.append(c); params.extend(p)
+    
+    where_sql = " AND ".join(clauses)
     
     try:
-        # KPI Query (sidebar filters only)
         kpi_query = f"""
             SELECT 
-                COUNT(DISTINCT log.INSTRUCTOR_ID) as total_instructors,
                 COUNT(DISTINCT CONCAT(log.INSTRUCTOR_ID, '_', log.DATE)) as total_working_days,
                 COUNT(DISTINCT ar.ID) as active_centers
             FROM TXN_SESSION log

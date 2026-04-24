@@ -11,15 +11,17 @@ def _region_expression() -> str:
 
 
 def get_instructor_kpis(
-    start: int | None = None,
-    end: int | None = None,
-    region: str | None = None,
-    program: str | None = None,
-    instructor: str | None = None,
+    start: int | list[int] | None = None,
+    end: int | list[int] | None = None,
+    year: int | list[int] | None = None,
+    region: str | list[str] | None = None,
+    program: str | list[str] | None = None,
+    instructor: str | list[str] | None = None,
 ) -> dict[str, int | float | str]:
     where_clause, params = build_dimension_filters(
         start=start,
         end=end,
+        year=year,
         region=region,
         program=program,
         year_expression="d.year_actual",
@@ -79,11 +81,12 @@ def get_instructor_kpis(
 
 
 def get_instructor_session_log(
-    start: int | None = None,
-    end: int | None = None,
-    region: str | None = None,
-    program: str | None = None,
-    instructor: str | None = None,
+    start: int | list[int] | None = None,
+    end: int | list[int] | None = None,
+    year: int | list[int] | None = None,
+    region: str | list[str] | None = None,
+    program: str | list[str] | None = None,
+    instructor: str | list[str] | None = None,
     limit: int = 10,
     offset: int = 0,
     dt_params: dict | None = None,
@@ -92,6 +95,7 @@ def get_instructor_session_log(
     where_clause, params = build_dimension_filters(
         start=start,
         end=end,
+        year=year,
         region=region,
         program=program,
         year_expression="d.year_actual",
@@ -186,16 +190,18 @@ def get_instructor_session_log(
 
 
 def get_multi_program_instructors(
-    start: int | None = None,
-    end: int | None = None,
-    region: str | None = None,
-    program: str | None = None,
-    instructor: str | None = None,
+    start: int | list[int] | None = None,
+    end: int | list[int] | None = None,
+    year: int | list[int] | None = None,
+    region: str | list[str] | None = None,
+    program: str | list[str] | None = None,
+    instructor: str | list[str] | None = None,
     limit: int = 5,
 ) -> list[dict]:
     where_clause, params = build_dimension_filters(
         start=start,
         end=end,
+        year=year,
         region=region,
         program=program,
         year_expression="d.year_actual",
@@ -240,15 +246,17 @@ def get_multi_program_instructors(
 
 
 def get_sessions_by_instructor_type(
-    start: int | None = None,
-    end: int | None = None,
-    region: str | None = None,
-    program: str | None = None,
-    instructor: str | None = None,
+    start: int | list[int] | None = None,
+    end: int | list[int] | None = None,
+    year: int | list[int] | None = None,
+    region: str | list[str] | None = None,
+    program: str | list[str] | None = None,
+    instructor: str | list[str] | None = None,
 ) -> list[dict]:
     where_clause, params = build_dimension_filters(
         start=start,
         end=end,
+        year=year,
         region=region,
         program=program,
         year_expression="d.year_actual",
@@ -258,22 +266,36 @@ def get_sessions_by_instructor_type(
         instructor_expression="u.role_name",
     )
 
+    # Comparison Logic: If multiple regions are selected, group by region
+    compare_region = isinstance(region, list) and len([v for v in region if v]) > 1
+    
+    group_sql = ""
+    group_select = ""
+    if compare_region:
+        group_sql = ", g.region_name"
+        group_select = ", COALESCE(g.region_name, 'Unknown') AS group"
+
     rows = fetch_all(
         f"""
         SELECT
             {_type_expression()} AS label,
             COUNT(f.sk_fact_session_id) AS value
+            {group_select}
         FROM dw.fact_session f
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN dw.dim_user u ON u.sk_user_id = f.sk_user_id
         {where_clause}
-        GROUP BY u.role_name
+        GROUP BY u.role_name {group_sql}
         ORDER BY value DESC, label
         """,
         params,
     )
-    return [{"label": row["label"], "value": float(row["value"] or 0)} for row in rows]
+    return [{
+        "label": row["label"], 
+        "value": float(row["value"] or 0),
+        **({"group": row["group"]} if "group" in row else {})
+    } for row in rows]
 
 
 
@@ -291,27 +313,30 @@ def get_instructor_type_options() -> list[str]:
 
 
 def get_instructor_productivity(
-    start: int | None = None,
-    end: int | None = None,
-    region: str | None = None,
-    program: str | None = None,
-    instructor: str | None = None,
+    start: int | list[int] | None = None,
+    end: int | list[int] | None = None,
+    year: int | list[int] | None = None,
+    region: str | list[str] | None = None,
+    program: str | list[str] | None = None,
+    instructor: str | list[str] | None = None,
     limit: int = 20,
 ) -> list[dict]:
-    rows = get_instructor_session_log(start=start, end=end, region=region, program=program, instructor=instructor, limit=limit)
+    rows = get_instructor_session_log(start=start, end=end, year=year, region=region, program=program, instructor=instructor, limit=limit)
     return [{"label": row["name"], "value": float(row["sessions"])} for row in rows]
 
 
 def get_monthly_instructor_activity(
-    start: int | None = None,
-    end: int | None = None,
-    region: str | None = None,
-    program: str | None = None,
-    instructor: str | None = None,
+    start: int | list[int] | None = None,
+    end: int | list[int] | None = None,
+    year: int | list[int] | None = None,
+    region: str | list[str] | None = None,
+    program: str | list[str] | None = None,
+    instructor: str | list[str] | None = None,
 ) -> list[dict]:
     where_clause, params = build_dimension_filters(
         start=start,
         end=end,
+        year=year,
         region=region,
         program=program,
         year_expression="d.year_actual",
@@ -321,20 +346,33 @@ def get_monthly_instructor_activity(
         instructor_expression="u.role_name",
     )
 
+    # Comparison Logic: If multiple years are selected, group by year
+    # 'start' is the 'year' filter in instructor.html
+    compare_year = isinstance(start, list) and len([v for v in start if v]) > 1
+    
+    group_select = ""
+    if compare_year:
+        group_select = ", d.year_actual::text AS group"
+
     rows = fetch_all(
         f"""
         SELECT
-            TO_CHAR(DATE_TRUNC('month', d.full_date), 'YYYY-MM') AS label,
+            TO_CHAR(d.full_date, 'Mon') AS label,
             COUNT(f.sk_fact_session_id) AS value,
-            DATE_TRUNC('month', d.full_date) AS sort_key
+            EXTRACT(MONTH FROM d.full_date) AS sort_key
+            {group_select}
         FROM dw.fact_session f
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         {where_clause}
-        GROUP BY DATE_TRUNC('month', d.full_date)
+        GROUP BY TO_CHAR(d.full_date, 'Mon'), EXTRACT(MONTH FROM d.full_date) {", d.year_actual" if compare_year else ""}
         ORDER BY sort_key
         """,
         params,
     )
-    return [{"label": row["label"], "value": float(row["value"])} for row in rows]
+    return [{
+        "label": row["label"], 
+        "value": float(row["value"]),
+        **({"group": row["group"]} if "group" in row else {})
+    } for row in rows]
 

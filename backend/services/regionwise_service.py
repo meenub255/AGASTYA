@@ -7,16 +7,18 @@ DW = DATAMART_SCHEMA_NAME
 
 
 def get_regionwise_filters(region_name=None):
+    from backend.services.query_utils import get_list_filter_clause
     try:
         regions = [r["region_name"] for r in fetch_all(
             f"SELECT DISTINCT region_name FROM {DW}.dim_geography WHERE region_name IS NOT NULL ORDER BY region_name"
         )]
-        areas = []
-        if region_name:
-            areas = [r["area_name"] for r in fetch_all(
-                f"SELECT DISTINCT area_name FROM {DW}.dim_geography WHERE region_name = %s AND area_name IS NOT NULL ORDER BY area_name",
-                [region_name]
-            )]
+        
+        where_sql, params = get_list_filter_clause("region_name", region_name)
+        areas = [r["area_name"] for r in fetch_all(
+            f"SELECT DISTINCT area_name FROM {DW}.dim_geography WHERE {where_sql} AND area_name IS NOT NULL ORDER BY area_name",
+            params
+        )]
+        
         years = [r["year_actual"] for r in fetch_all(
             f"SELECT DISTINCT year_actual FROM {DW}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC"
         )]
@@ -30,22 +32,24 @@ def get_regionwise_filters(region_name=None):
 
 
 def get_regionwise_data(region=None, area=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import get_list_filter_clause
     try:
-        where_clauses = ["TRUE"]
+        clauses = []
         params = []
-        if region:
-            where_clauses.append("g.region_name = %s")
-            params.append(region)
-        if area:
-            where_clauses.append("g.area_name = %s")
-            params.append(area)
-        if year:
-            where_clauses.append("d.year_actual = %s")
-            params.append(int(year))
-        if month:
-            where_clauses.append("d.month_actual = %s")
-            params.append(int(month))
-        where_sql = " AND ".join(where_clauses)
+        
+        c, p = get_list_filter_clause("g.region_name", region)
+        clauses.append(c); params.extend(p)
+        
+        c, p = get_list_filter_clause("g.area_name", area)
+        clauses.append(c); params.extend(p)
+        
+        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int")
+        clauses.append(c); params.extend(p)
+        
+        c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
+        clauses.append(c); params.extend(p)
+        
+        where_sql = " AND ".join(clauses)
 
         kpi_row = fetch_one(f"""
             SELECT

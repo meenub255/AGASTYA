@@ -2,18 +2,20 @@ from backend.services.query_utils import fetch_all, fetch_one
 from backend.config import DATAMART_SCHEMA_NAME
 
 
-def get_school_visit_filters(region_name: str | None = None):
+def get_school_visit_filters(region_name: str | list[str] | None = None):
+    from backend.services.query_utils import get_list_filter_clause
     # 1. Fetch all Regions always
     region_query = f"SELECT DISTINCT region_name FROM {DATAMART_SCHEMA_NAME}.dim_geography WHERE region_name IS NOT NULL ORDER BY region_name"
     regions = [row["region_name"] for row in fetch_all(region_query)]
     
     # 2. Fetch Areas and Programs based on Region (Dependent Logic & Data > 0)
-    # Both Area and Program should now ONLY show if they have data in fact_session
+    where_sql, params = get_list_filter_clause("g.region_name", region_name)
+    
     areas_query = f"""
         SELECT DISTINCT g.area_name AS area 
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         INNER JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-        WHERE g.area_name IS NOT NULL
+        WHERE g.area_name IS NOT NULL AND {where_sql}
     """
     
     prog_query = f"""
@@ -21,20 +23,14 @@ def get_school_visit_filters(region_name: str | None = None):
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         INNER JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON p.sk_program_id = f.sk_program_id
         INNER JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-        WHERE p.program_name IS NOT NULL
+        WHERE p.program_name IS NOT NULL AND {where_sql}
     """
-    
-    params = []
-    if region_name and region_name != "Select Region":
-        areas_query += " AND g.region_name = %s"
-        prog_query += " AND g.region_name = %s"
-        params.append(region_name)
     
     areas = [row["area"] for row in fetch_all(areas_query + " ORDER BY area", params)]
     
     # Only show programs if region is selected, and ONLY those with data
     programs = []
-    if region_name and region_name != "Select Region":
+    if region_name:
         programs = [row["program_name"] for row in fetch_all(prog_query + " ORDER BY p.program_name", params)]
 
     years = [row["year_actual"] for row in fetch_all(f"SELECT DISTINCT year_actual FROM {DATAMART_SCHEMA_NAME}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC")]
@@ -51,28 +47,27 @@ def get_school_visit_filters(region_name: str | None = None):
 
 
 def get_school_visit_data(region=None, area=None, program=None, year=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
 
-    where_clauses = ["TRUE"]
+    clauses = []
     params = []
     
-    if region:
-        where_clauses.append("g.region_name = %s")
-        params.append(region)
-    if area:
-        where_clauses.append("g.area_name = %s")
-        params.append(area)
-    if program:
-        where_clauses.append("p.program_name = %s")
-        params.append(program)
-    if year:
-        where_clauses.append("d.year_actual = %s")
-        params.append(int(year))
-    if month:
-        where_clauses.append("d.month_actual = %s")
-        params.append(int(month))
+    c, p = get_list_filter_clause("g.region_name", region)
+    clauses.append(c); params.extend(p)
     
-    where_sql = " AND ".join(where_clauses)
+    c, p = get_list_filter_clause("g.area_name", area)
+    clauses.append(c); params.extend(p)
+    
+    c, p = get_list_filter_clause("p.program_name", program)
+    clauses.append(c); params.extend(p)
+    
+    c, p = get_list_filter_clause("d.year_actual", year, cast_type="int")
+    clauses.append(c); params.extend(p)
+    
+    c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
+    clauses.append(c); params.extend(p)
+    
+    where_sql = " AND ".join(clauses)
     
     # Get KPIs (Using sidebar filters only)
     kpi_sql = f"""

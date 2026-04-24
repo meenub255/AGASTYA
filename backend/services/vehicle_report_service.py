@@ -2,19 +2,17 @@ from backend.services.query_utils import fetch_all, fetch_one
 from backend.config import DATAMART_SCHEMA_NAME, SOURCE_SCHEMA_NAME
 
 def get_vehicle_report_filters(region_name=None):
+    from backend.services.query_utils import get_list_filter_clause
     try:
         # 1. Available Regions
         region_query = f"SELECT DISTINCT region_name FROM {DATAMART_SCHEMA_NAME}.dim_geography WHERE region_name IS NOT NULL ORDER BY region_name"
         regions = [row["region_name"] for row in fetch_all(region_query)]
         
         # 2. Available Areas (Centers) - Linked to Region if selected
-        area_query = f"SELECT DISTINCT area_name FROM {DATAMART_SCHEMA_NAME}.dim_geography WHERE area_name IS NOT NULL"
-        params = []
-        if region_name and region_name != "Select Region":
-            area_query += " AND region_name = %s"
-            params.append(region_name)
+        where_sql, params = get_list_filter_clause("region_name", region_name)
+        area_query = f"SELECT DISTINCT area_name FROM {DATAMART_SCHEMA_NAME}.dim_geography WHERE {where_sql} AND area_name IS NOT NULL ORDER BY area_name"
         
-        areas = [row["area_name"] for row in fetch_all(area_query + " ORDER BY area_name", params)]
+        areas = [row["area_name"] for row in fetch_all(area_query, params)]
         
         # 3. Years and Months from dim_date
         years = [row["year_actual"] for row in fetch_all(f"SELECT DISTINCT year_actual FROM {DATAMART_SCHEMA_NAME}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC")]
@@ -31,25 +29,25 @@ def get_vehicle_report_filters(region_name=None):
         return {"regions": [], "areas": [], "years": [], "months": []}
 
 def get_vehicle_report_data(region=None, area=None, year=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
     try:
-        where_clauses = ["TRUE"]
+        clauses = []
         params = []
         
-        if region and str(region).strip() not in ["", "null", "undefined", "Select Region"]:
-            where_clauses.append("r.NAME = %s")
-            params.append(region)
-        if area and str(area).strip() not in ["", "null", "undefined", "Select Center"]:
-            where_clauses.append("a.NAME = %s")
-            params.append(area)
-        if year and str(year).strip() not in ["", "null", "undefined", "Select Year"]:
-            where_clauses.append("EXTRACT(YEAR FROM log.DATE) = %s")
-            params.append(int(year))
-        if month and str(month).strip() not in ["", "null", "undefined", "Select Month"]:
-            where_clauses.append("EXTRACT(MONTH FROM log.DATE) = %s")
-            params.append(int(month))
-            
-        where_sql = " AND ".join(where_clauses)
+        c, p = get_list_filter_clause("r.NAME", region)
+        clauses.append(c); params.extend(p)
+        
+        c, p = get_list_filter_clause("a.NAME", area)
+        clauses.append(c); params.extend(p)
+        
+        # Year/Month are from the log.date column in this service
+        c, p = get_list_filter_clause("EXTRACT(YEAR FROM log.DATE)", year, cast_type="int")
+        clauses.append(c); params.extend(p)
+        
+        c, p = get_list_filter_clause("EXTRACT(MONTH FROM log.DATE)", month, cast_type="int")
+        clauses.append(c); params.extend(p)
+        
+        where_sql = " AND ".join(clauses)
 
         # 1. KPIs
         kpi_sql = f"""

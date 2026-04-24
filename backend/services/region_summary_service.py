@@ -5,26 +5,25 @@ from backend.config import DATAMART_SCHEMA_NAME
 logger = logging.getLogger(__name__)
 
 
-def get_region_summary_filters(region_name: str | None = None):
+def get_region_summary_filters(region_name: str | list[str] | None = None):
+    from backend.services.query_utils import get_list_filter_clause
     try:
         # 1. Fetch all Regions always
         region_query = f"SELECT DISTINCT region_name FROM {DATAMART_SCHEMA_NAME}.dim_geography WHERE region_name IS NOT NULL ORDER BY region_name"
         regions = [row["region_name"] for row in fetch_all(region_query)]
 
         # 2. Fetch only programs that have associated data (>0) for the selected region
-        # If no region is selected, we return an empty list to keep the dropdown "inactive"
-        programs = []
-        if region_name and region_name != "Select Region":
-            prog_query = f"""
-                SELECT DISTINCT p.program_name 
-                FROM {DATAMART_SCHEMA_NAME}.dim_program p
-                INNER JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON p.sk_program_id = f.sk_program_id
-                INNER JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-                WHERE p.program_name IS NOT NULL 
-                AND g.region_name = %s
-                ORDER BY p.program_name
-            """
-            programs = [row["program_name"] for row in fetch_all(prog_query, [region_name])]
+        where_sql, params = get_list_filter_clause("g.region_name", region_name)
+        prog_query = f"""
+            SELECT DISTINCT p.program_name 
+            FROM {DATAMART_SCHEMA_NAME}.dim_program p
+            INNER JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON p.sk_program_id = f.sk_program_id
+            INNER JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = f.sk_geography_id
+            WHERE p.program_name IS NOT NULL 
+            AND {where_sql}
+            ORDER BY p.program_name
+        """
+        programs = [row["program_name"] for row in fetch_all(prog_query, params)]
         
         years = [row["year_actual"] for row in fetch_all(f"SELECT DISTINCT year_actual FROM {DATAMART_SCHEMA_NAME}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC")]
         
@@ -42,25 +41,24 @@ def get_region_summary_filters(region_name: str | None = None):
 
 
 def get_region_summary_data(region=None, program_type=None, year=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
+    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
     try:
-        where_clauses = ["TRUE"]
+        clauses = []
         params = []
         
-        if region and str(region).strip() not in ["", "null", "undefined", "Select Region"]:
-            where_clauses.append("g.region_name = %s")
-            params.append(region)
-        if program_type and str(program_type).strip() not in ["", "null", "undefined", "Select Program"]:
-            where_clauses.append("p.program_name = %s")
-            params.append(program_type)
-        if year and str(year).strip() not in ["", "null", "undefined", "Select Year"]:
-            where_clauses.append("d.year_actual = %s")
-            params.append(int(year))
-        if month and str(month).strip() not in ["", "null", "undefined", "Select Month"]:
-            where_clauses.append("d.month_actual = %s")
-            params.append(int(month))
+        c, p = get_list_filter_clause("g.region_name", region)
+        clauses.append(c); params.extend(p)
         
-        where_sql = " AND ".join(where_clauses)
+        c, p = get_list_filter_clause("p.program_name", program_type)
+        clauses.append(c); params.extend(p)
+        
+        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int")
+        clauses.append(c); params.extend(p)
+        
+        c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
+        clauses.append(c); params.extend(p)
+        
+        where_sql = " AND ".join(clauses)
         
         # KPI Query (sidebar filters only)
         kpi_sql = f"""
