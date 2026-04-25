@@ -17,13 +17,14 @@ def get_performance_mgmt_filters():
         months = [{"id": r["month_actual"], "name": r["month_name"].strip()} for r in fetch_all(
             f"SELECT DISTINCT month_actual, TO_CHAR(TO_DATE(month_actual::text,'MM'),'Month') AS month_name FROM {DW}.dim_date ORDER BY month_actual"
         )]
-        return {"regions": regions, "years": years, "months": months}
+        quarters = [1, 2, 3, 4]
+        return {"regions": regions, "years": years, "months": months, "quarters": quarters}
     except Exception as e:
         logger.error(f"performance mgmt filters error: {e}")
-        return {"regions": [], "years": [], "months": []}
+        return {"regions": [], "years": [], "months": [], "quarters": []}
 
 
-def get_performance_mgmt_data(region=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+def get_performance_mgmt_data(region=None, year=None, month=None, quarter=None, limit=15, offset=0, dt_params=None, period=None, group_by="month"):
     from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
     try:
         clauses = []
@@ -35,12 +36,38 @@ def get_performance_mgmt_data(region=None, year=None, month=None, limit=15, offs
         c, p = get_list_filter_clause("d.year_actual", year, cast_type="int")
         clauses.append(c); params.extend(p)
         
+        # Quarter Filter (Fiscal)
+        fiscal_q_expr = "CASE WHEN d.month_actual IN (4,5,6) THEN 1 WHEN d.month_actual IN (7,8,9) THEN 2 WHEN d.month_actual IN (10,11,12) THEN 3 ELSE 4 END"
+        c, p = get_list_filter_clause(fiscal_q_expr, quarter, cast_type="int")
+        clauses.append(c); params.extend(p)
+        
         c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
         clauses.append(c); params.extend(p)
         
-        where_sql = " AND ".join(clauses)
+        # Parse period label for drilldown filter
+        if group_by == "month" and period:
+            parts = period.split(" ")
+            if len(parts) == 2:
+                clauses.append("TO_CHAR(TO_DATE(d.month_actual::text,'MM'),'Mon') = %s")
+                params.append(parts[0])
+                clauses.append("d.year_actual = %s")
+                params.append(int(parts[1]))
+        elif group_by == "quarter" and period:
+            parts = period.split(" ")
+            if len(parts) == 2:
+                q_val = int(parts[0].replace('Q', ''))
+                y_val = int(parts[1])
+                clauses.append("CASE WHEN d.month_actual IN (4,5,6) THEN 1 WHEN d.month_actual IN (7,8,9) THEN 2 WHEN d.month_actual IN (10,11,12) THEN 3 ELSE 4 END = %s")
+                params.append(q_val)
+                clauses.append("CASE WHEN d.month_actual >= 4 THEN d.year_actual ELSE d.year_actual - 1 END = %s")
+                params.append(y_val)
+        elif group_by == "year" and period:
+            clauses.append("d.year_actual = %s")
+            params.append(int(period))
+        
+        where_sql = " AND ".join(clauses) if clauses else "TRUE"
 
-        # KPI Query (sidebar filters only)
+        # KPI Query
         kpi_row = fetch_one(f"""
             SELECT
                 COUNT(DISTINCT f.sk_user_id)                   AS total_instructors,
@@ -57,11 +84,61 @@ def get_performance_mgmt_data(region=None, year=None, month=None, limit=15, offs
         total_sessions    = int(kpi_row.get("total_sessions", 0) or 0)
         avg_per_inst      = round(total_sessions / total_instructors, 1) if total_instructors else 0
 
+        # Insight Logic (Top Region)
+        top_region_row = fetch_one(f"""
+            SELECT COALESCE(g.region_name, 'Unknown') as region_name, 
+                   COUNT(DISTINCT f.sk_fact_session_id) as sessions,
+                   COALESCE(SUM(e.total_exposure_count), 0) as students,
+                   COUNT(DISTINCT f.sk_user_id) as instructors
+            FROM {DW}.fact_session f
+            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DW}.dim_date d ON f.date_id = d.date_id
+            LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+            WHERE {where_sql}
+            GROUP BY g.region_name
+            ORDER BY sessions DESC
+            LIMIT 1
+        """, params)
+        
+        top_region = top_region_row.get("region_name", "N/A") if top_region_row else "N/A"
+        top_sessions = int(top_region_row.get("sessions", 0)) if top_region_row else 0
+        top_students = int(top_region_row.get("students", 0)) if top_region_row else 0
+        top_instructors = int(top_region_row.get("instructors", 0)) if top_region_row else 0
+
+        # Build Status & Reasons dynamically
+        sess_status = "High" if total_sessions > 500 else ("Low/Decline" if total_sessions < 100 else "Average")
+        sess_reason = f"Excellent execution driven by {top_region}." if sess_status == "High" else (
+                      f"Lower volume across regions; {top_region} led with only {top_sessions} sessions." if sess_status == "Low/Decline" else 
+                      "Consistent performance inline with expectations.")
+                      
+        inst_status = "Stable"
+        inst_reason = f"Active participation across regions, led by {top_region} ({top_instructors} active)."
+        
+        avg_status = "High" if avg_per_inst >= 20 else ("Low/Decline" if avg_per_inst < 10 else "Average")
+        avg_reason = "Instructors are highly engaged and delivering frequently." if avg_status == "High" else (
+                     "Instructor engagement has dropped, pulling down average delivery." if avg_status == "Low/Decline" else 
+                     "Steady delivery rate per instructor.")
+                     
+        stu_status = "High" if int(kpi_row.get("total_students", 0) or 0) > 10000 else "Average"
+        stu_reason = f"Strong attendance, majorly supported by {top_region} ({top_students} students)."
+
         kpis = [
-            {"label": "Total Instructors",        "value": total_instructors,                                      "icon": "fas fa-users",              "color": "bg-info"},
-            {"label": "Avg Sessions/Instructor",   "value": avg_per_inst,                                           "icon": "fas fa-chart-line",         "color": "bg-success"},
-            {"label": "Total Sessions",            "value": total_sessions,                                         "icon": "fas fa-chalkboard-teacher", "color": "bg-navy-blue"},
-            {"label": "Total Students Impacted",   "value": int(kpi_row.get("total_students", 0) or 0),            "icon": "fas fa-user-graduate",      "color": "bg-danger"},
+            {
+                "label": "Total Instructors", "value": total_instructors, "icon": "fas fa-users", "color": "bg-info",
+                "insights": {"top_performing": top_region, "status": inst_status, "reason": inst_reason}
+            },
+            {
+                "label": "Avg Sessions/Instructor", "value": avg_per_inst, "icon": "fas fa-chart-line", "color": "bg-success",
+                "insights": {"top_performing": top_region, "status": avg_status, "reason": avg_reason}
+            },
+            {
+                "label": "Total Sessions", "value": total_sessions, "icon": "fas fa-chalkboard-teacher", "color": "bg-navy-blue",
+                "insights": {"top_performing": top_region, "status": sess_status, "reason": sess_reason}
+            },
+            {
+                "label": "Total Students Impacted", "value": int(kpi_row.get("total_students", 0) or 0), "icon": "fas fa-user-graduate", "color": "bg-danger",
+                "insights": {"top_performing": top_region, "status": stu_status, "reason": stu_reason}
+            },
         ]
 
         # DataTable Logic
@@ -115,9 +192,216 @@ def get_performance_mgmt_data(region=None, year=None, month=None, limit=15, offs
             LIMIT %s OFFSET %s
         """, params + search_params + [limit, offset])
 
-        return {"kpis": kpis, "table": table, "total_count": int(total_count)}
-
-        return {"kpis": kpis, "table": table, "total_count": int(total_count)}
+        return {
+            "kpis": kpis,
+            "table": table,
+            "recordsTotal": int(total_count),
+            "recordsFiltered": int(total_count)
+        }
     except Exception as e:
         logger.error(f"performance mgmt data error: {e}", exc_info=True)
-        return {"kpis": [], "table": [], "total_count": 0}
+        return {
+            "kpis": [],
+            "table": [],
+            "recordsTotal": 0,
+            "recordsFiltered": 0
+        }
+
+
+def get_performance_mgmt_chart_data(
+    region=None, year=None, month=None, quarter=None,
+    group_by="month"  # 'day', 'month', 'quarter', 'year'
+):
+    """Returns session trend data (actual + computed target + daily hi/lo) for candlestick chart."""
+    from backend.services.query_utils import get_list_filter_clause
+    try:
+        clauses, params = [], []
+        c, p = get_list_filter_clause("g.region_name", region); clauses.append(c); params.extend(p)
+        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); clauses.append(c); params.extend(p)
+        c, p = get_list_filter_clause("d.month_actual", month, cast_type="int"); clauses.append(c); params.extend(p)
+        
+        fiscal_q_expr = "CASE WHEN d.month_actual IN (4,5,6) THEN 1 WHEN d.month_actual IN (7,8,9) THEN 2 WHEN d.month_actual IN (10,11,12) THEN 3 ELSE 4 END"
+        c, p = get_list_filter_clause(fiscal_q_expr, quarter, cast_type="int"); clauses.append(c); params.extend(p)
+        where = " AND ".join(clauses)
+
+        # Choose grouping dimension
+        if group_by == "day":
+            label_expr = "TO_CHAR(d.full_date, 'DD Mon YYYY')"
+            sort_expr  = "MIN(d.full_date)"
+            grp_expr   = "d.full_date"
+        elif group_by == "quarter":
+            fiscal_y_expr = "CASE WHEN d.month_actual >= 4 THEN d.year_actual ELSE d.year_actual - 1 END"
+            label_expr = "'Q' || " + fiscal_q_expr + " || ' ' || " + fiscal_y_expr
+            sort_expr  = "MIN(d.full_date)"
+            grp_expr   = fiscal_q_expr + ", " + fiscal_y_expr
+        elif group_by == "year":
+            label_expr = "d.year_actual::text"
+            sort_expr  = "d.year_actual"
+            grp_expr   = "d.year_actual"
+        else:  # month (default)
+            label_expr = "TO_CHAR(TO_DATE(d.month_actual::text, 'MM'), 'Mon') || ' ' || d.year_actual"
+            sort_expr  = "MIN(d.full_date)"
+            grp_expr   = "d.month_actual, d.year_actual"
+
+        rows = fetch_all(f"""
+            SELECT
+                {label_expr}                              AS period_label,
+                {sort_expr}                               AS sort_key,
+                COUNT(DISTINCT f.sk_fact_session_id)      AS actual_sessions,
+                MAX(daily.day_sessions)                   AS high_sessions,
+                MIN(daily.day_sessions)                   AS low_sessions
+            FROM {DW}.fact_session f
+            JOIN {DW}.dim_date d       ON f.date_id = d.date_id
+            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            JOIN (
+                SELECT date_id, COUNT(DISTINCT sk_fact_session_id) AS day_sessions
+                FROM {DW}.fact_session
+                GROUP BY date_id
+            ) daily ON f.date_id = daily.date_id
+            WHERE {where}
+            GROUP BY {grp_expr}
+            ORDER BY sort_key
+        """, params)
+
+        # Compute target = 110% of prior period actual (first period target = 0)
+        result = []
+        for i, r in enumerate(rows):
+            actual = int(r["actual_sessions"] or 0)
+            if i == 0:
+                target = round(actual * 0.9)  # first bar: 90% as soft target baseline
+            else:
+                target = round(int(rows[i - 1]["actual_sessions"] or 0) * 1.1)
+            result.append({
+                "label":   r["period_label"],
+                "actual":  actual,
+                "target":  target,
+                "high":    int(r["high_sessions"] or actual),
+                "low":     int(r["low_sessions"] or actual),
+                "open":    target,   # candlestick open = target
+                "close":   actual,   # candlestick close = actual
+                "met":     actual >= target,
+            })
+        return {"data": result, "group_by": group_by}
+    except Exception as e:
+        logger.error(f"chart_data error: {e}", exc_info=True)
+        return {"data": [], "group_by": group_by}
+
+def get_performance_mgmt_region_chart(
+    region=None, year=None, month=None, quarter=None, period=None, group_by="month"
+):
+    """Returns top 5 regions by sessions and students impacted for an insightful secondary chart."""
+    from backend.services.query_utils import get_list_filter_clause
+    try:
+        clauses, params = [], []
+        c, p = get_list_filter_clause("g.region_name", region); clauses.append(c); params.extend(p)
+        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); clauses.append(c); params.extend(p)
+        c, p = get_list_filter_clause("d.month_actual", month, cast_type="int"); clauses.append(c); params.extend(p)
+        
+        fiscal_q_expr = "CASE WHEN d.month_actual IN (4,5,6) THEN 1 WHEN d.month_actual IN (7,8,9) THEN 2 WHEN d.month_actual IN (10,11,12) THEN 3 ELSE 4 END"
+        c, p = get_list_filter_clause(fiscal_q_expr, quarter, cast_type="int"); clauses.append(c); params.extend(p)
+        
+        # Parse period label for drilldown filter if it exists
+        if group_by == "month" and period:
+            parts = period.split(" ")
+            if len(parts) == 2:
+                clauses.append("TO_CHAR(TO_DATE(d.month_actual::text,'MM'),'Mon') = %s")
+                params.append(parts[0])
+                clauses.append("d.year_actual = %s")
+                params.append(int(parts[1]))
+        elif group_by == "quarter" and period:
+            parts = period.split(" ")
+            if len(parts) == 2:
+                q_val = int(parts[0].replace('Q', ''))
+                y_val = int(parts[1])
+                clauses.append("CASE WHEN d.month_actual IN (4,5,6) THEN 1 WHEN d.month_actual IN (7,8,9) THEN 2 WHEN d.month_actual IN (10,11,12) THEN 3 ELSE 4 END = %s")
+                params.append(q_val)
+                clauses.append("CASE WHEN d.month_actual >= 4 THEN d.year_actual ELSE d.year_actual - 1 END = %s")
+                params.append(y_val)
+        elif group_by == "year" and period:
+            clauses.append("d.year_actual = %s")
+            params.append(int(period))
+
+        where_sql = " AND ".join(clauses) if clauses else "TRUE"
+
+        query = f"""
+            SELECT 
+                COALESCE(g.region_name, 'Unknown') as region_name,
+                COUNT(DISTINCT f.sk_fact_session_id) as sessions,
+                COALESCE(SUM(e.total_exposure_count), 0) as students
+            FROM {DW}.fact_session f
+            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DW}.dim_date d ON f.date_id = d.date_id
+            LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+            WHERE {where_sql}
+            GROUP BY g.region_name
+            ORDER BY sessions DESC
+            LIMIT 5
+        """
+        
+        data = fetch_all(query, params)
+        return {"data": data}
+    except Exception as e:
+        logger.error(f"region_chart error: {e}", exc_info=True)
+        return {"data": []}
+
+
+def get_performance_mgmt_drilldown(
+    period_label: str,
+    group_by: str = "month",
+    region=None, year=None
+):
+    """Returns instructor-level breakdown for a clicked chart bar."""
+    from backend.services.query_utils import get_list_filter_clause
+    try:
+        clauses, params = [], []
+        c, p = get_list_filter_clause("g.region_name", region); clauses.append(c); params.extend(p)
+        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); clauses.append(c); params.extend(p)
+
+        # Parse period label for date filter
+        if group_by == "month" and period_label:
+            # e.g. "Mar 2026"
+            parts = period_label.split(" ")
+            if len(parts) == 2:
+                clauses.append("TO_CHAR(TO_DATE(d.month_actual::text,'MM'),'Mon') = %s")
+                params.append(parts[0])
+                clauses.append("d.year_actual = %s")
+                params.append(int(parts[1]))
+        elif group_by == "quarter" and period_label:
+            parts = period_label.split(" ")
+            if len(parts) == 2:
+                q_val = int(parts[0].replace('Q', ''))
+                y_val = int(parts[1])
+                clauses.append("CASE WHEN d.month_actual IN (4,5,6) THEN 1 WHEN d.month_actual IN (7,8,9) THEN 2 WHEN d.month_actual IN (10,11,12) THEN 3 ELSE 4 END = %s")
+                params.append(q_val)
+                clauses.append("CASE WHEN d.month_actual >= 4 THEN d.year_actual ELSE d.year_actual - 1 END = %s")
+                params.append(y_val)
+        elif group_by == "year" and period_label:
+            clauses.append("d.year_actual = %s")
+            params.append(int(period_label))
+
+        where = " AND ".join(clauses) if clauses else "TRUE"
+
+        table = fetch_all(f"""
+            SELECT
+                COALESCE(u.user_name, 'Unknown')                   AS instructor_name,
+                COALESCE(u.role_name, 'Unknown')                   AS role,
+                COALESCE(g.region_name, 'Unknown')                 AS region_name,
+                COUNT(DISTINCT f.sk_program_id)                    AS programs,
+                COUNT(DISTINCT f.sk_fact_session_id)               AS sessions,
+                COUNT(DISTINCT f.sk_school_id)                     AS schools,
+                COALESCE(SUM(e.total_exposure_count), 0)           AS students_impacted,
+                ROUND(AVG(COALESCE(f.session_duration_minutes,0)),1) AS avg_duration_min
+            FROM {DW}.fact_session f
+            LEFT JOIN {DW}.dim_user u       ON f.sk_user_id = u.sk_user_id
+            LEFT JOIN {DW}.dim_geography g  ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
+            LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+            WHERE {where}
+            GROUP BY u.user_name, u.role_name, g.region_name
+            ORDER BY sessions DESC
+            LIMIT 50
+        """, params)
+        return {"table": table, "period": period_label}
+    except Exception as e:
+        logger.error(f"drilldown error: {e}", exc_info=True)
+        return {"table": [], "period": period_label}
