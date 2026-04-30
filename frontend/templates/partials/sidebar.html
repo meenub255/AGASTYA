@@ -161,28 +161,30 @@
         const EXPANDED = 'ps-expanded';
         const OPEN = 'ps-group-open';
 
-        // ── Restore pinned state ──────────────────────────────────
-        if (localStorage.getItem('sidebarPinned') === '1') {
+        // ── Restore pinned state (Skip on mobile) ──────────────────
+        if (localStorage.getItem('sidebarPinned') === '1' && window.innerWidth > 991) {
             sidebar.classList.add(PINNED, EXPANDED);
             pinBtn.classList.add('active');
         }
-        updateContentMargin(sidebar.classList.contains(PINNED));
+        updateContentMargin(sidebar.classList.contains(PINNED) && window.innerWidth > 991);
 
-        // ── Hover expand/collapse (only when NOT pinned) ─────────
+        // ── Hover expand/collapse (only when NOT pinned & NOT mobile) ─
         sidebar.addEventListener('mouseenter', function () {
-            if (!sidebar.classList.contains(PINNED)) {
+            if (!sidebar.classList.contains(PINNED) && window.innerWidth > 991) {
                 sidebar.classList.add(EXPANDED);
             }
         });
         sidebar.addEventListener('mouseleave', function () {
-            if (!sidebar.classList.contains(PINNED)) {
+            if (!sidebar.classList.contains(PINNED) && window.innerWidth > 991) {
                 sidebar.classList.remove(EXPANDED);
             }
         });
 
-        // ── Pin toggle ───────────────────────────────────────────
+        // ── Pin toggle (Desktop only) ───────────────────────────────
         pinBtn.addEventListener('click', function (e) {
             e.stopPropagation();
+            if (window.innerWidth <= 991) return; 
+
             const isPinned = sidebar.classList.toggle(PINNED);
             sidebar.classList.toggle(EXPANDED, isPinned);
             pinBtn.classList.toggle('active', isPinned);
@@ -191,6 +193,12 @@
         });
 
         function updateContentMargin(expanded) {
+            if (window.innerWidth <= 991) {
+                document.querySelectorAll('.content-wrapper, .main-footer, .main-header').forEach(function (el) {
+                    el.style.marginLeft = '0';
+                });
+                return;
+            }
             var w = expanded ? 'var(--ps-expanded-w)' : 'var(--ps-rail-w)';
             document.querySelectorAll('.content-wrapper, .main-footer, .main-header').forEach(function (el) {
                 el.style.marginLeft = w;
@@ -213,11 +221,15 @@
         if (pushmenuBtn) {
             pushmenuBtn.addEventListener('click', function (e) {
                 e.preventDefault();
-                var isPinned = sidebar.classList.toggle(PINNED);
-                sidebar.classList.toggle(EXPANDED, isPinned);
-                pinBtn.classList.toggle('active', isPinned);
-                localStorage.setItem('sidebarPinned', isPinned ? '1' : '0');
-                updateContentMargin(isPinned);
+                if (window.innerWidth <= 991) {
+                    sidebar.classList.toggle(EXPANDED);
+                } else {
+                    var isPinned = sidebar.classList.toggle(PINNED);
+                    sidebar.classList.toggle(EXPANDED, isPinned);
+                    pinBtn.classList.toggle('active', isPinned);
+                    localStorage.setItem('sidebarPinned', isPinned ? '1' : '0');
+                    updateContentMargin(isPinned);
+                }
             });
         }
     })();
