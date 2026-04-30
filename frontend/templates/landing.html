@@ -147,6 +147,63 @@
         font-size: 1.1rem;
         color: var(--agastya-text-muted);
     }
+
+    /* Card link normalization */
+    a.feature-card {
+        text-decoration: none !important;
+        display: block;
+        color: inherit;
+        cursor: pointer;
+    }
+
+    a.feature-card:hover {
+        color: inherit;
+    }
+
+    /* Mobile Responsive Overrides */
+    @media (max-width: 992px) {
+        .hero-title {
+            font-size: 2.25rem;
+        }
+        .feature-grid {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 1.75rem;
+            padding: 0 1rem;
+            line-height: 1.2;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        .hero-logo {
+            max-height: 80px;
+            margin-bottom: 1rem;
+        }
+        .landing-wrapper {
+            padding: 1.5rem 0;
+            overflow-x: hidden;
+        }
+        .feature-grid {
+            grid-template-columns: 1fr;
+            padding: 0 1rem;
+            gap: 1.25rem;
+        }
+        .feature-card {
+            padding: 1.5rem;
+        }
+        .description-highlight {
+            font-size: 0.95rem;
+            margin: 1.25rem 1rem;
+            padding-left: 1rem;
+        }
+        .hero-section {
+            margin-bottom: 2rem;
+        }
+    }
 </style>
 
 <div class="landing-wrapper">
@@ -165,7 +222,7 @@
         <!-- Features Grid -->
         <div class="feature-grid">
             <!-- Instructor Performance -->
-            <div class="feature-card">
+            <a href="/performance-management-dashboard" class="feature-card">
                 <div class="feature-icon">
                     <i class="fas fa-chalkboard-teacher"></i>
                 </div>
@@ -175,10 +232,10 @@
                     session delivery.
                     Identify high-performing educators and ensure consistent educational quality.
                 </p>
-            </div>
+            </a>
 
             <!-- Program Reach -->
-            <div class="feature-card">
+            <a href="/programwise-report" class="feature-card">
                 <div class="feature-icon">
                     <i class="fas fa-street-view"></i>
                 </div>
@@ -187,10 +244,10 @@
                     Analyze <strong>student exposures</strong> and school participation metrics.
                     Visualize nationwide expansion and segment outreach and impact by regional hubs.
                 </p>
-            </div>
+            </a>
 
             <!-- Operational Efficiency -->
-            <div class="feature-card">
+            <a href="/manpower-vehicle-dashboard" class="feature-card">
                 <div class="feature-icon">
                     <i class="fas fa-shuttle-van"></i>
                 </div>
@@ -199,7 +256,7 @@
                     Gain visibility into <strong>vehicle logistics</strong>, fuel utilization, and resource deployment.
                     Streamline operations to ensure maximum impact in remote locations.
                 </p>
-            </div>
+            </a>
         </div>
 
         <!-- Call to Action -->
