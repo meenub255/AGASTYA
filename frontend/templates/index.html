@@ -1,44 +1,32 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-    <!-- Left Column: Filter Slicers -->
-    <div class="col-md-2 mb-3">
-        <div class="card filter-card shadow-lg">
-            <div class="card-header">
-                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
+    <!-- Dashboard Content -->
+    <div class="col-md-12">
+        <!-- Top Action Bar (Filters + Title) -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h1 class="m-0 font-weight-bold" style="font-size: 1.8rem; color: #1e293b;">Overview</h1>
+                <p class="text-muted small mb-0">Global metrics and regional performance tracking</p>
             </div>
-            <div class="card-body">
-                <div class="form-group mb-4">
-                    <label class="filter-label">Year</label>
-                    <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year" data-placeholder="Select Year">
-                    </select>
+            
+            <!-- Filter Launcher Card (Rounded Rectangle like KPI) -->
+            <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
+                <div class="fl-content">
+                    <div class="fl-icon">
+                        <i class="fas fa-sliders-h"></i>
+                    </div>
+                    <div class="fl-text">
+                        <span class="fl-label">Data Filters</span>
+                        <span class="fl-value" id="activeFilterCount">All Data</span>
+                    </div>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Region</label>
-                    <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region">
-                    </select>
-                </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Program</label>
-                    <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program" data-placeholder="Select Program">
-                    </select>
-                </div>
-                
-                <div class="mt-5">
-                    <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-3">
-                        <i class="fas fa-sync-alt mr-2"></i>See Report
-                    </button>
-                    <button id="resetFilters" class="btn btn-outline-light btn-block btn-premium mb-3" style="border-color: rgba(255,255,255,0.2)">
-                        <i class="fas fa-undo mr-2"></i>Reset All
-                    </button>
+                <div class="fl-chevron">
+                    <i class="fas fa-chevron-right"></i>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Right Column: Dashboard Content -->
-    <div class="col-md-10">
         <!-- KPI Grid -->
         {% include "partials/overview_kpis.html" %}
 
@@ -115,72 +103,60 @@
             <!-- Extra stat mini-cards (sessions, students, schools) -->
             <div class="row mb-3" id="drilldownStats">
                 <div class="col-md-4 mb-2">
-                    <div class="card shadow-sm" style="border-left: 4px solid #6366f1; border-radius:10px; background: white;">
-                        <div class="card-body py-3 px-4">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <p class="mb-0" style="font-size:11px; text-transform:uppercase; letter-spacing:.05em; color: #64748b;">Total Sessions</p>
-                                    <h3 id="ddSessions" class="mb-0 font-weight-bold" style="color:#1e293b; font-size:1.6rem;">—</h3>
-                                </div>
-                                <div style="width:40px; height:40px; background:#ede9fe; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                                    <i class="fas fa-chalkboard" style="color:#6366f1; font-size:16px;"></i>
-                                </div>
-                            </div>
+                    <div class="small-box bg-indigo shadow-sm" style="background-color: #6366f1 !important; color: white !important;">
+                        <div class="inner">
+                            <h3 id="ddSessions">0</h3>
+                            <p>Total Sessions</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-chalkboard"></i>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-2">
-                    <div class="card shadow-sm" style="border-left: 4px solid #10b981; border-radius:10px; background: white;">
-                        <div class="card-body py-3 px-4">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <p class="mb-0" style="font-size:11px; text-transform:uppercase; letter-spacing:.05em; color: #64748b;">Students Reached</p>
-                                    <h3 id="ddStudents" class="mb-0 font-weight-bold" style="color:#1e293b; font-size:1.6rem;">—</h3>
-                                </div>
-                                <div style="width:40px; height:40px; background:#d1fae5; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                                    <i class="fas fa-user-graduate" style="color:#10b981; font-size:16px;"></i>
-                                </div>
-                            </div>
+                    <div class="small-box bg-success shadow-sm" style="background-color: #10b981 !important; color: white !important;">
+                        <div class="inner">
+                            <h3 id="ddStudents">0</h3>
+                            <p>Students Reached</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-user-graduate"></i>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-2">
-                    <div class="card shadow-sm" style="border-left: 4px solid #f59e0b; border-radius:10px; background: white;">
-                        <div class="card-body py-3 px-4">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <p class="mb-0" style="font-size:11px; text-transform:uppercase; letter-spacing:.05em; color: #64748b;">Schools Visited</p>
-                                    <h3 id="ddSchools" class="mb-0 font-weight-bold" style="color:#1e293b; font-size:1.6rem;">—</h3>
-                                </div>
-                                <div style="width:40px; height:40px; background:#fef3c7; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                                    <i class="fas fa-school" style="color:#f59e0b; font-size:16px;"></i>
-                                </div>
-                            </div>
+                    <div class="small-box bg-warning shadow-sm" style="background-color: #f59e0b !important; color: white !important;">
+                        <div class="inner">
+                            <h3 id="ddSchools">0</h3>
+                            <p>Schools Visited</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-school"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Program Breakdown Table -->
-            <div class="card white-chart-card shadow-sm">
-                <div class="card-header d-flex align-items-center" style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
-                    <i class="fas fa-table mr-2" style="color:#6366f1;"></i>
-                    <h3 class="card-title mb-0" style="font-size:13px; font-weight:700; color:#334155;">
-                        Program Breakdown — <span id="ddTableRegionLabel" style="color:#6366f1;"></span>
+            <div class="card white-chart-card shadow-sm" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header d-flex align-items-center" style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
+                    <i class="fas fa-table mr-2" style="color: #6366f1;"></i>
+                    <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">
+                        Program Breakdown — <span id="ddTableRegionLabel" style="color: #6366f1;"></span>
                     </h3>
-                    <span id="ddProgramCount" class="badge badge-pill ml-2" style="background:#ede9fe; color:#6366f1; font-size:11px;"></span>
+                    <span id="ddProgramCount" class="badge badge-pill ml-2" style="background: #ede9fe; color: #6366f1; font-size: 11px;"></span>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body">
                     <div class="table-responsive">
-                        <table id="drilldownTable" class="table table-hover mb-0" style="font-size:13px;">
-                            <thead style="background:#f1f5f9; color:#475569;">
+                        <table id="drilldownTable" class="table table-hover mb-0" style="width:100%">
+                            <thead>
                                 <tr>
-                                    <th class="px-3 py-2">Program</th>
-                                    <th class="px-3 py-2">Donor</th>
-                                    <th class="px-3 py-2 text-right">Sessions</th>
-                                    <th class="px-3 py-2 text-right">Students Reached</th>
-                                    <th class="px-3 py-2 text-right">Schools</th>
-                                    <th class="px-3 py-2 text-right">Instructors</th>
+                                    <th>Program</th>
+                                    <th>Donor</th>
+                                    <th class="text-right">Sessions</th>
+                                    <th class="text-right">Students</th>
+                                    <th class="text-right">Schools</th>
+                                    <th class="text-right">Instructors</th>
                                 </tr>
                             </thead>
                             <tbody id="drilldownTableBody">
@@ -191,8 +167,42 @@
             </div>
         </div>
 
-    </div><!-- /.col-md-10 -->
+    </div><!-- /.col-md-12 -->
 </div><!-- /.row -->
+
+<!-- Filter Overlay Drawer -->
+<div id="filterDrawerOverlay" class="filter-drawer-overlay"></div>
+<div id="filterDrawer" class="filter-drawer">
+    <div class="fd-header">
+        <h3 class="fd-title"><i class="fas fa-filter mr-2"></i>Filters</h3>
+        <button id="closeDrawer" class="fd-close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="fd-body">
+        <div class="fd-section mb-4">
+            <label class="fd-label">Fiscal Year</label>
+            <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year" data-placeholder="Select Year">
+            </select>
+            <small class="text-muted">Multi-select available</small>
+        </div>
+        
+        <div class="fd-section mb-4">
+            <label class="fd-label">Regional Hubs</label>
+            <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region">
+            </select>
+        </div>
+
+        <div class="fd-section mb-4">
+            <label class="fd-label">Program Category</label>
+            <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program" data-placeholder="Select Program">
+            </select>
+        </div>
+    </div>
+    <div class="fd-footer">
+        <button id="resetFilters" class="btn btn-outline-secondary btn-premium btn-block">
+            <i class="fas fa-undo mr-2"></i>Reset All Filters
+        </button>
+    </div>
+</div>
 
 <style>
     #drilldownPanel {
@@ -205,6 +215,164 @@
     #drilldownTable tbody tr:hover { background: #f8fafc; }
     .bar-selected { outline: 3px solid #f59e0b; }
     .dd-stat-number { transition: all 0.4s ease; }
+
+    /* Filter Launcher Styles */
+    .filter-launcher {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 10px 18px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid #e2e8f0;
+    }
+    .filter-launcher:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        border-color: #3b82f6;
+    }
+    .fl-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .fl-icon {
+        width: 40px;
+        height: 40px;
+        background: #eff6ff;
+        color: #3b82f6;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+    .fl-text {
+        display: flex;
+        flex-direction: column;
+    }
+    .fl-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        font-weight: 700;
+    }
+    .fl-value {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+    .fl-chevron {
+        color: #cbd5e1;
+        font-size: 0.8rem;
+        margin-left: 10px;
+    }
+
+    /* Filter Drawer Styles */
+    .filter-drawer-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 2000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    .filter-drawer {
+        position: fixed;
+        top: 0;
+        right: -400px;
+        width: 400px;
+        height: 100vh;
+        background: #ffffff;
+        box-shadow: -10px 0 40px rgba(0,0,0,0.1);
+        z-index: 2001;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .filter-drawer.open {
+        right: 0;
+    }
+    .filter-drawer-overlay.open {
+        opacity: 1;
+        visibility: visible;
+    }
+    .fd-header {
+        padding: 24px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .fd-title {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+    .fd-close {
+        background: #f1f5f9;
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .fd-close:hover {
+        background: #e2e8f0;
+        color: #1e293b;
+    }
+    .fd-body {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+    }
+    .fd-label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        margin-bottom: 10px;
+    }
+    .fd-footer {
+        padding: 20px 24px;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        background: #f8fafc;
+    }
+    
+    /* Select2 Dark/Premium override for drawer */
+    .filter-drawer .select2-container--bootstrap4 .select2-selection {
+        border-radius: 10px !important;
+        border: 1px solid #e2e8f0 !important;
+        padding: 5px !important;
+    }
+    
+    /* Ensure Select2 dropdown is above the drawer overlay */
+    .select2-container--open {
+        z-index: 9999 !important;
+    }
+
+    /* Hide redundant base header for this page */
+    .content-header {
+        display: none !important;
+    }
 </style>
 {% endblock %}
 
@@ -222,9 +390,53 @@
             Chart.register(ChartDataLabels);
         }
 
+        // ── Filters ─────────────────────────────────────────────────────
+        const rf = $('#regionFilter'), pf = $('#programFilter'), yf = $('#yearFilter');
+
         if ($.fn.select2) {
-            $('.select2').select2({ theme: 'bootstrap4' });
+            $('.select2').select2({ 
+                theme: 'bootstrap4',
+                dropdownParent: $(document.body),
+                width: '100%',
+                allowClear: true,
+                multiple: true
+            });
         }
+
+        // ── Drawer Logic ────────────────────────────────────────────────
+        const launcher = $('#filterLauncher');
+        const drawer = $('#filterDrawer');
+        const overlay = $('#filterDrawerOverlay');
+        const closeBtn = $('#closeDrawer');
+
+        launcher.click(() => {
+            drawer.addClass('open');
+            overlay.addClass('open');
+        });
+
+        const closeDrawer = () => {
+            drawer.removeClass('open');
+            overlay.removeClass('open');
+        };
+
+        closeBtn.click(closeDrawer);
+        overlay.click(closeDrawer);
+
+        // Update active filter count display
+        function updateFilterSummary() {
+            const regions = $('#regionFilter').val() || [];
+            const programs = $('#programFilter').val() || [];
+            const years = $('#yearFilter').val() || [];
+            const total = (regions ? regions.length : 0) + (programs ? programs.length : 0) + (years ? years.length : 0);
+            
+            if (total === 0) {
+                $('#activeFilterCount').text('All Data');
+            } else {
+                $('#activeFilterCount').text(`${total} Filters Applied`);
+            }
+        }
+
+        $('.select2').on('change', updateFilterSummary);
 
         $('.region-legend-trigger').popover({
             html: true,
@@ -261,27 +473,69 @@
             });
         }
 
-        // ── Filters ─────────────────────────────────────────────────────
-        if ($.fn.select2) window.PramanaDashboard.initMultiFilters();
+        function fetchFilters(target, currentYears = [], currentRegions = []) {
+            let params = {};
+            if (currentYears && currentYears.length) params.years = currentYears;
+            if (currentRegions && currentRegions.length) params.regions = currentRegions;
+            const query = $.param(params, true);
 
-        const rf = $('#regionFilter'), pf = $('#programFilter'), yf = $('#yearFilter');
+            return fetch(`/dashboard/filters?${query}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (target === 'all') {
+                        // Clear and populate all
+                        yf.empty();
+                        data.years.forEach(y => yf.append(new Option(y, y)));
+                        
+                        rf.empty();
+                        data.regions.forEach(r => rf.append(new Option(r, r)));
+                        
+                        pf.empty();
+                        data.programs.forEach(p => pf.append(new Option(p, p)));
+                        
+                        // Notify Select2
+                        yf.trigger('change.select2');
+                        rf.trigger('change.select2');
+                        pf.trigger('change.select2');
+                    } else if (target === 'regions') {
+                        const currentSel = rf.val() || [];
+                        rf.empty();
+                        data.regions.forEach(r => rf.append(new Option(r, r)));
+                        rf.val(currentSel).trigger('change.select2', { internal: true });
+                    } else if (target === 'programs') {
+                        const currentSel = pf.val() || [];
+                        pf.empty();
+                        data.programs.forEach(p => pf.append(new Option(p, p)));
+                        pf.val(currentSel).trigger('change.select2', { internal: true });
+                    }
+                    updateFilterSummary();
+                });
+        }
 
-        fetch('/dashboard/filters')
-            .then(r => r.json())
-            .then(data => {
-                data.regions.forEach(r => rf.append(new Option(r, r)));
-                data.years.forEach(y => yf.append(new Option(y, y)));
+        // Initial load
+        fetchFilters('all');
+
+        yf.on('change', function (e, data) {
+            if (data && data.internal) return;
+            const years = $(this).val() || [];
+            fetchFilters('regions', years).then(() => {
+                const regions = rf.val() || [];
+                fetchFilters('programs', years, regions);
             });
+            loadData();
+        });
 
-        rf.on('change', function () {
-            const regions = $(this).val();
-            pf.empty().append(new Option('All Programs', ''));
-            if (regions && regions.length > 0) {
-                const query = $.param({ region_name: regions }, true);
-                fetch(`/dashboard/filters?${query}`)
-                    .then(r => r.json())
-                    .then(data => data.programs.forEach(p => pf.append(new Option(p, p))));
-            }
+        rf.on('change', function (e, data) {
+            if (data && data.internal) return;
+            const years = yf.val() || [];
+            const regions = $(this).val() || [];
+            fetchFilters('programs', years, regions);
+            loadData();
+        });
+
+        pf.on('change', function (e, data) {
+            if (data && data.internal) return;
+            loadData();
         });
 
         // ── KPI counter animation ────────────────────────────────────────
@@ -395,63 +649,91 @@
             loadDrilldown(regionFullName);
         }
 
-        // ── Treemap (unchanged, no drill-down) ───────────────────────────
-        function renderTreemap(chartData) {
+        // ── Polar Area Chart (Instructors per Region) ───────────────────
+        function renderPolarAreaChart(chartData) {
             const el = document.getElementById('instructorRegionChart');
             if (!el) return;
 
-            const treeData = chartData.labels.map((label, i) => {
-                const code = getAcronym(label);
-                regionMapping[code] = label;
-                return { v: chartData.datasets[0].data[i], g: code };
+            const labels = chartData.labels.map(l => {
+                const code = getAcronym(l);
+                regionMapping[code] = l;
+                return code;
             });
-
-            const values  = treeData.map(d => d.v);
-            const maxVal  = Math.max(...values) || 1;
-            const minVal  = Math.min(...values) || 0;
-            const range   = maxVal - minVal || 1;
+            const data = chartData.datasets[0].data;
 
             if (window.instructorChartInst) window.instructorChartInst.destroy();
 
+            const palette = [
+                'rgba(99, 102, 241, 0.8)',  // Indigo
+                'rgba(16, 185, 129, 0.8)',  // Emerald
+                'rgba(245, 158, 11, 0.8)',  // Amber
+                'rgba(59, 130, 246, 0.8)',  // Blue
+                'rgba(139, 92, 246, 0.8)',  // Violet
+                'rgba(236, 72, 153, 0.8)',  // Pink
+                'rgba(20, 184, 166, 0.8)',  // Teal
+                'rgba(249, 115, 22, 0.8)',  // Orange
+            ];
+
             window.instructorChartInst = new Chart(el.getContext('2d'), {
-                type: 'treemap',
+                type: 'polarArea',
+                plugins: [ChartDataLabels],
                 data: {
+                    labels: labels,
                     datasets: [{
-                        label: 'Instructors',
-                        tree: treeData,
-                        key: 'v',
-                        groups: ['g'],
-                        backgroundColor: ctx => {
-                            const v = ctx.raw && ctx.raw.v;
-                            if (!v) return '#f8fafc';
-                            const l = 90 - ((v - minVal) / range * 60);
-                            return `hsl(217,91%,${l}%)`;
-                        },
-                        borderColor: '#1e3a8a',
-                        borderWidth: 1,
-                        spacing: 1,
-                        labels: {
-                            display: true,
-                            formatter: ctx => [ctx.raw.g, ctx.raw.v.toLocaleString()],
-                            color: ctx => {
-                                const v = ctx.raw && ctx.raw.v;
-                                return ((v - minVal) / range) > 0.35 ? '#fff' : '#1e3a8a';
-                            },
-                            font: { size: 11, weight: 'bold' }
-                        },
-                        captions: { display: false }
+                        data: data,
+                        backgroundColor: labels.map((_, i) => palette[i % palette.length]),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
                     }]
                 },
                 options: {
                     maintainAspectRatio: false,
+                    onClick: (evt, elements) => {
+                        if (elements.length > 0) {
+                            const idx = elements[0].index;
+                            const code = labels[idx];
+                            const fullName = regionMapping[code] || code;
+                            selectedRegion = fullName;
+                            loadDrilldown(fullName);
+                        }
+                    },
+                    scales: {
+                        r: {
+                            grid: { color: '#f1f5f9' },
+                            ticks: { display: false }
+                        }
+                    },
                     plugins: {
-                        legend: { display: false },
-                        datalabels: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                title:  items => regionMapping[items[0].raw.g] || items[0].raw.g,
-                                label:  item  => `Instructors: ${item.raw.v.toLocaleString()}`
+                        legend: {
+                            display: true,
+                            position: 'right',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 15,
+                                font: { size: 11, weight: '600' },
+                                color: '#475569',
+                                usePointStyle: true,
+                                pointStyle: 'circle'
                             }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                title: items => regionMapping[items[0].label] || items[0].label,
+                                label: item => ` Instructors: ${item.raw.toLocaleString()}`
+                            }
+                        },
+                        datalabels: {
+                            display: true,
+                            anchor: 'center',
+                            align: 'center',
+                            color: '#ffffff',
+                            font: { weight: 'bold', size: 13 },
+                            formatter: (value) => value.toLocaleString(),
+                            textShadowColor: 'rgba(0,0,0,0.6)',
+                            textShadowBlur: 4
                         }
                     }
                 }
@@ -471,7 +753,7 @@
                     fullKpis = data.kpis;
                     updateKpis(data.kpis);
                     regionMapping = {};
-                    renderTreemap(data.charts.instructors_by_region);
+                    renderPolarAreaChart(data.charts.instructors_by_region);
                     renderBarChart(data.charts.programs_by_region);
                     updateLegendPopover();
                 });
@@ -509,22 +791,30 @@
             $('#ddProgramCount').text(programs.length + ' program' + (programs.length !== 1 ? 's' : ''));
 
             const tbody = $('#drilldownTableBody').empty();
-            if (!programs.length) {
-                tbody.append('<tr><td colspan="6" class="text-center text-muted py-4">No data found for this region.</td></tr>');
-            } else {
-                programs.forEach(p => {
-                    tbody.append(`
-                        <tr>
-                            <td class="px-3 py-2 font-weight-600" style="color:#1e293b;">${p.program}</td>
-                            <td class="px-3 py-2 text-muted">${p.donor}</td>
-                            <td class="px-3 py-2 text-right">${p.sessions.toLocaleString()}</td>
-                            <td class="px-3 py-2 text-right">${p.students_reached.toLocaleString()}</td>
-                            <td class="px-3 py-2 text-right">${p.schools_visited.toLocaleString()}</td>
-                            <td class="px-3 py-2 text-right">${p.instructors.toLocaleString()}</td>
-                        </tr>
-                    `);
-                });
+            programs.forEach(p => {
+                tbody.append(`
+                    <tr>
+                        <td class="font-weight-600">${p.program}</td>
+                        <td class="text-muted">${p.donor}</td>
+                        <td class="text-right">${p.sessions.toLocaleString()}</td>
+                        <td class="text-right">${p.students_reached.toLocaleString()}</td>
+                        <td class="text-right">${p.schools_visited.toLocaleString()}</td>
+                        <td class="text-right">${p.instructors.toLocaleString()}</td>
+                    </tr>
+                `);
+            });
+
+            // Initialize DataTable if not already done, or clear and redraw
+            if ($.fn.DataTable.isDataTable('#drilldownTable')) {
+                $('#drilldownTable').DataTable().destroy();
             }
+            
+            PramanaDashboard.initDataTable('#drilldownTable', {
+                paging: true,
+                searching: true,
+                pageLength: 10,
+                order: [[2, 'desc']] // Sort by sessions by default
+            });
 
             // Show panel with animation
             $('#drilldownPanel').show();
@@ -549,11 +839,14 @@
         };
 
         // ── Button handlers ──────────────────────────────────────────────
-        $('#seeReport').click(() => loadData());
-
         $('#resetFilters').click(() => {
-            $('#yearFilter, #regionFilter, #programFilter').val(null).trigger('change');
-            loadData();
+            yf.val(null).trigger('change', { internal: true });
+            rf.val(null).trigger('change', { internal: true });
+            pf.val(null).trigger('change', { internal: true });
+            fetchFilters('all').then(() => {
+                loadData();
+                updateFilterSummary();
+            });
         });
 
         // Auto-load
