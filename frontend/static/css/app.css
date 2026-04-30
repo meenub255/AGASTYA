@@ -2708,6 +2708,33 @@ table.dataTable thead th {
     transition: margin-left var(--ps-transition);
 }
 
+/* ── Mobile Responsiveness ─────────────────────────────────── */
+@media (max-width: 991.98px) {
+    :root {
+        --ps-rail-w: 0px;
+    }
+
+    .pramana-sidebar {
+        width: 0 !important;
+        transform: translateX(-100%);
+        transition: transform var(--ps-transition), width var(--ps-transition);
+        overflow: hidden !important;
+    }
+
+    .pramana-sidebar.ps-expanded {
+        width: var(--ps-expanded-w) !important;
+        transform: translateX(0);
+        overflow: y-scroll !important;
+        box-shadow: 10px 0 50px rgba(0,0,0,0.5);
+    }
+
+    .content-wrapper,
+    .main-footer,
+    .main-header {
+        margin-left: 0 !important;
+    }
+}
+
 /* ── Suppress AdminLTE's own aside/sidebar so it doesn't conflict ─── */
 .main-sidebar {
     display: none !important;
