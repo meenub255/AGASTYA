@@ -4,8 +4,11 @@ from backend.services import performance_mgmt_service
 router = APIRouter(prefix="/performance-mgmt", tags=["performance-mgmt"])
 
 @router.get("/filters")
-def get_filters():
-    return performance_mgmt_service.get_performance_mgmt_filters()
+def get_filters(
+    region: list[str] | None = Query(None),
+    year:   list[str] | None = Query(None),
+):
+    return performance_mgmt_service.get_performance_mgmt_filters(region, year)
 
 @router.get("/data")
 def get_data(
