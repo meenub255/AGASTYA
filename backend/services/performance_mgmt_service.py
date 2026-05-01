@@ -6,17 +6,41 @@ logger = logging.getLogger(__name__)
 DW = DATAMART_SCHEMA_NAME
 
 
-def get_performance_mgmt_filters():
+def get_performance_mgmt_filters(region=None, year=None):
+    from backend.services.query_utils import get_list_filter_clause
     try:
-        regions = [r["region_name"] for r in fetch_all(
-            f"SELECT DISTINCT region_name FROM {DW}.dim_geography WHERE region_name IS NOT NULL ORDER BY region_name"
-        )]
+        # 1. Available Years (always shown based on all fact data)
         years = [r["year_actual"] for r in fetch_all(
-            f"SELECT DISTINCT year_actual FROM {DW}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC"
+            f"SELECT DISTINCT d.year_actual FROM {DW}.fact_session f JOIN {DW}.dim_date d ON f.date_id = d.date_id ORDER BY d.year_actual DESC"
         )]
-        months = [{"id": r["month_actual"], "name": r["month_name"].strip()} for r in fetch_all(
-            f"SELECT DISTINCT month_actual, TO_CHAR(TO_DATE(month_actual::text,'MM'),'Month') AS month_name FROM {DW}.dim_date ORDER BY month_actual"
-        )]
+
+        # 2. Available Regions (filtered by selected year)
+        y_clauses, y_params = get_list_filter_clause("d.year_actual", year, cast_type="int")
+        regions = [r["region_name"] for r in fetch_all(f"""
+            SELECT DISTINCT g.region_name 
+            FROM {DW}.fact_session f 
+            JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            JOIN {DW}.dim_date d ON f.date_id = d.date_id
+            WHERE {y_clauses} AND g.region_name IS NOT NULL
+            ORDER BY g.region_name
+        """, y_params)]
+
+        # 3. Available Months (filtered by selected year AND region)
+        m_clauses = []
+        m_params = []
+        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); m_clauses.append(c); m_params.extend(p)
+        c, p = get_list_filter_clause("g.region_name", region); m_clauses.append(c); m_params.extend(p)
+        m_where = " AND ".join(m_clauses) if m_clauses else "TRUE"
+
+        months = [{"id": r["month_actual"], "name": r["month_name"].strip()} for r in fetch_all(f"""
+            SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text,'MM'),'Month') AS month_name 
+            FROM {DW}.fact_session f
+            JOIN {DW}.dim_date d ON f.date_id = d.date_id
+            JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            WHERE {m_where}
+            ORDER BY d.month_actual
+        """, m_params)]
+
         quarters = [1, 2, 3, 4]
         return {"regions": regions, "years": years, "months": months, "quarters": quarters}
     except Exception as e:
@@ -335,7 +359,6 @@ def get_performance_mgmt_region_chart(
             WHERE {where_sql}
             GROUP BY g.region_name
             ORDER BY sessions DESC
-            LIMIT 5
         """
         
         data = fetch_all(query, params)
@@ -354,14 +377,19 @@ def get_performance_mgmt_drilldown(
     from backend.services.query_utils import get_list_filter_clause
     try:
         clauses, params = [], []
-        c, p = get_list_filter_clause("g.region_name", region); clauses.append(c); params.extend(p)
+        if region:
+            region_list = [region] if isinstance(region, str) else region
+            # Normalize both sides: lowercase and replace underscores with spaces for consistent matching
+            clauses.append("REPLACE(LOWER(g.region_name), '_', ' ') = ANY(%s)")
+            params.append([r.lower().replace("_", " ") for r in region_list])
+        
         c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); clauses.append(c); params.extend(p)
 
         # Parse period label for date filter
+        months_short = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         if group_by == "month" and period_label:
-            # e.g. "Mar 2026"
             parts = period_label.split(" ")
-            if len(parts) == 2:
+            if len(parts) == 2 and parts[0] in months_short:
                 clauses.append("TO_CHAR(TO_DATE(d.month_actual::text,'MM'),'Mon') = %s")
                 params.append(parts[0])
                 clauses.append("d.year_actual = %s")
