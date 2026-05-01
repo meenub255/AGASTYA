@@ -2,27 +2,64 @@ from backend.services.query_utils import fetch_all, fetch_one
 from backend.config import DATAMART_SCHEMA_NAME
 
 
-def get_instructor_summary_filters():
-    # Fetch from new dim_geography joined with fact_session to show only locations with data
-    locations_query = f"""
-        SELECT DISTINCT g.region_name, g.area_name AS area 
-        FROM {DATAMART_SCHEMA_NAME}.dim_geography g
-        INNER JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON g.sk_geography_id = f.sk_geography_id
-        WHERE g.region_name IS NOT NULL 
-        ORDER BY g.region_name, g.area_name
-    """
-    locations = fetch_all(locations_query)
-    
-    years = [row["year_actual"] for row in fetch_all(f"SELECT DISTINCT year_actual FROM {DATAMART_SCHEMA_NAME}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC")]
-    
-    months = [{"id": row["month_actual"], "name": (row["month_name"] or "Unknown").strip()} for row in fetch_all(f"SELECT DISTINCT month_actual, COALESCE(TO_CHAR(TO_DATE(month_actual::text, 'MM'), 'Month'), 'Unknown') as month_name FROM {DATAMART_SCHEMA_NAME}.dim_date ORDER BY month_actual")]
-    
-    return {
-        "regions": sorted(list(set(row["region_name"] for row in locations))),
-        "areas": sorted(list(set(row["area"] for row in locations if row.get("area")))),
-        "years": years,
-        "months": months
-    }
+def get_instructor_summary_filters(year=None, region=None, area=None):
+    from backend.services.query_utils import get_list_filter_clause
+    try:
+        # 1. Available Years
+        years = [r["year_actual"] for r in fetch_all(
+            f"SELECT DISTINCT d.year_actual FROM {DATAMART_SCHEMA_NAME}.fact_session f JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id ORDER BY d.year_actual DESC"
+        )]
+
+        # 2. Available Regions (filtered by year)
+        y_clauses, y_params = get_list_filter_clause("d.year_actual", year, cast_type="int")
+        regions = [r["region_name"] for r in fetch_all(f"""
+            SELECT DISTINCT g.region_name 
+            FROM {DATAMART_SCHEMA_NAME}.fact_session f 
+            JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+            WHERE {y_clauses} AND g.region_name IS NOT NULL
+            ORDER BY g.region_name
+        """, y_params)]
+
+        # 3. Available Areas (filtered by year and region)
+        a_clauses, a_params = [], []
+        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); a_clauses.append(c); a_params.extend(p)
+        c, p = get_list_filter_clause("g.region_name", region); a_clauses.append(c); a_params.extend(p)
+        a_where = " AND ".join(a_clauses)
+        areas = [r["area_name"] for r in fetch_all(f"""
+            SELECT DISTINCT g.area_name 
+            FROM {DATAMART_SCHEMA_NAME}.fact_session f 
+            JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+            WHERE {a_where} AND g.area_name IS NOT NULL
+            ORDER BY g.area_name
+        """, a_params)]
+
+        # 4. Available Months (filtered by year, region, and area)
+        m_clauses, m_params = [], []
+        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); m_clauses.append(c); m_params.extend(p)
+        c, p = get_list_filter_clause("g.region_name", region); m_clauses.append(c); m_params.extend(p)
+        c, p = get_list_filter_clause("g.area_name", area); m_clauses.append(c); m_params.extend(p)
+        m_where = " AND ".join(m_clauses)
+        months = [{"id": r["month_actual"], "name": r["month_name"].strip()} for r in fetch_all(f"""
+            SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text,'MM'),'Month') AS month_name 
+            FROM {DATAMART_SCHEMA_NAME}.fact_session f
+            JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+            JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            WHERE {m_where}
+            ORDER BY d.month_actual
+        """, m_params)]
+
+        return {
+            "regions": regions,
+            "areas": areas,
+            "years": years,
+            "months": months
+        }
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"instructor summary filters error: {e}")
+        return {"regions": [], "areas": [], "years": [], "months": []}
 
 
 def get_instructor_summary_data(region=None, area=None, year=None, month=None, limit=15, offset=0, dt_params=None):
