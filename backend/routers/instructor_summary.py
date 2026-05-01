@@ -4,8 +4,12 @@ from backend.services import instructor_summary_service
 router = APIRouter(prefix="/instructor-summary", tags=["instructor-summary"])
 
 @router.get("/filters")
-def get_filters():
-    return instructor_summary_service.get_instructor_summary_filters()
+def get_filters(
+    year:   list[str] | None = Query(None),
+    region: list[str] | None = Query(None),
+    area:   list[str] | None = Query(None),
+):
+    return instructor_summary_service.get_instructor_summary_filters(year, region, area)
 
 @router.get("/data")
 def get_data(
