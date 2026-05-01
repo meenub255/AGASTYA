@@ -1,586 +1,462 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-    <!-- ═══════════════════════════════════════════════════
-         FILTER PANE
-         ═══════════════════════════════════════════════════ -->
-    <div class="col-md-2 mb-3">
-        <div class="card filter-card shadow-lg">
-            <div class="card-header">
-                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
+<div class="col-md-12">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="m-0 font-weight-bold" style="font-size:1.8rem;color:#1e293b;">Performance Management</h1>
+            <p class="text-muted small mb-0">Session targets, actuals &amp; regional instructor analysis</p>
+        </div>
+        <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
+            <div class="fl-content"><div class="fl-icon"><i class="fas fa-sliders-h"></i></div>
+            <div class="fl-text"><span class="fl-label">Data Filters</span><span class="fl-value" id="activeFilterCount">All Data</span></div></div>
+            <div class="fl-chevron"><i class="fas fa-chevron-right"></i></div>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-lg-3 col-6"><div class="small-box bg-info kpi-card" id="kpiCardInstructors" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights"><div class="inner"><h3 id="kpiInstructors">0</h3><p>Total Instructors</p></div><div class="icon"><i class="fas fa-users"></i></div></div></div>
+        <div class="col-lg-3 col-6"><div class="small-box bg-success kpi-card" id="kpiCardAvgSessions" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights"><div class="inner"><h3 id="kpiAvgSessions">0</h3><p>Avg Sessions/Instructor</p></div><div class="icon"><i class="fas fa-chart-line"></i></div></div></div>
+        <div class="col-lg-3 col-6"><div class="small-box bg-navy-blue kpi-card" id="kpiCardSessions" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights"><div class="inner"><h3 id="kpiSessions">0</h3><p>Total Sessions</p></div><div class="icon"><i class="fas fa-chalkboard-teacher"></i></div></div></div>
+        <div class="col-lg-3 col-6"><div class="small-box bg-danger kpi-card" id="kpiCardStudents" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights"><div class="inner"><h3 id="kpiStudents">0</h3><p>Total Students Impacted</p></div><div class="icon"><i class="fas fa-user-graduate"></i></div></div></div>
+    </div>
+    <div class="row">
+        <div class="col-xl-7 col-lg-7">
+            <div class="card mb-4 white-chart-card" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header d-flex align-items-center justify-content-between" style="background:#f1f5f9;border-bottom:1px solid #e2e8f0 !important;">
+                    <div><h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-chart-line mr-2" style="color:#3b82f6;"></i>Session Target vs Actual</h3>
+                    <small class="text-muted">Click a point to drill into instructor breakdown</small></div>
+                </div>
+                <div class="card-body" style="padding:16px;"><div style="position:relative;height:350px;"><canvas id="trendChart"></canvas></div></div>
             </div>
-            <div class="card-body">
-
-                <!-- Region -->
-                <div class="form-group mb-3">
-                    <label class="filter-label">Region</label>
-                    <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple"
-                            data-filter="region" data-placeholder="All Regions"></select>
+        </div>
+        <div class="col-xl-5 col-lg-5">
+            <div class="card mb-4 white-chart-card" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header d-flex align-items-center" style="background:#f1f5f9;border-bottom:1px solid #e2e8f0 !important;">
+                    <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-map-marked-alt mr-2" style="color:#8b5cf6;"></i>Sessions by Region</h3>
+                    <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" style="cursor:pointer;" data-toggle="popover" data-trigger="click" data-html="true" tabindex="0" title="Region Code Legend" data-content="Loading..."></i>
                 </div>
-
-                <!-- Year -->
-                <div class="form-group mb-3">
-                    <label class="filter-label">Year</label>
-                    <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple"
-                            data-filter="year" data-placeholder="All Years"></select>
-                </div>
-
-                <!-- Month -->
-                <div class="form-group mb-3">
-                    <label class="filter-label">Month</label>
-                    <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple"
-                            data-filter="month" data-placeholder="All Months"></select>
-                </div>
-
-                <hr style="border-color:rgba(255,255,255,0.1); margin:12px 0;">
-                <p class="filter-label" style="margin-bottom:6px;">Chart Grouping</p>
-
-                <!-- Quarter (chart-only filter) -->
-                <div class="form-group mb-3">
-                    <label class="filter-label">Quarter</label>
-                    <select id="quarterFilter" class="form-control select2 filter-multi" multiple="multiple"
-                            data-filter="quarter" data-placeholder="All Quarters"></select>
-                </div>
-
-                <!-- Group By (for chart) -->
-                <div class="form-group mb-3">
-                    <label class="filter-label">Group Chart By</label>
-                    <select id="groupByFilter" class="form-control" style="background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.1);">
-                        <option value="month">Month</option>
-                        <option value="day">Day</option>
-                        <option value="quarter">Quarter</option>
-                        <option value="year">Year</option>
-                    </select>
-                </div>
-
-                <div class="mt-4">
-                    <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-2">
-                        <i class="fas fa-sync-alt mr-2"></i>Apply Filters
-                    </button>
-                    <button id="resetFilters" class="btn btn-outline-light btn-block btn-premium mb-2"
-                            style="border-color:rgba(255,255,255,0.2)">
-                        <i class="fas fa-undo mr-2"></i>Reset All
-                    </button>
-                    <button id="exportXlsx" class="btn btn-success btn-block btn-premium">
-                        <i class="fas fa-file-excel mr-2"></i>Export XLSX
-                    </button>
-                </div>
+                <div class="card-body" style="padding:16px;"><div style="position:relative;height:350px;"><canvas id="regionChart"></canvas></div></div>
             </div>
         </div>
     </div>
-
-    <!-- ═══════════════════════════════════════════════════
-         MAIN CONTENT
-         ═══════════════════════════════════════════════════ -->
-    <div class="col-md-10">
-
-        <!-- ── KPI Cards ──────────────────────────────────── -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-info kpi-card" id="kpiCardInstructors" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                    <div class="inner"><h3 id="kpiInstructors">0</h3><p>Total Instructors</p></div>
-                    <div class="icon"><i class="fas fa-users"></i></div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-success kpi-card" id="kpiCardAvgSessions" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                    <div class="inner"><h3 id="kpiAvgSessions">0</h3><p>Avg Sessions/Instructor</p></div>
-                    <div class="icon"><i class="fas fa-chart-line"></i></div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-navy-blue kpi-card" id="kpiCardSessions" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                    <div class="inner"><h3 id="kpiSessions">0</h3><p>Total Sessions</p></div>
-                    <div class="icon"><i class="fas fa-chalkboard-teacher"></i></div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-danger kpi-card" id="kpiCardStudents" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                    <div class="inner"><h3 id="kpiStudents">0</h3><p>Total Students Impacted</p></div>
-                    <div class="icon"><i class="fas fa-user-graduate"></i></div>
-                </div>
-            </div>
+    <div id="drilldownPanel" style="display:none;margin-top:8px;">
+        <div class="d-flex align-items-center mb-3 px-1" style="gap:8px;">
+            <span class="text-muted" style="font-size:13px;cursor:pointer;" onclick="clearPerfDrilldown()"><i class="fas fa-chart-bar mr-1"></i>All Data</span>
+            <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
+            <span id="drilldownTitle" style="font-size:13px;font-weight:600;color:#1e3a8a;"></span>
+            <button onclick="clearPerfDrilldown()" class="btn btn-sm ml-auto" style="background:#f1f5f9;border:1px solid #e2e8f0;color:#64748b;font-size:11px;padding:3px 10px;border-radius:20px;"><i class="fas fa-times mr-1"></i>Close</button>
         </div>
-
-        <div class="row">
-            <div class="col-xl-8 col-lg-7">
-                <!-- ── Simple Trend Chart ────────────────────── -->
-                <div class="card mb-4" id="chartCard" style="background-color: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
-                    <div class="card-header d-flex align-items-center justify-content-between py-2" style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-                        <div>
-                            <h5 class="mb-0" style="color:#1e293b;font-weight:700;">
-                                <i class="fas fa-chart-bar mr-2" style="color:#3b82f6;"></i>
-                                Session Target vs Actual
-                            </h5>
-                            <small style="color:#64748b;">Click a bar to drill into instructor breakdown</small>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <!-- Legend -->
-                            <span style="font-size:0.85rem;color:#475569;font-weight:500;">
-                                <span style="display:inline-block;width:12px;height:12px;background:#10b981;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>Met Target
-                                <span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:2px;margin-left:12px;margin-right:4px;vertical-align:middle;"></span>Missed Target
-                                <span style="display:inline-block;width:12px;height:12px;background:#cbd5e1;border:1px solid #94a3b8;border-radius:2px;margin-left:12px;margin-right:4px;vertical-align:middle;"></span>Target
-                            </span>
-                        </div>
-                    </div>
-                    <div class="card-body" style="padding:16px 16px 8px;">
-                        <div style="position:relative;height:320px;">
-                            <canvas id="trendChart"></canvas>
-                        </div>
-                    </div>
-                </div>
+        <div class="card white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+            <div class="card-header d-flex align-items-center" style="background:#f1f5f9;border-bottom:1px solid #e2e8f0 !important;">
+                <i class="fas fa-table mr-2" style="color:#3b82f6;"></i>
+                <h3 class="card-title text-sm uppercase font-weight-bold" style="color:#334155;">Instructor Breakdown — <span id="ddTableLabel" style="color:#3b82f6;"></span></h3>
+                <span id="ddRecordCount" class="badge badge-pill ml-2" style="background:#ede9fe;color:#6366f1;font-size:11px;"></span>
             </div>
-
-            <div class="col-xl-4 col-lg-5">
-                <!-- ── Region Distribution Chart ────────────────────── -->
-                <div class="card mb-4" id="regionChartCard" style="background-color: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
-                    <div class="card-header py-2" style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-                        <h5 class="mb-0" style="color:#1e293b;font-weight:700;">
-                            <i class="fas fa-map-marked-alt mr-2" style="color:#8b5cf6;"></i>
-                            Top 5 Regions by Sessions
-                        </h5>
-                        <small style="color:#64748b;">Hover for students impacted</small>
-                    </div>
-                    <div class="card-body" style="padding:16px;">
-                        <div style="position:relative;height:320px;">
-                            <canvas id="regionChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div class="card-body"><div class="table-responsive">
+                <table id="drilldownTable" class="table table-hover mb-0" style="width:100%">
+                    <thead><tr><th>Instructor</th><th>Role</th><th>Region</th><th class="text-right">Programs</th><th class="text-right">Sessions</th><th class="text-right">Schools</th><th class="text-right">Students</th><th class="text-right">Avg Duration</th></tr></thead>
+                    <tbody id="drilldownBody"></tbody>
+                </table>
+            </div></div>
         </div>
+    </div>
+</div>
+<div id="filterDrawerOverlay" class="filter-drawer-overlay"></div>
+<div id="filterDrawer" class="filter-drawer">
+    <div class="fd-header"><h3 class="fd-title"><i class="fas fa-filter mr-2"></i>Filters</h3><button id="closeDrawer" class="fd-close"><i class="fas fa-times"></i></button></div>
+    <div class="fd-body">
+        <label class="fd-label">Fiscal Year</label>
+        <select id="yearFilter" class="form-control select2" multiple="multiple" data-placeholder="All Years"></select>
+        <label class="fd-label mt-4">Regional Hubs</label>
+        <select id="regionFilter" class="form-control select2" multiple="multiple" data-placeholder="All Regions"></select>
+        <label class="fd-label mt-4">Month</label>
+        <select id="monthFilter" class="form-control select2" multiple="multiple" data-placeholder="All Months"></select>
+        <hr style="border-color:#e2e8f0;margin:20px 0;"><p class="fd-label" style="margin-bottom:6px;">Chart Settings</p>
+        <label class="fd-label mt-2">Quarter</label>
+        <select id="quarterFilter" class="form-control select2" multiple="multiple" data-placeholder="All Quarters"></select>
+        <label class="fd-label mt-4">Group Chart By</label>
+        <select id="groupByFilter" class="form-control" style="border:1px solid #e2e8f0;border-radius:10px;padding:8px;">
+            <option value="month">Month</option><option value="day">Day</option><option value="quarter">Quarter</option><option value="year">Year</option>
+        </select>
+    </div>
+    <div class="fd-footer"><button id="resetFilters" class="btn btn-outline-secondary btn-block" style="border-radius:10px;"><i class="fas fa-undo mr-2"></i>Reset All Filters</button></div>
+</div>
 
-        <!-- ── Drilldown Table (hidden until chart click) ─── -->
-        <div class="card" id="drilldownCard" style="display:none; background-color: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-            <div class="card-header d-flex align-items-center justify-content-between py-2" style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-                <h5 class="mb-0" style="color:#1e293b;font-weight:700;">
-                    <i class="fas fa-table mr-2" style="color:#3b82f6;"></i>
-                    Instructor Breakdown — <span id="drilldownTitle" style="color: #475569;">–</span>
-                </h5>
-                <button id="closeDrilldown" class="btn btn-sm btn-outline-secondary">
-                    <i class="fas fa-times mr-1"></i>Close
-                </button>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table id="drilldownTable" class="table table-striped table-hover mb-0 high-contrast-table">
-                        <thead>
-                            <tr>
-                                <th>Instructor</th>
-                                <th>Role</th>
-                                <th>Region</th>
-                                <th class="text-center">Programs</th>
-                                <th class="text-center">Sessions</th>
-                                <th class="text-center">Schools</th>
-                                <th class="text-center">Students</th>
-                                <th class="text-center">Avg Duration (min)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="drilldownBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-    </div><!-- /col-md-10 -->
-</div><!-- /row -->
+<style>
+.content-header{display:none !important}
+.filter-launcher{background:#fff;border-radius:12px;padding:10px 18px;display:flex;align-items:center;gap:15px;cursor:pointer;transition:all .2s;border:1px solid #e2e8f0}
+.filter-launcher:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(0,0,0,.05);border-color:#3b82f6}
+.fl-content{display:flex;align-items:center;gap:12px}
+.fl-icon{width:40px;height:40px;background:#eff6ff;color:#3b82f6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.fl-text{display:flex;flex-direction:column}
+.fl-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:#64748b;font-weight:700}
+.fl-value{font-size:.95rem;font-weight:700;color:#1e293b}
+.fl-chevron{color:#cbd5e1;font-size:.8rem;margin-left:10px}
+.filter-drawer-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,.4);backdrop-filter:blur(4px);z-index:2000;opacity:0;visibility:hidden;transition:all .3s}
+.filter-drawer{position:fixed;top:0;right:-400px;width:400px;height:100vh;background:#fff;box-shadow:-10px 0 40px rgba(0,0,0,.1);z-index:2001;display:flex;flex-direction:column;transition:all .3s cubic-bezier(.4,0,.2,1)}
+.filter-drawer.open{right:0}
+.filter-drawer-overlay.open{opacity:1;visibility:visible}
+.fd-header{padding:24px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between}
+.fd-title{margin:0;font-size:1.25rem;font-weight:700;color:#1e293b}
+.fd-close{background:#f1f5f9;border:none;width:32px;height:32px;border-radius:8px;color:#64748b;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
+.fd-close:hover{background:#e2e8f0;color:#1e293b}
+.fd-body{flex:1;padding:24px;overflow-y:auto}
+.fd-label{display:block;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-bottom:10px}
+.fd-footer{padding:20px 24px;border-top:1px solid #f1f5f9;display:flex;align-items:center;background:#f8fafc}
+.select2-container--open{z-index:9999 !important}
+#drilldownPanel{animation:slideDown .3s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+</style>
 {% endblock %}
-
 
 {% block scripts %}
 <script>
 $(function () {
-
-    /* ══════════════════════════════════════════════════════
-       1.  FILTER INITIALISATION
-       ══════════════════════════════════════════════════════ */
-    if ($.fn.select2) {
-        $('.select2:not(.filter-multi)').select2({ theme: 'bootstrap4' });
-        window.PramanaDashboard.initMultiFilters();
-    }
-
-    fetch('/performance-mgmt/filters')
-        .then(r => r.json())
-        .then(data => {
-            data.regions.forEach(r   => $('#regionFilter').append(new Option(r, r)));
-            data.years.forEach(y     => $('#yearFilter').append(new Option(y, y)));
-            data.months.forEach(m    => $('#monthFilter').append(new Option(m.name, m.id)));
-            data.quarters.forEach(q  => $('#quarterFilter').append(new Option('Q' + q, q)));
-            // Trigger select2 refresh after populating
-            $('#regionFilter, #yearFilter, #monthFilter, #quarterFilter').trigger('change');
-        });
-
-
-    /* ══════════════════════════════════════════════════════
-       2.  TREND CHART (ACTUAL VS TARGET)
-       ══════════════════════════════════════════════════════ */
+    let regionMapping = {};
     let candleChart = null;
+    let regionChartInstance = null;
     let currentGroupBy = 'month';
 
-    function buildTrendDatasets(data) {
-        const labels   = data.map(d => d.label);
-        const actuals  = data.map(d => d.actual);
-        const targets  = data.map(d => d.target);
-        
-        const pointColors = data.map(d => {
-            if (d.actual > d.target) return '#10b981'; // Calm Green (Emerald 500)
-            if (d.actual < d.target) return '#f43f5e'; // Soft Red (Rose 500)
-            return '#f59e0b';                          // Warm Yellow (Amber 500)
-        });
-
-        return {
-            labels,
-            datasets: [
-                {
-                    label: 'Target Sessions',
-                    data: targets,
-                    backgroundColor: '#cbd5e1', // Soft Slate
-                    borderColor: '#94a3b8',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                    order: 2,
-                    type: 'bar',
-                },
-                {
-                    label: 'Actual Sessions',
-                    data: actuals,
-                    backgroundColor: 'rgba(96, 165, 250, 0.1)', // Soft Blue fill
-                    borderColor: '#60a5fa', // Soft Blue line
-                    borderWidth: 2,
-                    pointBackgroundColor: pointColors,
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 2,
-                    pointRadius: 6,
-                    pointHoverRadius: 8,
-                    order: 1,
-                    type: 'line',
-                }
-            ]
-        };
+    function getAcronym(str) {
+        if (!str) return '';
+        const parts = str.split(/[_ \-]/);
+        if (parts.length === 1 && str.length > 5) return str.substring(0, 3).toUpperCase();
+        let a = ''; parts.forEach(p => { if (p.length > 0) a += p[0].toUpperCase(); });
+        return a.length > 1 ? a : str.substring(0, 3).toUpperCase();
     }
 
-    function renderTrendChart(data) {
-        const ctx = document.getElementById('trendChart').getContext('2d');
-        const cfg  = buildTrendDatasets(data);
-
-        if (candleChart) candleChart.destroy();
-
-        candleChart = new Chart(ctx, {
-            type: 'bar',
-            data: cfg,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: { duration: 600, easing: 'easeInOutQuart' },
-                interaction: { mode: 'index', intersect: false },
-                onClick(evt, elements) {
-                    if (!elements.length) return;
-                    const idx = elements[0].index;
-                    const period = candleChart.data.labels[idx];
-                    loadKPIs(period);      // Update KPIs for the clicked month
-                    loadRegionChart(period); // Update Region chart for the clicked month
-                    loadDrilldown(period); // Load table for the clicked month
-                },
-                plugins: {
-                    legend: {
-                        display: false // We use our custom HTML legend above
-                    },
-                    tooltip: {
-                        backgroundColor: '#ffffff',
-                        titleColor: '#1e293b',
-                        bodyColor: '#475569',
-                        borderColor: '#e2e8f0',
-                        borderWidth: 1,
-                        padding: 12,
-                        boxPadding: 6,
-                        callbacks: {
-                            label(ctx) {
-                                return `  ${ctx.dataset.label}: ${(ctx.parsed.y ?? 0).toLocaleString()}`;
-                            },
-                            afterLabel(ctx) {
-                                if (ctx.datasetIndex === 1) {
-                                    // Actual bar — show met/missed
-                                    const idx = ctx.dataIndex;
-                                    const rawData = window._chartRawData || [];
-                                    if (rawData[idx]) {
-                                        return rawData[idx].met ? '  ✅ Target Met' : '  ❌ Target Missed';
-                                    }
-                                }
-                                return '';
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        stacked: false,
-                        grid:  { color: 'rgba(0,0,0,0.05)' },
-                        ticks: { color: '#334155', font: { size: 12, weight: 600 }, maxRotation: 35 },
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid:  { color: 'rgba(0,0,0,0.05)' },
-                        ticks: {
-                            color: '#334155',
-                            font: { size: 12, weight: 500 },
-                            callback(v) { return v >= 1000 ? (v/1000).toFixed(1) + 'k' : v; }
-                        }
-                    }
-                }
-            }
+    function updateLegendPopover() {
+        const keys = Object.keys(regionMapping).sort();
+        let c = '';
+        if (!keys.length) { 
+            c = 'No regions displayed'; 
+        } else {
+            c = '<div class="small" style="max-height:200px;overflow-y:auto;"><table class="table table-sm mb-0">';
+            keys.forEach(k => { 
+                c += '<tr><td class="font-weight-bold pr-2" style="border-top:0">' + k + '</td><td style="border-top:0">: ' + regionMapping[k] + '</td></tr>'; 
+            });
+            c += '</table></div>';
+        }
+        $('.region-legend-trigger').each(function() { 
+            $(this).popover('dispose').popover({ 
+                html: true, 
+                container: 'body', 
+                boundary: 'viewport', 
+                placement: 'auto',
+                trigger: 'click',
+                content: c
+            }); 
         });
     }
 
-    function loadChart() {
-        currentGroupBy = $('#groupByFilter').val() || 'month';
-        const filters  = window.PramanaDashboard.collectFilters();
-        filters.group_by = currentGroupBy;
-
-        const q = $.param(filters, true);
-        fetch(`/performance-mgmt/chart?${q}`)
-            .then(r => r.json())
-            .then(resp => {
-                window._chartRawData = resp.data;
-                renderTrendChart(resp.data);
-            })
-            .catch(err => console.error('Chart load error', err));
-            
-        loadRegionChart();
+    // ── Select2 Init ──
+    if ($.fn.select2) {
+        $('.select2').select2({ theme:'bootstrap4', dropdownParent:$(document.body), width:'100%', allowClear:true, multiple:true });
     }
 
-    /* ══════════════════════════════════════════════════════
-       2.1. REGION DISTRIBUTION CHART
-       ══════════════════════════════════════════════════════ */
-    let regionChartInstance = null;
+    // ── Filter Drawer ──
+    function openDrawer() { $('#filterDrawer').addClass('open'); $('#filterDrawerOverlay').addClass('open'); }
+    function closeDrawer() { $('#filterDrawer').removeClass('open'); $('#filterDrawerOverlay').removeClass('open'); }
+    $('#filterLauncher').click(openDrawer);
+    $('#closeDrawer').click(closeDrawer);
+    $('#filterDrawerOverlay').click(closeDrawer);
 
-    function loadRegionChart(period = null) {
-        const filters = window.PramanaDashboard.collectFilters();
-        if (period) {
-            filters.period = period;
-            filters.group_by = currentGroupBy;
-        }
-
-        const q = $.param(filters, true);
-        fetch(`/performance-mgmt/region-chart?${q}`)
-            .then(r => r.json())
-            .then(resp => {
-                renderRegionChart(resp.data);
-            })
-            .catch(err => console.error('Region chart load error', err));
+    function updateFilterSummary() {
+        const y = $('#yearFilter').val() || [], r = $('#regionFilter').val() || [], m = $('#monthFilter').val() || [];
+        const total = y.length + r.length + m.length;
+        $('#activeFilterCount').text(total ? total + ' Filter' + (total>1?'s':'') + ' Applied' : 'All Data');
     }
 
-    function renderRegionChart(data) {
-        const ctx = document.getElementById('regionChart').getContext('2d');
-        
-        if (regionChartInstance) regionChartInstance.destroy();
-        
-        if (!data || data.length === 0) {
-            // Optional: draw empty state
-            return;
-        }
-
-        const labels = data.map(d => d.region_name);
-        const sessions = data.map(d => d.sessions);
-        const students = data.map(d => d.students);
-        
-        // Cool palette
-        const colors = ['#60a5fa', '#34d399', '#f472b6', '#fbbf24', '#a78bfa', '#94a3b8'];
-
-        regionChartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: sessions,
-                    backgroundColor: colors,
-                    borderWidth: 2,
-                    borderColor: '#ffffff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '65%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: '#475569', font: { size: 11 }, padding: 15, boxWidth: 10 }
-                    },
-                    tooltip: {
-                        backgroundColor: '#ffffff',
-                        titleColor: '#1e293b',
-                        bodyColor: '#475569',
-                        borderColor: '#e2e8f0',
-                        borderWidth: 1,
-                        padding: 12,
-                        callbacks: {
-                            label: function(context) {
-                                const i = context.dataIndex;
-                                return ` Sessions: ${sessions[i].toLocaleString()}`;
-                            },
-                            afterLabel: function(context) {
-                                const i = context.dataIndex;
-                                return ` Students Impacted: ${students[i].toLocaleString()}`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
+    function collectFilters() {
+        return { region: $('#regionFilter').val() || [], year: $('#yearFilter').val() || [],
+                 month: $('#monthFilter').val() || [], quarter: $('#quarterFilter').val() || [] };
     }
 
+    // ── Populate Filters ──
+    function loadFilters(selected = {}) {
+        const params = $.param({
+            year: $('#yearFilter').val() || [],
+            region: $('#regionFilter').val() || []
+        }, true);
 
-    /* ══════════════════════════════════════════════════════
-       3.  KPI DATA LOAD
-       ══════════════════════════════════════════════════════ */
-    function loadKPIs(period = null) {
-        const filters = window.PramanaDashboard.collectFilters();
-        if (period) {
-            filters.period = period;
-            filters.group_by = currentGroupBy;
-        }
-        
-        const q = $.param(filters, true);
-        fetch(`/performance-mgmt/data?${q}&limit=1&offset=0`)
+        return fetch('/performance-mgmt/filters?' + params)
             .then(r => r.json())
             .then(data => {
-                if (data.kpis && data.kpis.length >= 4) {
-                    $('#kpiInstructors').text((data.kpis[0].value || 0).toLocaleString());
-                    $('#kpiAvgSessions').text((data.kpis[1].value || 0).toLocaleString());
-                    $('#kpiSessions').text((data.kpis[2].value || 0).toLocaleString());
-                    $('#kpiStudents').text((data.kpis[3].value || 0).toLocaleString());
-                    
-                    // Setup hover drilldown/insights
-                    function formatInsight(insight) {
-                        if(!insight) return "No insight data.";
-                        let statusColor = insight.status === 'High' ? '#10b981' : (insight.status === 'Low/Decline' ? '#f43f5e' : '#f59e0b');
-                        return `
-                            <div style="font-size:0.85rem; line-height: 1.4; color: #334155;">
-                                <div style="margin-bottom: 4px;"><strong>Top Performing:</strong> <span style="color:#1e293b;">${insight.top_performing}</span></div>
-                                <div style="margin-bottom: 4px;"><strong>Status:</strong> <span style="font-weight:600;color:${statusColor};">${insight.status}</span></div>
-                                <div><strong>Reason:</strong> ${insight.reason}</div>
-                            </div>
-                        `;
-                    }
-
-                    $('#kpiCardInstructors').attr('data-content', formatInsight(data.kpis[0].insights));
-                    $('#kpiCardAvgSessions').attr('data-content', formatInsight(data.kpis[1].insights));
-                    $('#kpiCardSessions').attr('data-content', formatInsight(data.kpis[2].insights));
-                    $('#kpiCardStudents').attr('data-content', formatInsight(data.kpis[3].insights));
-
-                    // Re-initialize popovers
-                    $('[data-toggle="popover"]').popover('dispose').popover();
+                // Update Year (only on first load or if not selected)
+                if (!$('#yearFilter').val()?.length) {
+                    const currentYear = $('#yearFilter').val();
+                    $('#yearFilter').empty();
+                    data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
+                    if (currentYear) $('#yearFilter').val(currentYear);
                 }
+
+                // Update Regions
+                const currentRegions = $('#regionFilter').val();
+                $('#regionFilter').empty();
+                data.regions.forEach(r => $('#regionFilter').append(new Option(r, r)));
+                if (currentRegions) {
+                    // Only keep selected regions that are still available
+                    const stillAvailable = currentRegions.filter(r => data.regions.includes(r));
+                    $('#regionFilter').val(stillAvailable);
+                }
+
+                // Update Months
+                const currentMonths = $('#monthFilter').val();
+                $('#monthFilter').empty();
+                data.months.forEach(m => $('#monthFilter').append(new Option(m.name, m.id)));
+                if (currentMonths) {
+                    const stillAvailable = currentMonths.filter(m => data.months.some(dm => dm.id == m));
+                    $('#monthFilter').val(stillAvailable);
+                }
+
+                // Update Quarters (static)
+                if (!$('#quarterFilter option').length) {
+                    data.quarters.forEach(q => $('#quarterFilter').append(new Option('Q'+q, q)));
+                }
+
+                $('.select2').trigger('change.select2', { internal: true });
             });
     }
 
+    // Initialize filters
+    loadFilters();
 
-    /* ══════════════════════════════════════════════════════
-       4.  DRILLDOWN TABLE
-       ══════════════════════════════════════════════════════ */
-    let drillTable = null;
-
-    function loadDrilldown(period) {
-        $('#drilldownTitle').text(period);
-        $('#drilldownCard').slideDown(250);
-
-        // Scroll into view
-        document.getElementById('drilldownCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-        if (drillTable) {
-            // Re-draw with new period
-            drillTable.ajax.url(getDrilldownUrl(period)).load();
-            return;
+    // ── Reactive filter changes ──
+    $('#yearFilter,#regionFilter,#monthFilter,#quarterFilter,#groupByFilter').on('change', function(e, opts) {
+        if (opts && opts.internal) return;
+        
+        // If Year changes, re-load Regions and Months
+        // If Region changes, re-load Months
+        if (this.id === 'yearFilter' || this.id === 'regionFilter') {
+            loadFilters().then(() => {
+                updateFilterSummary();
+                applyAll();
+            });
+        } else {
+            updateFilterSummary();
+            applyAll();
         }
+    });
 
-        // Initialize DataTable
-        drillTable = $('#drilldownTable').DataTable({
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            pageLength: 15,
-            lengthMenu: [[15, 30, 50, 100], [15, 30, 50, 100]],
-            ajax: {
-                url: getDrilldownUrl(period),
-                type: "GET",
-                dataSrc: "table",
-                error: function(xhr, error, thrown) {
-                    console.error("DataTables load error:", error, thrown);
+    // ── Trend Chart (Dual-Line) ──
+    function renderTrendChart(data) {
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        const labels = data.map(d => d.label);
+        const actuals = data.map(d => d.actual);
+        const targets = data.map(d => d.target);
+        const pointColors = data.map(d => d.actual >= d.target ? '#10b981' : '#ef4444');
+
+        if (candleChart) candleChart.destroy();
+
+        const gradientFill = ctx.createLinearGradient(0, 0, 0, 350);
+        gradientFill.addColorStop(0, 'rgba(59,130,246,0.25)');
+        gradientFill.addColorStop(1, 'rgba(59,130,246,0.02)');
+
+        candleChart = new Chart(ctx, {
+            type: 'line',
+            plugins: [ChartDataLabels],
+            data: {
+                labels,
+                datasets: [
+                    { label:'Target', data:targets, borderColor:'#94a3b8', borderWidth:2, borderDash:[6,4],
+                      pointRadius:0, tension:0.4, fill:false, order:2 },
+                    { label:'Actual', data:actuals, borderColor:'#3b82f6', borderWidth:3,
+                      backgroundColor:gradientFill, fill:true, tension:0.4,
+                      pointBackgroundColor:pointColors, pointBorderColor:'#fff',
+                      pointBorderWidth:2, pointRadius:6, pointHoverRadius:9, order:1 }
+                ]
+            },
+            options: {
+                responsive:true, maintainAspectRatio:false,
+                interaction:{mode:'index',intersect:false},
+                onClick(evt, elements) {
+                    if (!elements.length) return;
+                    const period = candleChart.data.labels[elements[0].index];
+                    loadDrilldown(period, 'period');
+                },
+                plugins: {
+                    legend:{display:true,position:'bottom',labels:{color:'#475569',usePointStyle:true,pointStyle:'circle',padding:20}},
+                    datalabels:{display:false},
+                    tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8,
+                        callbacks:{
+                            label(ctx){return '  '+ctx.dataset.label+': '+(ctx.parsed.y||0).toLocaleString()},
+                            afterLabel(ctx){ if(ctx.datasetIndex===1){ const d=window._chartRawData||[]; if(d[ctx.dataIndex]) return d[ctx.dataIndex].met?'  ✅ Met':'  ❌ Missed';} return '';}
+                        }
+                    }
+                },
+                scales:{
+                    x:{grid:{display:false},ticks:{color:'#334155',font:{size:11,weight:600},maxRotation:35}},
+                    y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#334155',font:{size:11},callback(v){return v>=1000?(v/1000).toFixed(1)+'k':v}}}
                 }
-            },
-            columns: [
-                { data: "instructor_name", className: "font-weight-bold" },
-                { data: "role", render: data => `<span class="badge badge-secondary">${data}</span>` },
-                { data: "region_name" },
-                { data: "programs", className: "text-center", render: $.fn.dataTable.render.number(',', '.', 0) },
-                { data: "sessions", className: "text-center", render: function(data, type, row, meta) {
-                    // Quick progress bar based on an arbitrary max for visual effect (e.g., 200 sessions max)
-                    // We can't know the absolute max across all pages easily, so we use a relative static max.
-                    const pct = Math.min(100, Math.round((data / 200) * 100));
-                    return `${(data||0).toLocaleString()}
-                            <div class="progress progress-xxs mt-1">
-                                <div class="progress-bar bg-info" style="width:${pct}%"></div>
-                            </div>`;
-                }},
-                { data: "schools", className: "text-center", render: $.fn.dataTable.render.number(',', '.', 0) },
-                { data: "students_impacted", className: "text-center", render: $.fn.dataTable.render.number(',', '.', 0) },
-                { data: "avg_duration_min", className: "text-center" }
-            ],
-            order: [[4, "desc"]], // Order by sessions descending
-            language: {
-                search: "",
-                searchPlaceholder: "Search records..."
-            },
-            dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
-                 "<'row'<'col-sm-12'tr>>" +
-                 "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            }
         });
     }
 
-    function getDrilldownUrl(period) {
-        const filters = window.PramanaDashboard.collectFilters();
-        filters.period = period;
-        filters.group_by = currentGroupBy;
-        return `/performance-mgmt/data?${$.param(filters, true)}`;
+    // ── Region Polar Area Chart ──
+    const POLAR_PALETTE = ['rgba(99,102,241,0.8)','rgba(16,185,129,0.8)','rgba(245,158,11,0.8)','rgba(59,130,246,0.8)','rgba(139,92,246,0.8)','rgba(236,72,153,0.8)','rgba(20,184,166,0.8)','rgba(249,115,22,0.8)','rgba(168,85,247,0.8)','rgba(14,165,233,0.8)'];
+
+    function renderRegionChart(data) {
+        const ctx = document.getElementById('regionChart').getContext('2d');
+        if (regionChartInstance) regionChartInstance.destroy();
+        if (!data || !data.length) return;
+
+        regionMapping = {};
+        const labels = data.map(d => { const c = getAcronym(d.region_name); regionMapping[c] = d.region_name; return c; });
+        const sessions = data.map(d => d.sessions);
+        const students = data.map(d => d.students);
+
+        regionChartInstance = new Chart(ctx, {
+            type: 'bar',
+            plugins: [ChartDataLabels],
+            data: { 
+                labels, 
+                datasets:[{
+                    data:sessions, 
+                    backgroundColor:labels.map((_,i)=>POLAR_PALETTE[i%POLAR_PALETTE.length]), 
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barThickness: 16
+                }] 
+            },
+            options: {
+                indexAxis: 'y',
+                maintainAspectRatio:false,
+                onClick(evt, elements) {
+                    if (!elements.length) return;
+                    const idx = elements[0].index;
+                    const fullName = regionMapping[labels[idx]] || labels[idx];
+                    loadDrilldown(fullName, 'region');
+                },
+                scales:{
+                    x:{ display: false, grid: { display: false } },
+                    y:{ grid: { display: false }, ticks: { color: '#64748b', font: { size: 10, weight: '600' } } }
+                },
+                plugins:{
+                    legend:{ display: false },
+                    tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8,
+                        callbacks:{
+                            title(items){return regionMapping[items[0].label]||items[0].label},
+                            label(item){return ' Sessions: '+item.raw.toLocaleString()},
+                            afterLabel(item){return ' Students: '+(students[item.dataIndex]||0).toLocaleString()}
+                        }
+                    },
+                    datalabels:{
+                        display:true,
+                        anchor:'end',
+                        align:'start',
+                        color:'#fff',
+                        font:{weight:'bold',size:11},
+                        formatter:v=>v.toLocaleString(),
+                        offset: 4
+                    }
+                }
+            }
+        });
+        updateLegendPopover();
     }
 
-    $('#closeDrilldown').click(function () {
-        $('#drilldownCard').slideUp(200);
-        // Reset KPIs back to overall when closing
+    // ── Data Loaders ──
+    function loadChart() {
+        currentGroupBy = $('#groupByFilter').val() || 'month';
+        const f = collectFilters(); f.group_by = currentGroupBy;
+        fetch('/performance-mgmt/chart?' + $.param(f,true)).then(r=>r.json()).then(resp=>{
+            window._chartRawData = resp.data;
+            renderTrendChart(resp.data);
+        }).catch(e=>console.error('Chart error',e));
+        loadRegionChart();
+    }
+
+    function loadRegionChart(period) {
+        const f = collectFilters();
+        if (period) { f.period = period; f.group_by = currentGroupBy; }
+        fetch('/performance-mgmt/region-chart?' + $.param(f,true)).then(r=>r.json()).then(resp=>{
+            renderRegionChart(resp.data);
+        }).catch(e=>console.error('Region chart error',e));
+    }
+
+    function loadKPIs(period) {
+        const f = collectFilters();
+        if (period) { f.period = period; f.group_by = currentGroupBy; }
+        fetch('/performance-mgmt/data?' + $.param(f,true) + '&limit=1&offset=0').then(r=>r.json()).then(data=>{
+            if (data.kpis && data.kpis.length >= 4) {
+                $('#kpiInstructors').text((data.kpis[0].value||0).toLocaleString());
+                $('#kpiAvgSessions').text((data.kpis[1].value||0).toLocaleString());
+                $('#kpiSessions').text((data.kpis[2].value||0).toLocaleString());
+                $('#kpiStudents').text((data.kpis[3].value||0).toLocaleString());
+                function fmtInsight(i){if(!i)return'No data.';let sc=i.status==='High'?'#10b981':(i.status==='Low/Decline'?'#f43f5e':'#f59e0b');return'<div style="font-size:.85rem;line-height:1.4;color:#334155"><div style="margin-bottom:4px"><strong>Top:</strong> '+i.top_performing+'</div><div style="margin-bottom:4px"><strong>Status:</strong> <span style="font-weight:600;color:'+sc+'">'+i.status+'</span></div><div><strong>Reason:</strong> '+i.reason+'</div></div>';}
+                $('#kpiCardInstructors').attr('data-content',fmtInsight(data.kpis[0].insights));
+                $('#kpiCardAvgSessions').attr('data-content',fmtInsight(data.kpis[1].insights));
+                $('#kpiCardSessions').attr('data-content',fmtInsight(data.kpis[2].insights));
+                $('#kpiCardStudents').attr('data-content',fmtInsight(data.kpis[3].insights));
+                $('.kpi-card').popover('dispose').popover();
+            }
+        });
+    }
+
+    // ── Drilldown ──
+    function loadDrilldown(value, type) {
+        const displayLabel = value;
+        $('#drilldownTitle').text(displayLabel);
+        $('#ddTableLabel').text(displayLabel);
+
+        const filters = collectFilters();
+        const params = new URLSearchParams();
+        
+        // Add existing filters from drawer
+        if (filters.year && filters.year.length) filters.year.forEach(v => params.append('year', v));
+        if (filters.month && filters.month.length) filters.month.forEach(v => params.append('month', v));
+        if (filters.quarter && filters.quarter.length) filters.quarter.forEach(v => params.append('quarter', v));
+
+        if (type === 'region') {
+            // Override with clicked region
+            params.append('region', value);
+            params.set('period', 'ALL');
+        } else {
+            // Keep drawer regions, filter by clicked period
+            if (filters.region && filters.region.length) filters.region.forEach(v => params.append('region', v));
+            params.set('period', value);
+        }
+        
+        params.set('group_by', currentGroupBy);
+        
+        fetch('/performance-mgmt/drilldown?' + params.toString())
+            .then(r=>r.json()).then(resp=>{
+                const rows = resp.table || [];
+                $('#ddRecordCount').text(rows.length + ' record' + (rows.length!==1?'s':''));
+                const tbody = $('#drilldownBody').empty();
+                rows.forEach(r=>{
+                    tbody.append('<tr><td class="font-weight-600">'+r.instructor_name+'</td><td><span class="badge badge-secondary">'+r.role+'</span></td><td>'+r.region_name+'</td><td class="text-right">'+(r.programs||0).toLocaleString()+'</td><td class="text-right">'+(r.sessions||0).toLocaleString()+'</td><td class="text-right">'+(r.schools||0).toLocaleString()+'</td><td class="text-right">'+(r.students_impacted||0).toLocaleString()+'</td><td class="text-right">'+(r.avg_duration_min||0)+'</td></tr>');
+                });
+                if ($.fn.DataTable.isDataTable('#drilldownTable')) $('#drilldownTable').DataTable().destroy();
+                PramanaDashboard.initDataTable('#drilldownTable',{paging:true,searching:true,pageLength:15,order:[[4,'desc']]});
+                $('#drilldownPanel').show();
+                $('html,body').animate({scrollTop:$('#drilldownPanel').offset().top-20},400);
+            }).catch(e=>console.error('Drilldown error',e));
+    }
+
+    window.clearPerfDrilldown = function() {
+        $('#drilldownPanel').hide();
         loadKPIs();
         loadRegionChart();
-    });
+    };
 
+    // ── Apply / Reset ──
+    function applyAll() { loadKPIs(); loadChart(); $('#drilldownPanel').hide(); }
 
-    /* ══════════════════════════════════════════════════════
-       5.  APPLY FILTERS / RESET
-       ══════════════════════════════════════════════════════ */
-    function applyAll() {
-        loadKPIs();
-        loadChart();
-        // Hide drilldown on filter change
-        $('#drilldownCard').hide();
-    }
-
-    $('#seeReport').click(applyAll);
-
-    $('#resetFilters').click(function () {
-        $('#regionFilter, #yearFilter, #monthFilter, #quarterFilter').val(null).trigger('change');
-        $('#groupByFilter').val('month');
-        currentGroupBy = 'month';
-        $('#drilldownCard').hide();
+    $('#resetFilters').click(function() {
+        $('#yearFilter,#regionFilter,#monthFilter,#quarterFilter').val(null).trigger('change',{internal:true});
+        $('#groupByFilter').val('month'); currentGroupBy='month';
+        updateFilterSummary();
         applyAll();
     });
 
-    $('#exportXlsx').click(() => {
-        const filters = window.PramanaDashboard.collectFilters();
-        const q = $.param(filters, true);
-        window.exportToXLSX(`/performance-mgmt/export?${q}`, 'performance_mgmt.xlsx');
+    $('#exportXlsx').click(()=>{
+        const q=$.param(collectFilters(),true);
+        window.exportToXLSX('/performance-mgmt/export?'+q,'performance_mgmt.xlsx');
     });
 
-    // Initial load after filters populate
     setTimeout(applyAll, 500);
 });
 </script>
 {% endblock %}
+
