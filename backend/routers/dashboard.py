@@ -5,38 +5,70 @@ from backend.services import region_service
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 @router.get("/filters")
-def get_filters(region_name: list[str] | None = Query(None)):
+def get_filters(
+    years: list[str] | None = Query(None),
+    regions: list[str] | None = Query(None)
+):
     from backend.services.query_utils import fetch_all, get_list_filter_clause
     from backend.config import DATAMART_SCHEMA_NAME
     
-    # 1. Fetch Regions via service
-    regions = region_service.get_region_options()
+    # Ensure we have lists even if called manually or with None
+    if years is None or not isinstance(years, list): years = []
+    if regions is None or not isinstance(regions, list): regions = []
     
-    # 2. Fetch Programs (Conditional or All)
-    if region_name:
-        where_sql, params = get_list_filter_clause("g.region_name", region_name)
-        # Fetch only programs with data for these regions
-        prog_query = f"""
-            SELECT DISTINCT p.program_name 
-            FROM {DATAMART_SCHEMA_NAME}.fact_session f
-            JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-            JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON p.sk_program_id = f.sk_program_id
-            WHERE {where_sql}
-            ORDER BY p.program_name
-        """
-        prog_rows = fetch_all(prog_query, params)
-    else:
-        # If no region, we return empty to signify it's inactive per user request
-        prog_rows = []
+    # 1. Fetch Years (only those with data)
+    years_query = f"""
+        SELECT DISTINCT d.year_actual 
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
+        WHERE d.year_actual IS NOT NULL
+        ORDER BY d.year_actual DESC
+    """
+    years_data = [str(r["year_actual"]) for r in fetch_all(years_query)]
     
-    programs = [r["program_name"] for r in prog_rows if r.get("program_name")]
+    # 2. Fetch Regions (filtered by years)
+    where_clauses = []
+    params = []
+    if years:
+        sql, p = get_list_filter_clause("d.year_actual", [int(y) for y in years])
+        where_clauses.append(sql)
+        params.extend(p)
     
-    years = [row["year"] for row in fetch_all(f"SELECT DISTINCT year_actual AS year FROM {DATAMART_SCHEMA_NAME}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC")]
-
+    where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
+    
+    regions_query = f"""
+        SELECT DISTINCT g.region_name 
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
+        WHERE {where_sql} AND g.region_name IS NOT NULL
+        ORDER BY g.region_name
+    """
+    regions_data = [r["region_name"] for r in fetch_all(regions_query, params)]
+    
+    # 3. Fetch Programs (filtered by years and regions)
+    if regions:
+        sql, p = get_list_filter_clause("g.region_name", regions)
+        where_clauses.append(sql)
+        params.extend(p)
+    
+    where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
+    
+    programs_query = f"""
+        SELECT DISTINCT p.program_name 
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON p.sk_program_id = f.sk_program_id
+        JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
+        WHERE {where_sql} AND p.program_name IS NOT NULL
+        ORDER BY p.program_name
+    """
+    programs_data = [r["program_name"] for r in fetch_all(programs_query, params)]
+    
     return {
-        "regions": regions,
-        "programs": programs,
-        "years": years
+        "years": years_data,
+        "regions": regions_data,
+        "programs": programs_data
     }
 
 
