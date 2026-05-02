@@ -239,13 +239,22 @@ def get_drilldown_data(
 ):
     """
     Returns rich drill-down stats for a specific region click.
-    Extra data beyond what the KPIs already show:
-      - Total sessions, students reached, schools visited in the region
-      - Per-program breakdown table
+    Uses hardened matching to ensure data integrity.
     """
-    where_clause, params = _build_filters(year=year, region=[region], program=program)
+    # 1. Build base filters (excluding region for now to apply custom matching)
+    where_clause, params = _build_filters(year=year, program=program)
+    
+    # 2. Add hardened region filter
+    region_norm = region.lower().replace("_", " ")
+    region_filter = "REPLACE(LOWER(g.region_name), '_', ' ') = %s"
+    
+    if where_clause:
+        where_clause += f" AND {region_filter}"
+    else:
+        where_clause = f"WHERE {region_filter}"
+    params.append(region_norm)
 
-    # 1. Extended summary stats (not shown in main KPIs)
+    # 1. Extended summary stats
     summary_row = fetch_one(
         f"""
         SELECT
