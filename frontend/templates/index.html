@@ -765,18 +765,23 @@
             if (filters.year) filters.years = filters.year;
             const query = $.param({ ...filters, region: regionFullName }, true);
 
-            // Update KPIs to region-filtered view
-            fetch(`/dashboard/data?${query}`)
+            // Update KPIs to region-filtered view with cache-busting
+            fetch(`/dashboard/data?${query}`, { cache: 'no-store' })
                 .then(r => r.json())
                 .then(data => updateKpis(data.kpis));
 
-            // Fetch drill-down detail
-            fetch(`/dashboard/drill-down?${query}`)
+            // Fetch drill-down detail with cache-busting
+            fetch(`/dashboard/drill-down?${query}`, { cache: 'no-store' })
                 .then(r => r.json())
                 .then(data => renderDrilldown(regionFullName, data));
         }
 
         function renderDrilldown(regionFullName, data) {
+            // Destroy DataTable FIRST before modifying the DOM to avoid state persistence issues
+            if ($.fn.DataTable.isDataTable('#drilldownTable')) {
+                $('#drilldownTable').DataTable().destroy();
+            }
+
             // Breadcrumb
             $('#drilldownRegionLabel').text(regionFullName);
             $('#ddTableRegionLabel').text(regionFullName);
@@ -804,11 +809,7 @@
                 `);
             });
 
-            // Initialize DataTable if not already done, or clear and redraw
-            if ($.fn.DataTable.isDataTable('#drilldownTable')) {
-                $('#drilldownTable').DataTable().destroy();
-            }
-            
+            // Re-initialize DataTable with the fresh content
             PramanaDashboard.initDataTable('#drilldownTable', {
                 paging: true,
                 searching: true,
@@ -825,6 +826,11 @@
         window.clearDrilldown = function (restoreKpis = true) {
             selectedRegion = null;
             $('#drilldownPanel').hide();
+            
+            // Clean up DataTable properly
+            if ($.fn.DataTable.isDataTable('#drilldownTable')) {
+                $('#drilldownTable').DataTable().destroy();
+            }
             $('#drilldownTableBody').empty();
 
             // Reset bar colors
