@@ -419,15 +419,20 @@ $(function () {
         
         params.set('group_by', currentGroupBy);
         
-        fetch('/performance-mgmt/drilldown?' + params.toString())
+        fetch('/performance-mgmt/drilldown?' + params.toString(), { cache: 'no-store' })
             .then(r=>r.json()).then(resp=>{
+                // Destroy DataTable properly before modifying the DOM
+                if ($.fn.DataTable.isDataTable('#drilldownTable')) {
+                    $('#drilldownTable').DataTable().destroy();
+                }
+
                 const rows = resp.table || [];
                 $('#ddRecordCount').text(rows.length + ' record' + (rows.length!==1?'s':''));
                 const tbody = $('#drilldownBody').empty();
                 rows.forEach(r=>{
                     tbody.append('<tr><td class="font-weight-600">'+r.instructor_name+'</td><td><span class="badge badge-secondary">'+r.role+'</span></td><td>'+r.region_name+'</td><td class="text-right">'+(r.programs||0).toLocaleString()+'</td><td class="text-right">'+(r.sessions||0).toLocaleString()+'</td><td class="text-right">'+(r.schools||0).toLocaleString()+'</td><td class="text-right">'+(r.students_impacted||0).toLocaleString()+'</td><td class="text-right">'+(r.avg_duration_min||0)+'</td></tr>');
                 });
-                if ($.fn.DataTable.isDataTable('#drilldownTable')) $('#drilldownTable').DataTable().destroy();
+
                 PramanaDashboard.initDataTable('#drilldownTable',{paging:true,searching:true,pageLength:15,order:[[4,'desc']]});
                 $('#drilldownPanel').show();
                 $('html,body').animate({scrollTop:$('#drilldownPanel').offset().top-20},400);
@@ -436,6 +441,10 @@ $(function () {
 
     window.clearPerfDrilldown = function() {
         $('#drilldownPanel').hide();
+        if ($.fn.DataTable.isDataTable('#drilldownTable')) {
+            $('#drilldownTable').DataTable().destroy();
+        }
+        $('#drilldownBody').empty();
         loadKPIs();
         loadRegionChart();
     };
