@@ -8,18 +8,34 @@ DW = DATAMART_SCHEMA_NAME
 
 def get_exposure_session_filters():
     try:
-        regions = [r["region_name"] for r in fetch_all(
-            f"SELECT DISTINCT region_name FROM {DW}.dim_geography WHERE region_name IS NOT NULL ORDER BY region_name"
-        )]
-        programs = [r["program_name"] for r in fetch_all(
-            f"SELECT DISTINCT program_name FROM {DW}.dim_program WHERE program_name IS NOT NULL ORDER BY program_name"
-        )]
-        years = [r["year_actual"] for r in fetch_all(
-            f"SELECT DISTINCT year_actual FROM {DW}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC"
-        )]
-        months = [{"id": r["month_actual"], "name": r["month_name"].strip()} for r in fetch_all(
-            f"SELECT DISTINCT month_actual, TO_CHAR(TO_DATE(month_actual::text,'MM'),'Month') AS month_name FROM {DW}.dim_date ORDER BY month_actual"
-        )]
+        # INNER JOIN with fact_session to ensure data exists
+        regions = [r["region_name"] for r in fetch_all(f"""
+            SELECT DISTINCT g.region_name 
+            FROM {DW}.dim_geography g
+            INNER JOIN {DW}.fact_session f ON g.sk_geography_id = f.sk_geography_id
+            WHERE g.region_name IS NOT NULL 
+            ORDER BY g.region_name
+        """)]
+        programs = [r["program_name"] for r in fetch_all(f"""
+            SELECT DISTINCT p.program_name 
+            FROM {DW}.dim_program p
+            INNER JOIN {DW}.fact_session f ON p.sk_program_id = f.sk_program_id
+            WHERE p.program_name IS NOT NULL 
+            ORDER BY p.program_name
+        """)]
+        years = [r["year_actual"] for r in fetch_all(f"""
+            SELECT DISTINCT d.year_actual 
+            FROM {DW}.dim_date d
+            INNER JOIN {DW}.fact_session f ON d.date_id = f.date_id
+            WHERE d.year_actual IS NOT NULL 
+            ORDER BY d.year_actual DESC
+        """)]
+        months = [{"id": r["month_actual"], "name": r["month_name"].strip()} for r in fetch_all(f"""
+            SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text,'MM'),'Month') AS month_name 
+            FROM {DW}.dim_date d
+            INNER JOIN {DW}.fact_session f ON d.date_id = f.date_id
+            ORDER BY d.month_actual
+        """)]
         return {"regions": regions, "programs": programs, "years": years, "months": months}
     except Exception as e:
         logger.error(f"exposure session filters error: {e}")
@@ -61,11 +77,29 @@ def get_exposure_session_data(region=None, program=None, year=None, month=None, 
             WHERE {where_sql}
         """, params)
 
+        # Insight Logic
+        top_region_row = fetch_one(f"""
+            SELECT COALESCE(g.region_name, 'Unknown') as region_name, 
+                   COALESCE(SUM(e.total_exposure_count), 0) as students
+            FROM {DW}.fact_session f
+            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+            WHERE {where_sql}
+            GROUP BY g.region_name
+            ORDER BY students DESC
+            LIMIT 1
+        """, params)
+        top_region = top_region_row.get("region_name", "N/A") if top_region_row else "N/A"
+        
+        boys = int(kpi_row.get("total_boys", 0) or 0)
+        girls = int(kpi_row.get("total_girls", 0) or 0)
+        gender_status = "Balanced" if abs(boys - girls) < (boys + girls) * 0.1 else "Skewed"
+        
         kpis = [
-            {"label": "Total Students Exposed", "value": int(kpi_row.get("total_students", 0) or 0), "icon": "fas fa-user-graduate",  "color": "bg-info"},
-            {"label": "Total Boys",              "value": int(kpi_row.get("total_boys", 0) or 0),    "icon": "fas fa-male",           "color": "bg-success"},
-            {"label": "Total Girls",             "value": int(kpi_row.get("total_girls", 0) or 0),   "icon": "fas fa-female",         "color": "bg-navy-blue"},
-            {"label": "Total Sessions",          "value": int(kpi_row.get("total_sessions", 0) or 0),"icon": "fas fa-chalkboard",     "color": "bg-danger"},
+            {"label": "Total Students Exposed", "value": int(kpi_row.get("total_students", 0) or 0), "icon": "fas fa-user-graduate",  "color": "bg-info", "status": "Growth", "reason": f"Significant educational reach, primarily in {top_region}."},
+            {"label": "Total Boys",              "value": boys,    "icon": "fas fa-male",           "color": "bg-success", "status": gender_status, "reason": "Strong participation from male students across programs."},
+            {"label": "Total Girls",             "value": girls,   "icon": "fas fa-female",         "color": "bg-navy-blue", "status": gender_status, "reason": "Encouraging female student engagement in all active areas."},
+            {"label": "Total Sessions",          "value": int(kpi_row.get("total_sessions", 0) or 0),"icon": "fas fa-chalkboard",     "color": "bg-danger", "status": "Stable", "reason": f"Consistent session delivery supporting {top_region} students."},
         ]
 
         # 2. DataTable Logic
