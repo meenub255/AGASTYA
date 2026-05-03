@@ -8,12 +8,20 @@ DW = DATAMART_SCHEMA_NAME
 
 def get_instructor_feedback_filters():
     try:
-        instructors = [r["user_name"] for r in fetch_all(
-            f"SELECT DISTINCT user_name FROM {DW}.dim_user WHERE user_name IS NOT NULL ORDER BY user_name"
-        )]
-        years = [r["year_actual"] for r in fetch_all(
-            f"SELECT DISTINCT year_actual FROM {DW}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC"
-        )]
+        instructors = [r["user_name"] for r in fetch_all(f"""
+            SELECT DISTINCT u.user_name 
+            FROM {DW}.fact_session f
+            JOIN {DW}.dim_user u ON f.sk_user_id = u.sk_user_id
+            WHERE u.user_name IS NOT NULL 
+            ORDER BY u.user_name
+        """)]
+        years = [r["year_actual"] for r in fetch_all(f"""
+            SELECT DISTINCT d.year_actual 
+            FROM {DW}.fact_session f
+            JOIN {DW}.dim_date d ON f.date_id = d.date_id
+            WHERE d.year_actual IS NOT NULL 
+            ORDER BY d.year_actual DESC
+        """)]
         return {"instructors": instructors, "years": years}
     except Exception as e:
         logger.error(f"instructor feedback filters error: {e}")
