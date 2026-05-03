@@ -67,11 +67,43 @@ def get_nationwide_data(year=None, region=None, limit=15, offset=0, dt_params=No
             WHERE {where_sql}
         """, params)
 
+        # Insight Logic
+        top_region_row = fetch_one(f"""
+            SELECT COALESCE(g.region_name, 'Unknown') as region_name, 
+                   COUNT(DISTINCT f.sk_fact_session_id) as sessions,
+                   COALESCE(SUM(e.total_exposure_count), 0) as students,
+                   COUNT(DISTINCT f.sk_user_id) as instructors
+            FROM {DW}.fact_session f
+            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DW}.dim_date d ON f.date_id = d.date_id
+            LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+            WHERE {where_sql or 'TRUE'}
+            GROUP BY g.region_name
+            ORDER BY sessions DESC
+            LIMIT 1
+        """, params)
+        
+        top_region = top_region_row.get("region_name", "N/A") if top_region_row else "N/A"
+        top_sessions = int(top_region_row.get("sessions", 0)) if top_region_row else 0
+        top_instructors = int(top_region_row.get("instructors", 0)) if top_region_row else 0
+        
+        inst_status = "Growth" if int(kpi_row.get("total_instructors", 0)) > 1000 else "Stable"
+        inst_reason = f"Active workforce expansion, led by {top_region} ({top_instructors} active)."
+        
+        driver_status = "Stable"
+        driver_reason = f"Logistics network maintained across {int(kpi_row.get('total_states', 0))} states."
+        
+        state_status = "Expansive"
+        state_reason = f"Broad geographic footprint including {top_region}."
+        
+        prog_status = "Diversified"
+        prog_reason = f"Wide range of educational programs being delivered nationwide."
+
         kpis = [
-            {"label": "Total Instructors",    "value": int(kpi_row.get("total_instructors", 0) or 0), "icon": "fas fa-users",              "color": "bg-info"},
-            {"label": "Total Drivers",        "value": int(driver_row.get("total_drivers", 0) or 0),  "icon": "fas fa-truck",              "color": "bg-success"},
-            {"label": "States Reached",        "value": int(kpi_row.get("total_states", 0) or 0),      "icon": "fas fa-map-marker-alt",    "color": "bg-navy-blue"},
-            {"label": "Total Programs",       "value": int(kpi_row.get("total_programs", 0) or 0),    "icon": "fas fa-project-diagram",    "color": "bg-danger"},
+            {"label": "Total Instructors",    "value": int(kpi_row.get("total_instructors", 0) or 0), "icon": "fas fa-users",              "color": "bg-info", "status": inst_status, "reason": inst_reason},
+            {"label": "Total Drivers",        "value": int(driver_row.get("total_drivers", 0) or 0),  "icon": "fas fa-truck",              "color": "bg-success", "status": driver_status, "reason": driver_reason},
+            {"label": "States Reached",        "value": int(kpi_row.get("total_states", 0) or 0),      "icon": "fas fa-map-marker-alt",    "color": "bg-navy-blue", "status": state_status, "reason": state_reason},
+            {"label": "Total Programs",       "value": int(kpi_row.get("total_programs", 0) or 0),    "icon": "fas fa-project-diagram",    "color": "bg-danger", "status": prog_status, "reason": prog_reason},
         ]
 
         # Chart 1: Monthly sessions trend (for line chart with trend line)
