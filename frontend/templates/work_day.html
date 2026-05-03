@@ -1,121 +1,122 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-    <!-- Left Column: Filter Slicers -->
-    <div class="col-md-2 mb-3">
-        <div class="card filter-card shadow-lg">
-            <div class="card-header">
-                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
+<style>.content-header { display: none !important; }</style>
+<div class="col-md-12">
+    <!-- Premium Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="m-0 font-weight-bold" style="font-size:1.8rem;color:#1e293b;">Workforce Days</h1>
+            <p class="text-muted small mb-0">Instructor utilization, active days and center-wise participation metrics</p>
+        </div>
+        <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
+            <div class="fl-content">
+                <div class="fl-icon"><i class="fas fa-sliders-h"></i></div>
+                <div class="fl-text">
+                    <span class="fl-label">Data Filters</span>
+                    <span class="fl-value" id="activeFilterCount">All Data</span>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="form-group mb-4">
-                    <label class="filter-label">Region</label>
-                    <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region">
-                    </select>
+            <div class="fl-chevron"><i class="fas fa-chevron-right"></i></div>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info kpi-card" id="kpiCardInstructors" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="inner">
+                    <h3 id="kpiTotalInstructors">0</h3>
+                    <p>Total Instructors</p>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Area</label>
-                    <select id="areaFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="area" data-placeholder="Select Area">
-                    </select>
+                <div class="icon"><i class="fas fa-users"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success kpi-card" id="kpiCardWorkingDays" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="inner">
+                    <h3 id="kpiTotalWorkingDays">0</h3>
+                    <p>Working Days</p>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Year</label>
-                    <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year" data-placeholder="Select Year">
-                    </select>
+                <div class="icon"><i class="fas fa-calendar-check"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-navy-blue kpi-card" id="kpiCardAvgDays" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="inner">
+                    <h3 id="kpiAvgDays">0</h3>
+                    <p>Avg Days/User</p>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Month</label>
-                    <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month">
-                    </select>
+                <div class="icon"><i class="fas fa-chart-line"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger kpi-card" id="kpiCardActiveCenters" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="inner">
+                    <h3 id="kpiActiveCenters">0</h3>
+                    <p>Active Centers</p>
                 </div>
-                
-                <div class="mt-5">
-                    <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-3">
-                        <i class="fas fa-sync-alt mr-2"></i>See Report
-                    </button>
-                    <button id="resetFilters" class="btn btn-outline-light btn-block btn-premium mb-3" style="border-color: rgba(255,255,255,0.2)">
-                        <i class="fas fa-undo mr-2"></i>Reset All
-                    </button>
-                    <button id="exportXlsx" class="btn btn-success btn-block btn-premium">
-                        <i class="fas fa-file-excel mr-2"></i>Export XLSX
-                    </button>
-                </div>
+                <div class="icon"><i class="fas fa-map-marker-alt"></i></div>
             </div>
         </div>
     </div>
 
-    <!-- Right Column: Dashboard Content -->
-    <div class="col-md-10">
-        <!-- KPI Cards -->
-        <div id="kpiContainer" class="row mb-4">
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-info">
-                    <div class="inner">
-                        <h3 id="kpiTotalInstructors">0</h3>
-                        <p>Total Instructors</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-success">
-                    <div class="inner">
-                        <h3 id="kpiTotalWorkingDays">0</h3>
-                        <p>Total Working Days</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-navy-blue">
-                    <div class="inner">
-                        <h3 id="kpiAvgDays">0</h3>
-                        <p>Avg Days/Instructor</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-danger">
-                    <div class="inner">
-                        <h3 id="kpiActiveCenters">0</h3>
-                        <p>Active Centers</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-map-marker-alt"></i>
-                    </div>
-                </div>
+    <!-- Table -->
+    <div class="card premium-card white-chart-card shadow-sm">
+        <div class="card-header card-header-premium d-flex align-items-center">
+            <i class="fas fa-calendar-alt mr-2" style="color: #3b82f6;"></i>
+            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Instructor Utilization Log</h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="workDayTable" class="table table-hover mb-0" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Instructor</th>
+                            <th>Region / Area</th>
+                            <th class="text-center">Work Days</th>
+                            <th>Dates Active (DD)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Table -->
-        <div class="card mt-2">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table id="workDayTable" class="table table-striped table-hover mb-0 high-contrast-table">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>Instructor</th>
-                                <th>Region / Area</th>
-                                <th class="text-center">Work Days</th>
-                                <th>Dates Active (DD)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Populated by JS -->
-                        </tbody>
-                    </table>
-                </div>
-                </div>
-            </div>
+<!-- Filter Drawer -->
+<div class="filter-drawer-overlay" id="filterDrawerOverlay"></div>
+<div class="filter-drawer shadow-lg" id="filterDrawer">
+    <div class="fd-header">
+        <h3 class="fd-title"><i class="fas fa-sliders-h mr-2" style="color: #3b82f6;"></i>Filters</h3>
+        <button type="button" class="fd-close" id="closeDrawer"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="fd-body">
+        <div class="fd-section">
+            <label class="fd-label">Region</label>
+            <select id="regionFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Region"></select>
         </div>
+        <div class="fd-section">
+            <label class="fd-label">Area</label>
+            <select id="areaFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Area"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Fiscal Year</label>
+            <select id="yearFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Year"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Month</label>
+            <select id="monthFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Month"></select>
+        </div>
+    </div>
+    <div class="fd-footer">
+        <button class="btn btn-outline-secondary btn-block shadow-sm" id="resetFilters" style="border-radius: 10px;">
+            <i class="fas fa-undo mr-2"></i>Reset All
+        </button>
+        <button class="btn btn-success btn-block mt-2 shadow-sm" id="exportXlsx" style="border-radius: 10px; background: #10b981; border: none;">
+            <i class="fas fa-file-excel mr-2"></i>Export XLSX
+        </button>
     </div>
 </div>
 {% endblock %}
@@ -123,75 +124,96 @@
 {% block scripts %}
 <script>
 $(function () {
-    const pagination = window.PramanaPagination;
-
     if ($.fn.select2) {
-        $('.select2:not(.filter-multi)').select2({ theme: 'bootstrap4' });
-        window.PramanaDashboard.initMultiFilters();
+        $('.select2').select2({ 
+            theme: 'bootstrap4',
+            dropdownParent: $('#filterDrawer'),
+            width: '100%',
+            allowClear: true,
+            multiple: true
+        });
     }
 
-    // Load Filters
+    // ── Drawer Logic ──
+    $('#filterLauncher').click(() => {
+        $('#filterDrawerOverlay, #filterDrawer').addClass('open');
+    });
+    $('#closeDrawer, #filterDrawerOverlay').click(() => {
+        $('#filterDrawerOverlay, #filterDrawer').removeClass('open');
+    });
+
+    function updateFilterSummary() {
+        const r = $('#regionFilter').val() || [], a = $('#areaFilter').val() || [], y = $('#yearFilter').val() || [], m = $('#monthFilter').val() || [];
+        const total = r.length + a.length + y.length + m.length;
+        $('#activeFilterCount').text(total ? total + ' Filter' + (total>1?'s':'') + ' Applied' : 'All Data');
+    }
+
+    function collectFilters() {
+        return {
+            region: $('#regionFilter').val() || [],
+            area: $('#areaFilter').val() || [],
+            year: $('#yearFilter').val() || [],
+            month: $('#monthFilter').val() || []
+        };
+    }
+
     fetch('/work-day/filters')
         .then(res => res.json())
         .then(data => {
-            const regionSelect = $('#regionFilter');
-            const areaSelect = $('#areaFilter');
-            const yearSelect = $('#yearFilter');
-            const monthSelect = $('#monthFilter');
-
-            data.regions.forEach(r => regionSelect.append(new Option(r, r)));
-            data.areas.forEach(a => areaSelect.append(new Option(a, a)));
-            data.years.forEach(y => yearSelect.append(new Option(y, y)));
-            data.months.forEach(m => monthSelect.append(new Option(m.name, m.id)));
+            data.regions.forEach(r => $('#regionFilter').append(new Option(r, r)));
+            data.areas.forEach(a => $('#areaFilter').append(new Option(a, a)));
+            data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
+            data.months.forEach(m => $('#monthFilter').append(new Option(m.name, m.id)));
+            $('.select2').trigger('change.select2', { internal: true });
         });
 
     function loadData() {
+        window.loadReportData = loadData;
         window.PramanaDashboard.initDataTable('#workDayTable', {
             ajaxUrl: '/work-day/data',
-            getFilters: function() {
-                return window.PramanaDashboard.collectFilters();
-            },
+            getFilters: collectFilters,
             onDataLoad: function(data) {
-                // Update KPIs
                 if (data.kpis && data.kpis.length >= 4) {
                     $('#kpiTotalInstructors').text(data.kpis[0].value.toLocaleString());
                     $('#kpiTotalWorkingDays').text(data.kpis[1].value.toLocaleString());
                     $('#kpiAvgDays').text(data.kpis[2].value);
                     $('#kpiActiveCenters').text(data.kpis[3].value.toLocaleString());
+
+                    data.kpis.forEach((kpi, idx) => {
+                        const cardId = ['#kpiCardInstructors','#kpiCardWorkingDays','#kpiCardAvgDays','#kpiCardActiveCenters'][idx];
+                        $(cardId).attr('data-content', `
+                            <div class="kpi-insight">
+                                <div class="ki-status success">Active</div>
+                                <div class="ki-reason">Instructor availability is tracking well against session targets.</div>
+                            </div>
+                        `).popover('hide');
+                    });
                 }
             },
             columns: [
-                { data: 'instructor_name', render: function(data) {
-                    return `<span class="text-bold text-navy">${data}</span>`;
-                }},
-                { data: 'region', render: function(data, type, row) {
-                    return `<small class="text-muted"><i class="fas fa-globe mr-1"></i> ${row.region}</small> / ${row.area}`;
-                }},
-                { data: 'days_worked', className: 'text-center', render: function(data) {
-                    return `<span class="badge badge-info">${data}</span>`;
-                }},
-                { data: 'dates_active', render: function(data) {
-                    return `<div class="text-primary font-weight-bold" style="word-break: break-all;">${data}</div>`;
-                }}
+                { data: 'instructor_name', render: d => `<span class="font-weight-600 text-navy">${d}</span>` },
+                { data: 'region', render: (d, t, r) => `<div class="small"><span class="text-muted"><i class="fas fa-globe mr-1"></i> ${r.region}</span> / <span class="font-weight-bold">${r.area}</span></div>` },
+                { data: 'days_worked', className: 'text-center', render: d => `<span class="badge badge-info px-2 py-1">${d}</span>` },
+                { data: 'dates_active', render: d => `<div class="text-primary small font-weight-bold" style="word-break: break-all; opacity:0.8;">${d}</div>` }
             ]
         });
     }
 
-    $('#seeReport').click(function () {
+    $('.select2').on('change', function(e, opts) {
+        if (opts && opts.internal) return;
+        updateFilterSummary();
         loadData();
     });
 
     $('#resetFilters').click(function() {
-        window.PramanaDashboard.resetTable('#workDayTable', loadData);
+        $('.select2').val(null).trigger('change');
     });
 
     $('#exportXlsx').click(function() {
-        const filters = window.PramanaDashboard.collectFilters();
-        const query = $.param(filters, true);
-        window.exportToXLSX(`/work-day/export?${query}`, 'work_day_report.xlsx');
+        const q = $.param(collectFilters(), true);
+        window.exportToXLSX(`/work-day/export?${q}`, 'work_day_report.xlsx');
     });
 
-    // Initial Load
     setTimeout(loadData, 300);
 });
 </script>

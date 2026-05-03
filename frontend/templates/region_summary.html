@@ -1,234 +1,241 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-    <!-- Left Column: Filter Slicers -->
-    <div class="col-md-2 mb-3">
-        <div class="card filter-card shadow-lg">
-            <div class="card-header">
-                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
+<style>.content-header { display: none !important; }</style>
+<div class="col-md-12">
+    <!-- Premium Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="m-0 font-weight-bold" style="font-size:1.8rem;color:#1e293b;">Regional Summary</h1>
+            <p class="text-muted small mb-0">High-level regional performance, exposure and outreach targets</p>
+        </div>
+        <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
+            <div class="fl-content">
+                <div class="fl-icon"><i class="fas fa-sliders-h"></i></div>
+                <div class="fl-text">
+                    <span class="fl-label">Data Filters</span>
+                    <span class="fl-value" id="activeFilterCount">All Data</span>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="form-group mb-4">
-                    <label class="filter-label">Region</label>
-                    <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region">
-                    </select>
+            <div class="fl-chevron"><i class="fas fa-chevron-right"></i></div>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info kpi-card" id="kpiCardSessions" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="inner">
+                    <h3 id="kpiTotalSessions">0</h3>
+                    <p>Total Sessions</p>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Program Type</label>
-                    <select id="programTypeFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program_type" data-placeholder="Select Program">
-                    </select>
+                <div class="icon"><i class="fas fa-clock"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success kpi-card" id="kpiCardExposure" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="inner">
+                    <h3 id="kpiSchoolsExposure">0</h3>
+                    <p>Schools Exposure</p>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Year</label>
-                    <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year" data-placeholder="Select Year">
-                    </select>
+                <div class="icon"><i class="fas fa-user-graduate"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-navy-blue kpi-card" id="kpiCardSF" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="inner">
+                    <h3 id="kpiScienceFairs">0</h3>
+                    <p>Science Fairs</p>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Month</label>
-                    <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month">
-                    </select>
+                <div class="icon"><i class="fas fa-flask"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger kpi-card" id="kpiCardTTP" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="inner">
+                    <h3 id="kpiTeacherTraining">0</h3>
+                    <p>Teacher Training</p>
                 </div>
-                
-                <div class="mt-5">
-                    <button id="seeReportBtn" class="btn btn-primary btn-block btn-premium mb-3">
-                        <i class="fas fa-sync-alt mr-2"></i>See Report
-                    </button>
-                    <button id="resetFilters" class="btn btn-outline-light btn-block btn-premium mb-3" style="border-color: rgba(255,255,255,0.2)">
-                        <i class="fas fa-undo mr-2"></i>Reset All
-                    </button>
-                    <button id="exportXlsx" class="btn btn-success btn-block btn-premium">
-                        <i class="fas fa-file-excel mr-2"></i>Export XLSX
-                    </button>
-                </div>
+                <div class="icon"><i class="fas fa-chalkboard-teacher"></i></div>
             </div>
         </div>
     </div>
 
-    <!-- Right Column: Dashboard Content -->
-    <div class="col-md-10">
-        <!-- Dynamic KPI Cards (4 Cards) -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-info">
-                    <div class="inner">
-                        <h3 id="kpiTotalSessions">0</h3>
-                        <p>Total Sessions</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-success">
-                    <div class="inner">
-                        <h3 id="kpiSchoolsExposure">0</h3>
-                        <p>Total Schools Exposure</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-user-graduate"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-navy-blue">
-                    <div class="inner">
-                        <h3 id="kpiScienceFairs">0</h3>
-                        <p>Total Science Fair (SF)</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-flask"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-danger">
-                    <div class="inner">
-                        <h3 id="kpiTeacherTraining">0</h3>
-                        <p>Total Teacher Training Program (TTP)</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-chalkboard-teacher"></i>
-                    </div>
-                </div>
+    <!-- Table -->
+    <div class="card premium-card white-chart-card shadow-sm">
+        <div class="card-header card-header-premium d-flex align-items-center">
+            <i class="fas fa-chart-bar mr-2" style="color: #3b82f6;"></i>
+            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Regional Performance Aggregate</h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="regionTable" class="table table-hover mb-0" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Region</th>
+                            <th class="text-center">Sessions</th>
+                            <th class="text-center">Students reached</th>
+                            <th class="text-center">Teachers trained</th>
+                            <th class="text-center">Schools covered</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
+    </div>
+</div>
 
-        <div id="reportContent">
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="card card-outline card-info">
-                        <div class="card-body table-responsive p-0">
-                            <table class="table table-striped table-valign-middle high-contrast-table" id="regionTable">
-                                <thead>
-                                    <tr>
-                                        <th>Region</th>
-                                        <th>Sessions</th>
-                                        <th>Students</th>
-                                        <th>Teachers</th>
-                                        <th>Schools</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="summaryTableBody">
-                                    <!-- Rows will be injected here -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<!-- Filter Drawer -->
+<div class="filter-drawer-overlay" id="filterDrawerOverlay"></div>
+<div class="filter-drawer shadow-lg" id="filterDrawer">
+    <div class="fd-header">
+        <h3 class="fd-title"><i class="fas fa-sliders-h mr-2" style="color: #3b82f6;"></i>Filters</h3>
+        <button type="button" class="fd-close" id="closeDrawer"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="fd-body">
+        <div class="fd-section">
+            <label class="fd-label">Region</label>
+            <select id="regionFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Region"></select>
         </div>
+        <div class="fd-section">
+            <label class="fd-label">Program Type</label>
+            <select id="programTypeFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Program"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Fiscal Year</label>
+            <select id="yearFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Year"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Month</label>
+            <select id="monthFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Month"></select>
+        </div>
+    </div>
+    <div class="fd-footer">
+        <button class="btn btn-outline-secondary btn-block shadow-sm" id="resetFilters" style="border-radius: 10px;">
+            <i class="fas fa-undo mr-2"></i>Reset All
+        </button>
+        <button class="btn btn-success btn-block mt-2 shadow-sm" id="exportXlsx" style="border-radius: 10px; background: #10b981; border: none;">
+            <i class="fas fa-file-excel mr-2"></i>Export XLSX
+        </button>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    $(function () {
-        const pagination = window.PramanaPagination;
+$(function () {
+    let filtersInitialized = false;
 
-        if ($.fn.select2) {
-            $('.select2:not(.filter-multi)').select2({ theme: 'bootstrap4' });
-            window.PramanaDashboard.initMultiFilters();
-        }
-
-        // Load initial filter options (Regions, Years, Months)
-        function loadFilters() {
-            const filters = window.PramanaDashboard.collectFilters();
-            const query = $.param(filters, true);
-            fetch(`/region-summary/filters?${query}`)
-                .then(response => response.json())
-                .then(data => {
-                    // Update Regions if empty
-                    const r = $('#regionFilter');
-                    if (r.children().length === 0) {
-                        data.regions.forEach(reg => r.append(new Option(reg, reg)));
-                    }
-                    
-                    // Update Years if empty
-                    const y = $('#yearFilter');
-                    if (y.children().length === 0) {
-                        data.years.forEach(yr => y.append(new Option(yr, yr)));
-                    }
-                    
-                    // Update Months if empty
-                    const m = $('#monthFilter');
-                    if (m.children().length === 0) {
-                        data.months.forEach(mo => m.append(new Option(mo.name, mo.id)));
-                    }
-
-                    // Update Program Type dropdown dependent on Region
-                    const pt = $('#programTypeFilter');
-                    const selectedPrograms = pt.val() || [];
-                    pt.empty();
-                    
-                    if (data.programs && data.programs.length > 0) {
-                        data.programs.forEach(p => pt.append(new Option(p, p)));
-                        pt.val(selectedPrograms).trigger('change.select2');
-                        pt.prop('disabled', false);
-                    } else {
-                        pt.prop('disabled', true);
-                    }
-                });
-        }
-
-        loadFilters();
-
-        // Dependent filter logic: Region -> Program
-        $('#regionFilter').on('change', function() {
-            loadFilters();
+    if ($.fn.select2) {
+        $('.select2').select2({ 
+            theme: 'bootstrap4',
+            dropdownParent: $('#filterDrawer'),
+            width: '100%',
+            allowClear: true,
+            multiple: true
         });
+    }
 
-        function loadData() {
-            window.PramanaDashboard.initDataTable('#regionTable', {
-                ajaxUrl: '/region-summary/data',
-                getFilters: function() {
-                    return window.PramanaDashboard.collectFilters();
-                },
-                onDataLoad: function(data) {
-                    // Update KPIs (4 cards)
-                    if (data.kpis) {
-                        $('#kpiTotalSessions').text(data.kpis[0].value.toLocaleString());
-                        $('#kpiSchoolsExposure').text(data.kpis[1].value.toLocaleString());
-                        $('#kpiScienceFairs').text(data.kpis[2].value.toLocaleString());
-                        $('#kpiTeacherTraining').text(data.kpis[3].value.toLocaleString());
-                    }
-                },
-                columns: [
-                    { data: 'region' },
-                    { data: 'sessions', render: function(data) {
-                        return (data||0).toLocaleString();
-                    }},
-                    { data: 'students_reached', render: function(data) {
-                        return (data||0).toLocaleString();
-                    }},
-                    { data: 'teachers_trained', render: function(data) {
-                        return (data||0).toLocaleString();
-                    }},
-                    { data: 'schools_covered', render: function(data) {
-                        return (data||0).toLocaleString();
-                    }}
-                ]
-            });
-        }
-
-        $('#seeReportBtn').on('click', function () {
-            loadData();
-        });
-
-        $('#resetFilters').click(function() {
-            window.PramanaDashboard.resetTable('#regionTable', loadData);
-        });
-
-        $('#exportXlsx').click(function () {
-            const filters = window.PramanaDashboard.collectFilters();
-            const query = $.param(filters, true);
-            window.exportToXLSX(`/region-summary/export?${query}`, 'region_summary.xlsx');
-        });
-
-        // Auto-load
-        setTimeout(loadData, 300);
+    // ── Drawer Logic ──
+    $('#filterLauncher').click(() => {
+        $('#filterDrawerOverlay, #filterDrawer').addClass('open');
     });
+    $('#closeDrawer, #filterDrawerOverlay').click(() => {
+        $('#filterDrawerOverlay, #filterDrawer').removeClass('open');
+    });
+
+    function updateFilterSummary() {
+        const r = $('#regionFilter').val() || [], p = $('#programTypeFilter').val() || [], y = $('#yearFilter').val() || [], m = $('#monthFilter').val() || [];
+        const total = r.length + p.length + y.length + m.length;
+        $('#activeFilterCount').text(total ? total + ' Filter' + (total>1?'s':'') + ' Applied' : 'All Data');
+    }
+
+    function collectFilters() {
+        return {
+            region: $('#regionFilter').val() || [],
+            program_type: $('#programTypeFilter').val() || [],
+            year: $('#yearFilter').val() || [],
+            month: $('#monthFilter').val() || []
+        };
+    }
+
+    function loadFilters() {
+        const query = $.param(collectFilters(), true);
+        fetch(`/region-summary/filters?${query}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!filtersInitialized) {
+                    data.regions.forEach(r => $('#regionFilter').append(new Option(r, r)));
+                    data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
+                    data.months.forEach(m => $('#monthFilter').append(new Option(m.name, m.id)));
+                    filtersInitialized = true;
+                }
+                const pt = $('#programTypeFilter');
+                const selected = pt.val() || [];
+                pt.empty();
+                data.programs.forEach(p => pt.append(new Option(p, p)));
+                pt.val(selected).trigger('change.select2', { internal: true });
+                updateFilterSummary();
+            });
+    }
+
+    function loadData() {
+        window.loadReportData = loadData;
+        window.PramanaDashboard.initDataTable('#regionTable', {
+            ajaxUrl: '/region-summary/data',
+            getFilters: collectFilters,
+            onDataLoad: function(data) {
+                if (data.kpis && data.kpis.length >= 4) {
+                    $('#kpiTotalSessions').text(data.kpis[0].value.toLocaleString());
+                    $('#kpiSchoolsExposure').text(data.kpis[1].value.toLocaleString());
+                    $('#kpiScienceFairs').text(data.kpis[2].value.toLocaleString());
+                    $('#kpiTeacherTraining').text(data.kpis[3].value.toLocaleString());
+
+                    data.kpis.forEach((kpi, idx) => {
+                        const cardId = ['#kpiCardSessions','#kpiCardExposure','#kpiCardSF','#kpiCardTTP'][idx];
+                        $(cardId).attr('data-content', `
+                            <div class="kpi-insight">
+                                <div class="ki-status success">Active</div>
+                                <div class="ki-reason">Regional targets are being met with consistent outreach activity.</div>
+                            </div>
+                        `).popover('hide');
+                    });
+                }
+            },
+            columns: [
+                { data: 'region', render: d => `<span class="font-weight-600 text-navy">${d}</span>` },
+                { data: 'sessions', className: 'text-center small font-weight-bold', render: d => (d||0).toLocaleString() },
+                { data: 'students_reached', className: 'text-center small', render: d => (d||0).toLocaleString() },
+                { data: 'teachers_trained', className: 'text-center small', render: d => (d||0).toLocaleString() },
+                { data: 'schools_covered', className: 'text-center small font-weight-bold text-info', render: d => (d||0).toLocaleString() }
+            ]
+        });
+    }
+
+    $('#regionFilter').on('change', function(e, opts) {
+        if (opts && opts.internal) return;
+        loadFilters();
+        loadData();
+    });
+
+    $('.select2').not('#regionFilter').on('change', function(e, opts) {
+        if (opts && opts.internal) return;
+        updateFilterSummary();
+        loadData();
+    });
+
+    $('#resetFilters').click(function() {
+        $('.select2').val(null).trigger('change');
+    });
+
+    $('#exportXlsx').click(function() {
+        const q = $.param(collectFilters(), true);
+        window.exportToXLSX(`/region-summary/export?${q}`, 'region_summary.xlsx');
+    });
+
+    loadFilters();
+    setTimeout(loadData, 300);
+});
 </script>
 {% endblock %}

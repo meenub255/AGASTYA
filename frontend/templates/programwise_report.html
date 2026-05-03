@@ -1,213 +1,212 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-    <!-- Left Column: Filter Slicers -->
-    <div class="col-md-2 mb-3">
-        <div class="card filter-card shadow-lg">
-            <div class="card-header">
-                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
+<style>.content-header { display: none !important; }</style>
+<div class="col-md-12">
+    <!-- Premium Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="m-0 font-weight-bold" style="font-size:1.8rem;color:#1e293b;">Program Reports</h1>
+            <p class="text-muted small mb-0">Cross-program comparative analysis and donor-level metrics</p>
+        </div>
+        <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
+            <div class="fl-content">
+                <div class="fl-icon"><i class="fas fa-sliders-h"></i></div>
+                <div class="fl-text">
+                    <span class="fl-label">Data Filters</span>
+                    <span class="fl-value" id="activeFilterCount">All Data</span>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="form-group mb-4">
-                    <label class="filter-label">Donor Name</label>
-                    <select id="categoryFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="category" data-placeholder="Select Donor">
-                    </select>
-                </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Year</label>
-                    <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year" data-placeholder="Select Year">
-                    </select>
-                </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Month</label>
-                    <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month">
-                    </select>
-                </div>
-                
-                <div class="form-group mb-4">
-                    <div class="custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="toggleDataLabels" checked>
-                        <label class="custom-control-label filter-label" for="toggleDataLabels" style="text-transform: none;">Show Data Labels</label>
-                    </div>
-                </div>
+            <div class="fl-chevron"><i class="fas fa-chevron-right"></i></div>
+        </div>
+    </div>
 
-                <div class="mt-5">
-                    <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-3">
-                        <i class="fas fa-sync-alt mr-2"></i>See Report
-                    </button>
-                    <button id="resetFilters" class="btn btn-outline-light btn-block btn-premium mb-3" style="border-color: rgba(255,255,255,0.2)">
-                        <i class="fas fa-undo mr-2"></i>Reset All
-                    </button>
-                    <button id="exportXlsx" class="btn btn-success btn-block btn-premium mb-3">
-                        <i class="fas fa-file-excel mr-2"></i>Export XLSX
-                    </button>
+    <!-- KPI Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info kpi-card" id="kpiCardPrograms" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="inner">
+                    <h3 id="kpiTotalPrograms">0</h3>
+                    <p>Total Programs</p>
+                </div>
+                <div class="icon"><i class="fas fa-project-diagram"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success kpi-card" id="kpiCardSchools" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="inner">
+                    <h3 id="kpiTotalSchools">0</h3>
+                    <p>Total Schools</p>
+                </div>
+                <div class="icon"><i class="fas fa-school"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-navy-blue kpi-card" id="kpiCardSessions" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="inner">
+                    <h3 id="kpiTotalSessions">0</h3>
+                    <p>Total Sessions</p>
+                </div>
+                <div class="icon"><i class="fas fa-chalkboard-teacher"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger kpi-card" id="kpiCardStudents" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="inner">
+                    <h3 id="kpiTotalStudents">0</h3>
+                    <p>Total Impacted</p>
+                </div>
+                <div class="icon"><i class="fas fa-user-graduate"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drilldown Panel -->
+    <div id="drilldownPanel" style="display:none;margin-top:-10px;margin-bottom:20px;">
+        <div class="d-flex align-items-center px-1" style="gap:8px;">
+            <span class="text-muted" style="font-size:13px;cursor:pointer;" onclick="clearDrilldown()"><i class="fas fa-layer-group mr-1"></i>All Regions</span>
+            <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
+            <span id="drilldownTitle" style="font-size:13px;font-weight:600;color:#1e3a8a;"></span>
+            <button onclick="clearDrilldown()" class="btn btn-sm ml-auto" style="background:#f1f5f9;border:1px solid #e2e8f0;color:#64748b;font-size:11px;padding:3px 10px;border-radius:20px;">
+                <i class="fas fa-times mr-1"></i>Clear Drilldown
+            </button>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="card h-100 premium-card white-chart-card shadow-sm">
+                <div class="card-header card-header-premium border-0 pb-0 d-flex justify-content-between align-items-center">
+                    <h3 class="card-title text-sm uppercase">Schools Visited by Region</h3>
+                    <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
+                       style="cursor: pointer;"
+                       data-toggle="popover" 
+                       data-trigger="click" 
+                       data-html="true"
+                       tabindex="0"
+                       title="Region Code Legend" 
+                       data-content="Loading..."></i>
+                </div>
+                <div class="card-body">
+                    <div style="height:350px"><canvas id="schoolsRegionBar"></canvas></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100 premium-card white-chart-card shadow-sm">
+                <div class="card-header card-header-premium border-0 pb-0 d-flex justify-content-between align-items-center">
+                    <h3 class="card-title text-sm uppercase">Sessions by Donor</h3>
+                    <i class="fas fa-info-circle text-muted ml-auto donor-legend-trigger" 
+                       style="cursor: pointer;"
+                       data-toggle="popover" 
+                       data-trigger="click" 
+                       data-html="true"
+                       tabindex="0"
+                       title="Donor Code Legend" 
+                       data-content="Loading..."></i>
+                </div>
+                <div class="card-body">
+                    <div style="height:350px"><canvas id="sessionsDonorPie"></canvas></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Right Column: Dashboard Content -->
-    <div class="col-md-10">
-        <!-- KPI Cards -->
-        <div id="kpiContainer" class="row mb-4">
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-info">
-                    <div class="inner">
-                        <h3 id="kpiTotalPrograms">0</h3>
-                        <p>Total Programs</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-project-diagram"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-success">
-                    <div class="inner">
-                        <h3 id="kpiTotalSchools">0</h3>
-                        <p>Total Schools</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-school"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-navy-blue">
-                    <div class="inner">
-                        <h3 id="kpiTotalSessions">0</h3>
-                        <p>Total Sessions</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-chalkboard-teacher"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-danger">
-                    <div class="inner">
-                        <h3 id="kpiTotalStudents">0</h3>
-                        <p>Total Students Impacted</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-user-graduate"></i>
-                    </div>
-                </div>
+    <!-- Table -->
+    <div class="card premium-card white-chart-card shadow-sm">
+        <div class="card-header card-header-premium d-flex align-items-center">
+            <i class="fas fa-table mr-2" style="color: #3b82f6;"></i>
+            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Comprehensive Program Report</h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="programTable" class="table table-hover mb-0" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Region</th>
+                            <th>Area</th>
+                            <th>Program Name</th>
+                            <th>Donor</th>
+                            <th class="text-center">Schools</th>
+                            <th class="text-center">Days Worked</th>
+                            <th class="text-center">Sessions</th>
+                            <th class="text-center">Avg Min</th>
+                            <th class="text-center">Exposure</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Charts Row -->
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <div class="card h-100 white-chart-card">
-                    <div class="card-header border-0 pb-1 d-flex justify-content-between align-items-center" style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
-                        <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Schools Visited by Region</h3>
-                        <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
-                           style="cursor: pointer;"
-                           data-toggle="popover" 
-                           data-trigger="click" 
-                           data-html="true"
-                           tabindex="0"
-                           title="Region Code Legend" 
-                           data-content="Loading..."></i>
-                    </div>
-                    <div class="card-body">
-                        <div style="height:450px"><canvas id="schoolsRegionBar"></canvas></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card h-100 white-chart-card">
-                    <div class="card-header border-0 pb-1 d-flex justify-content-between align-items-center" style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
-                        <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Sessions by Donor</h3>
-                        <i class="fas fa-info-circle text-muted ml-auto donor-legend-trigger" 
-                           style="cursor: pointer;"
-                           data-toggle="popover" 
-                           data-trigger="click" 
-                           data-html="true"
-                           tabindex="0"
-                           title="Donor Code Legend" 
-                           data-content="Loading..."></i>
-                    </div>
-                    <div class="card-body">
-                        <div style="height:450px"><canvas id="sessionsDonorPie"></canvas></div>
-                    </div>
-                </div>
+<!-- Filter Drawer -->
+<div class="filter-drawer-overlay" id="filterDrawerOverlay"></div>
+<div class="filter-drawer shadow-lg" id="filterDrawer">
+    <div class="fd-header">
+        <h3 class="fd-title"><i class="fas fa-sliders-h mr-2" style="color: #3b82f6;"></i>Filters</h3>
+        <button type="button" class="fd-close" id="closeDrawer"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="fd-body">
+        <div class="fd-section">
+            <label class="fd-label">Donor Name</label>
+            <select id="categoryFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Donor"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Fiscal Year</label>
+            <select id="yearFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Year"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Month</label>
+            <select id="monthFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Month"></select>
+        </div>
+        <div class="fd-section">
+            <div class="custom-control custom-switch mt-2">
+                <input type="checkbox" class="custom-control-input" id="toggleDataLabels" checked>
+                <label class="custom-control-label" for="toggleDataLabels" style="font-size:13px;color:#64748b;">Show Data Labels</label>
             </div>
         </div>
-
-        <!-- Table -->
-        <style>
-            .program-table-container {
-                overflow-x: auto;
-                position: relative;
-                border: 1px solid #dee2e6;
-                border-radius: 4px;
-            }
-            /* Custom Scrollbar for the table */
-            .program-table-container::-webkit-scrollbar {
-                height: 10px;
-            }
-            .program-table-container::-webkit-scrollbar-track {
-                background: #f1f1f1;
-            }
-            .program-table-container::-webkit-scrollbar-thumb {
-                background: #001f3f;
-                border-radius: 5px;
-            }
-            .program-table-container::-webkit-scrollbar-thumb:hover {
-                background: #003366;
-            }
-            #programTable {
-                font-size: 0.85rem;
-                white-space: nowrap;
-            }
-            #programTable th {
-                background: #f8f9fa;
-                position: sticky;
-                top: 0;
-            }
-        </style>
-        <div class="card mt-2">
-            <div class="card-body p-0">
-                <div class="program-table-container">
-                    <table id="programTable" class="table table-striped table-hover mb-0 high-contrast-table table-bordered">
-                        <thead>
-                            <tr id="tableHeaderRow">
-                                <th class="bg-navy-blue text-white">Region Name</th>
-                                <th class="bg-navy-blue text-white">Area Name</th>
-                                <th class="bg-navy-blue text-white">Program Name</th>
-                                <th class="bg-navy-blue text-white">Donor Name</th>
-                                <th class="bg-navy-blue text-white">No of Schools visited</th>
-                                <th class="bg-navy-blue text-white">Total Number of Days worked</th>
-                                <th class="bg-navy-blue text-white">School Sessions</th>
-                                <th class="bg-navy-blue text-white">Average Session Durat</th>
-                                <th class="bg-navy-blue text-white">Total Exposure</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Populated by JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+    </div>
+    <div class="fd-footer">
+        <button class="btn btn-outline-secondary btn-block shadow-sm" id="resetFilters" style="border-radius: 10px;">
+            <i class="fas fa-undo mr-2"></i>Reset All
+        </button>
+        <button class="btn btn-success btn-block mt-2 shadow-sm" id="exportXlsx" style="border-radius: 10px; background: #10b981; border: none;">
+            <i class="fas fa-file-excel mr-2"></i>Export XLSX
+        </button>
+    </div>
+</div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-if (window.ChartDataLabels) { Chart.register(ChartDataLabels); }
 $(function () {
     const pagination = window.PramanaPagination;
     let regionMapping = {};
     let donorMapping = {};
+    let drilldownRegion = null;
 
     if ($.fn.select2) {
-        $('.select2:not(.filter-multi)').select2({ theme: 'bootstrap4' });
+        $('.select2').select2({ 
+            theme: 'bootstrap4',
+            dropdownParent: $('#filterDrawer'),
+            width: '100%',
+            allowClear: true,
+            multiple: true
+        });
     }
+
+    // ── Drawer Logic ──
+    $('#filterLauncher').click(() => {
+        $('#filterDrawerOverlay, #filterDrawer').addClass('open');
+    });
+    $('#closeDrawer, #filterDrawerOverlay').click(() => {
+        $('#filterDrawerOverlay, #filterDrawer').removeClass('open');
+    });
 
     const BAR_PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
     const PIE_PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
@@ -219,16 +218,47 @@ $(function () {
         placement: 'bottom'
     });
 
-    $('.region-legend-trigger, .donor-legend-trigger').popover({
-        html: true,
-        sanitize: false,
-        trigger: 'click',
-        placement: 'bottom'
-    });
+    function getAcronym(str) {
+        if (!str) return '';
+        const parts = str.split(/[ \-_]/);
+        if (parts.length === 1 && str.length > 8) return str.substring(0, 3).toUpperCase();
+        let acronym = '';
+        parts.forEach(p => { if (p.length > 0) acronym += p[0].toUpperCase(); });
+        return acronym.length > 1 ? acronym : str.substring(0, 3).toUpperCase();
+    }
 
-    // Premium Multi-filter initialization
-    if ($.fn.select2) {
-        window.PramanaDashboard.initMultiFilters();
+    function updateLegendPopover(mapping, selector) {
+        let content = '<div class="legend-mapping-popover"><table class="table table-sm pb-0 mb-0" style="font-size:11px">';
+        const sortedKeys = Object.keys(mapping).sort();
+        if (sortedKeys.length === 0) {
+            content = "No data available";
+        } else {
+            sortedKeys.forEach(code => {
+                const names = mapping[code];
+                const displayName = Array.isArray(names) ? names[0] + (names.length > 1 ? ` (+${names.length-1} more)` : '') : names;
+                content += `<tr><td class="font-weight-bold pr-2" style="border-top:0">${code}</td><td style="border-top:0">: ${displayName}</td></tr>`;
+            });
+            content += '</table></div>';
+        }
+        $(selector).attr('data-content', content);
+    }
+
+    function updateFilterSummary() {
+        const c = $('#categoryFilter').val() || [], y = $('#yearFilter').val() || [], m = $('#monthFilter').val() || [];
+        const total = c.length + y.length + m.length;
+        $('#activeFilterCount').text(total ? total + ' Filter' + (total>1?'s':'') + ' Applied' : 'All Data');
+    }
+
+    function collectFilters() {
+        let filters = {
+            category: $('#categoryFilter').val() || [],
+            year: $('#yearFilter').val() || [],
+            month: $('#monthFilter').val() || []
+        };
+        if (drilldownRegion) {
+            filters.region = [drilldownRegion];
+        }
+        return filters;
     }
 
     fetch('/programwise-report/filters')
@@ -237,36 +267,66 @@ $(function () {
             const categorySelect = $('#categoryFilter');
             const yearSelect = $('#yearFilter');
             const monthSelect = $('#monthFilter');
-
             data.categories.forEach(c => categorySelect.append(new Option(c, c)));
             data.years.forEach(y => yearSelect.append(new Option(y, y)));
             data.months.forEach(m => monthSelect.append(new Option(m.name, m.id)));
+            $('.select2').trigger('change.select2', { internal: true });
         });
 
+    window.setDrilldown = function(region) {
+        drilldownRegion = region;
+        $('#drilldownTitle').text('Region: ' + region);
+        $('#drilldownPanel').slideDown(200);
+        $('#programTable').DataTable().ajax.reload();
+        $('html, body').animate({ scrollTop: $("#drilldownPanel").offset().top - 100 }, 500);
+    };
+
+    window.clearDrilldown = function() {
+        drilldownRegion = null;
+        $('#drilldownPanel').slideUp(200);
+        $('#programTable').DataTable().ajax.reload();
+    };
 
     function loadData() {
         window.loadReportData = loadData;
         window.PramanaDashboard.initDataTable('#programTable', {
             ajaxUrl: '/programwise-report/data',
-            getFilters: function() {
-                return window.PramanaDashboard.collectFilters();
-            },
+            getFilters: collectFilters,
             onDataLoad: function(data) {
-                if (data.kpis) {
-                    $('#kpiTotalPrograms').text(data.kpis.total_programs.toLocaleString());
-                    $('#kpiTotalSchools').text(data.kpis.total_schools.toLocaleString());
-                    $('#kpiTotalSessions').text(data.kpis.total_sessions.toLocaleString());
-                    $('#kpiTotalStudents').text(data.kpis.total_students.toLocaleString());
+                if (data.kpis && data.kpis.length >= 4) {
+                    $('#kpiTotalPrograms').text(data.kpis[0].value.toLocaleString());
+                    $('#kpiTotalSchools').text(data.kpis[1].value.toLocaleString());
+                    $('#kpiTotalSessions').text(data.kpis[2].value.toLocaleString());
+                    $('#kpiTotalStudents').text(data.kpis[3].value.toLocaleString());
+
+                    // Update Popovers
+                    data.kpis.forEach((kpi, idx) => {
+                        const cardId = ['#kpiCardPrograms','#kpiCardSchools','#kpiCardSessions','#kpiCardStudents'][idx];
+                        $(cardId).attr('data-content', `
+                            <div class="kpi-insight">
+                                <div class="ki-status ${kpi.status.toLowerCase()}">${kpi.status}</div>
+                                <div class="ki-reason">${kpi.reason}</div>
+                            </div>
+                        `).popover('hide');
+                    });
                 }
-                if (data.charts) {
+                if (data.charts && !drilldownRegion) {
                     regionMapping = {};
                     donorMapping = {};
                     
-                    // Note: renderChart is global in dashboard.js
                     window.PramanaDashboard.renderChart('schoolsRegionBar', 'bar', data.charts.schools_by_region || [], 'Schools', {
                         borderRadius: 4,
                         useAcronyms: true,
-                        legendSelector: '.region-legend-trigger'
+                        legendSelector: '.region-legend-trigger',
+                        palette: BAR_PALETTE,
+                        onClick: (evt, elements, chart) => {
+                            if (elements.length > 0) {
+                                const idx = elements[0].index;
+                                const label = chart.data.labels[idx];
+                                const fullName = chart.options.plugins.tooltip.callbacks.title([{label: label}]);
+                                setDrilldown(fullName);
+                            }
+                        }
                     });
                     
                     window.PramanaDashboard.renderChart('sessionsDonorPie', 'pie', data.charts.sessions_by_donor || [], 'Sessions', {
@@ -275,45 +335,39 @@ $(function () {
                         useAcronyms: true,
                         usePieConnectors: true,
                         showPercentages: true,
-                        legendSelector: '.donor-legend-trigger'
+                        legendSelector: '.donor-legend-trigger',
+                        palette: PIE_PALETTE
                     });
                 }
             },
             columns: [
-                { data: 'Region Name' },
-                { data: 'Area Name' },
-                { data: 'Program Name', className: 'font-weight-bold text-navy' },
-                { data: 'Donor Name' },
-                { data: 'No of Schools visited', className: 'text-center font-weight-bold', render: function(data) {
-                    return (data || 0).toLocaleString();
-                }},
-                { data: 'Total Number of Days worked', className: 'text-center font-weight-bold', render: function(data) {
-                    return (data || 0).toLocaleString();
-                }},
-                { data: 'School Sessions', className: 'text-center font-weight-bold', render: function(data) {
-                    return (data || 0).toLocaleString();
-                }},
-                { data: 'Average Session Durat', className: 'text-center font-weight-bold', render: function(data) {
-                    return (data || 0).toLocaleString();
-                }},
-                { data: 'Total Exposure', className: 'text-center font-weight-bold', render: function(data) {
-                    return (data || 0).toLocaleString();
-                }}
+                { data: 'Region Name', render: d => `<span class="font-weight-600 text-navy">${d}</span>` },
+                { data: 'Area Name', render: d => `<span class="text-muted small">${d}</span>` },
+                { data: 'Program Name', className: 'small font-weight-bold' },
+                { data: 'Donor Name', className: 'small' },
+                { data: 'No of Schools visited', className: 'text-center', render: $.fn.dataTable.render.number(',', '.', 0) },
+                { data: 'Total Number of Days worked', className: 'text-center', render: $.fn.dataTable.render.number(',', '.', 0) },
+                { data: 'School Sessions', className: 'text-center', render: $.fn.dataTable.render.number(',', '.', 0) },
+                { data: 'Average Session Durat', className: 'text-center', render: $.fn.dataTable.render.number(',', '.', 0) },
+                { data: 'Total Exposure', className: 'text-center', render: d => `<span class="badge badge-success px-2 py-1">${(d||0).toLocaleString()}</span>` }
             ]
         });
     }
 
-    $('#seeReport').click(function () {
+    $('.select2').on('change', function(e, opts) {
+        if (opts && opts.internal) return;
+        updateFilterSummary();
+        clearDrilldown();
         loadData();
     });
 
     $('#resetFilters').click(function() {
-        window.PramanaDashboard.resetTable('#programTable', loadData);
+        $('.select2').val(null).trigger('change');
+        clearDrilldown();
     });
 
     $('#exportXlsx').click(() => {
-        const filters = window.PramanaDashboard.collectFilters();
-        const q = $.param(filters, true);
+        const q = $.param(collectFilters(), true);
         window.exportToXLSX(`/programwise-report/export?${q}`, 'programwise_report.xlsx');
     });
 
@@ -321,7 +375,6 @@ $(function () {
         window.PramanaDashboard.updateAllCharts();
     });
 
-    // Auto-load
     setTimeout(loadData, 300);
 });
 </script>

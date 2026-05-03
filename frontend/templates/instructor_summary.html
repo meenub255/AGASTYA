@@ -2,89 +2,33 @@
 
 {% block content %}
 <style>
-    /* ── Filter Launcher ── */
-    .filter-launcher {
-        background: #1a237e;
-        color: white;
-        border-radius: 12px;
-        padding: 12px 20px;
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        box-shadow: 0 4px 15px rgba(26, 35, 126, 0.2);
-        margin-bottom: 20px;
-    }
-    .filter-launcher:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(26, 35, 126, 0.3);
-        background: #283593;
-    }
-    .filter-badge-count {
-        background: rgba(255,255,255,0.2);
-        padding: 2px 10px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        margin-left: 10px;
-    }
-
-    /* ── Filter Drawer ── */
-    .filter-drawer-overlay {
-        position: fixed;
-        top: 0; right: 0; bottom: 0; left: 0;
-        background: rgba(0,0,0,0.5);
-        backdrop-filter: blur(4px);
-        z-index: 1050;
-        display: none;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-    .filter-drawer {
-        position: fixed;
-        top: 0; right: -400px; bottom: 0;
-        width: 400px;
-        background: white;
-        z-index: 1060;
-        box-shadow: -5px 0 25px rgba(0,0,0,0.2);
-        transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        display: flex;
-        flex-direction: column;
-    }
-    .filter-drawer.open { right: 0; }
-    .filter-drawer-header {
-        padding: 20px;
-        border-bottom: 1px solid #eee;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: #f8f9fa;
-    }
-    .filter-drawer-body {
-        padding: 25px;
-        overflow-y: auto;
-        flex-grow: 1;
-    }
-    .filter-drawer-footer {
-        padding: 20px;
-        border-top: 1px solid #eee;
-        background: #f8f9fa;
-    }
-    .drawer-section-title {
-        font-size: 0.75rem;
+    /* ── Table & Cards ── */
+    .content-header { display: none !important; }
+    #instructorTable th {
+        background: #f1f5f9 !important;
+        color: #475569 !important;
+        font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #64748b;
-        margin-bottom: 15px;
-        display: block;
+        letter-spacing: 0.5px;
+        padding: 15px;
+        border-bottom: 1px solid #e2e8f0 !important;
     }
-
-    /* ── Table & Cards ── */
+    #instructorTable td { 
+        padding: 12px 15px; 
+        vertical-align: middle; 
+        color: #1e293b !important;
+    }
+    .card-header-premium {
+        background: #f1f5f9;
+        border-bottom: 1px solid #e2e8f0 !important;
+        padding: 15px 20px;
+    }
     .premium-card {
-        border-radius: 12px;
+        border-radius: 15px;
         border: none;
         box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        overflow: hidden;
     }
     .small-box {
         border-radius: 12px;
@@ -92,130 +36,132 @@
         overflow: hidden;
     }
     .small-box:hover { transform: translateY(-3px); }
-    
-    #instructorTable th {
-        background: #f8fafc !important;
-        color: #475569 !important;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        padding: 15px;
-        border-bottom: 2px solid #e2e8f0 !important;
-    }
-    #instructorTable td { padding: 12px 15px; vertical-align: middle; }
 </style>
 
-<!-- Filter Launcher -->
-<div class="filter-launcher" id="filterLauncher">
-    <div class="d-flex align-items-center">
-        <i class="fas fa-filter mr-3"></i>
+<div class="col-md-12">
+    <!-- Top Action Bar (Filters + Title) -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-            <span class="font-weight-bold">Filter Instructor Summary</span>
-            <span id="activeFilterCount" class="filter-badge-count">All Data</span>
+            <h1 class="m-0 font-weight-bold" style="font-size: 1.8rem; color: #1e293b;">Instructor Summary</h1>
+            <p class="text-muted small mb-0">Detailed performance metrics per instructor</p>
+        </div>
+        
+        <!-- Filter Launcher -->
+        <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
+            <div class="fl-content">
+                <div class="fl-icon"><i class="fas fa-sliders-h"></i></div>
+                <div class="fl-text">
+                    <span class="fl-label">Data Filters</span>
+                    <span class="fl-value" id="activeFilterCount">All Data</span>
+                </div>
+            </div>
+            <div class="fl-chevron"><i class="fas fa-chevron-right"></i></div>
         </div>
     </div>
-    <i class="fas fa-chevron-right"></i>
-</div>
 
-<!-- KPI Cards -->
-<div class="row mb-4">
-    <div class="col-lg-3 col-6">
-        <div class="small-box bg-info">
-            <div class="inner">
-                <h3 id="kpiDaysWorked">0</h3>
-                <p>Days Worked</p>
+    <!-- KPI Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info kpi-card">
+                <div class="inner">
+                    <h3 id="kpiDaysWorked">0</h3>
+                    <p>Days Worked</p>
+                </div>
+                <div class="icon"><i class="fas fa-calendar-alt"></i></div>
             </div>
-            <div class="icon"><i class="fas fa-calendar-alt"></i></div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success kpi-card">
+                <div class="inner">
+                    <h3 id="kpiNoOfSessions">0</h3>
+                    <p>Total Sessions</p>
+                </div>
+                <div class="icon"><i class="fas fa-chalkboard-teacher"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-indigo kpi-card" style="background: #6366f1 !important; color:white;">
+                <div class="inner">
+                    <h3 id="kpiSchoolExposures">0</h3>
+                    <p>School Exposures</p>
+                </div>
+                <div class="icon"><i class="fas fa-school"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger kpi-card">
+                <div class="inner">
+                    <h3 id="kpiCombinedExposures">0</h3>
+                    <p>Combined Exposures</p>
+                </div>
+                <div class="icon"><i class="fas fa-users"></i></div>
+            </div>
         </div>
     </div>
-    <div class="col-lg-3 col-6">
-        <div class="small-box bg-success">
-            <div class="inner">
-                <h3 id="kpiNoOfSessions">0</h3>
-                <p>Total Sessions</p>
-            </div>
-            <div class="icon"><i class="fas fa-chalkboard-teacher"></i></div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-6">
-        <div class="small-box bg-indigo" style="background: #3f51b5 !important; color:white;">
-            <div class="inner">
-                <h3 id="kpiSchoolExposures">0</h3>
-                <p>School Exposures</p>
-            </div>
-            <div class="icon"><i class="fas fa-school"></i></div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-6">
-        <div class="small-box bg-danger">
-            <div class="inner">
-                <h3 id="kpiCombinedExposures">0</h3>
-                <p>Combined Exposures</p>
-            </div>
-            <div class="icon"><i class="fas fa-users"></i></div>
-        </div>
-    </div>
-</div>
 
-<!-- Main Table Card -->
-<div class="card premium-card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table id="instructorTable" class="table table-hover mb-0">
-                <thead>
-                    <tr>
-                        <th>Instructor</th>
-                        <th class="text-center">Days Worked</th>
-                        <th class="text-center">School Session</th>
-                        <th class="text-center">Exposures</th>
-                        <th class="text-center">Fairs</th>
-                        <th class="text-center">Training</th>
-                        <th class="text-center">SF Expo</th>
-                        <th class="text-center">YIL Sess</th>
-                        <th class="text-center">YIL Expo</th>
-                        <th class="text-center">CV Visit</th>
-                        <th class="text-center">CV Expo</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+    <!-- Main Table Card -->
+    <div class="card premium-card white-chart-card shadow-sm">
+        <div class="card-header card-header-premium d-flex align-items-center">
+            <i class="fas fa-table mr-2" style="color: #3b82f6;"></i>
+            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Instructor Performance Breakdown</h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="instructorTable" class="table table-hover mb-0" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Instructor</th>
+                            <th class="text-center">Days Worked</th>
+                            <th class="text-center">School Session</th>
+                            <th class="text-center">Exposures</th>
+                            <th class="text-center">Fairs</th>
+                            <th class="text-center">Training</th>
+                            <th class="text-center">SF Expo</th>
+                            <th class="text-center">YIL Sess</th>
+                            <th class="text-center">YIL Expo</th>
+                            <th class="text-center">CV Visit</th>
+                            <th class="text-center">CV Expo</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Filter Drawer -->
-<div class="filter-drawer-overlay" id="drawerOverlay"></div>
-<div class="filter-drawer" id="filterDrawer">
-    <div class="filter-drawer-header">
-        <h5 class="mb-0 font-weight-bold"><i class="fas fa-sliders-h mr-2"></i>Filters</h5>
-        <button type="button" class="btn btn-light btn-sm rounded-circle" id="closeDrawer">
+<div class="filter-drawer-overlay" id="filterDrawerOverlay"></div>
+<div class="filter-drawer shadow-lg" id="filterDrawer">
+    <div class="fd-header">
+        <h3 class="fd-title"><i class="fas fa-sliders-h mr-2" style="color: #3b82f6;"></i>Filters</h3>
+        <button type="button" class="fd-close" id="closeDrawer">
             <i class="fas fa-times"></i>
         </button>
     </div>
-    <div class="filter-drawer-body">
-        <div class="form-group mb-4">
-            <label class="drawer-section-title">Fiscal Year</label>
+    <div class="fd-body">
+        <div class="fd-section">
+            <label class="fd-label">Fiscal Year</label>
             <select id="yearFilter" class="form-control select2 filter-multi" multiple data-placeholder="All Years"></select>
         </div>
-        <div class="form-group mb-4">
-            <label class="drawer-section-title">Region</label>
+        <div class="fd-section">
+            <label class="fd-label">Region</label>
             <select id="regionFilter" class="form-control select2 filter-multi" multiple data-placeholder="All Regions"></select>
         </div>
-        <div class="form-group mb-4">
-            <label class="drawer-section-title">Area</label>
+        <div class="fd-section">
+            <label class="fd-label">Area</label>
             <select id="areaFilter" class="form-control select2 filter-multi" multiple data-placeholder="All Areas"></select>
         </div>
-        <div class="form-group mb-4">
-            <label class="drawer-section-title">Month</label>
+        <div class="fd-section">
+            <label class="fd-label">Month</label>
             <select id="monthFilter" class="form-control select2 filter-multi" multiple data-placeholder="All Months"></select>
         </div>
     </div>
-    <div class="filter-drawer-footer">
-        <button class="btn btn-outline-secondary btn-block" id="resetFilters">
+    <div class="fd-footer">
+        <button class="btn btn-outline-secondary btn-block shadow-sm" id="resetFilters" style="border-radius: 10px;">
             <i class="fas fa-undo mr-2"></i>Reset All Filters
         </button>
-        <button class="btn btn-success btn-block mt-2" id="exportXlsx">
+        <button class="btn btn-success btn-block mt-2 shadow-sm" id="exportXlsx" style="border-radius: 10px; background: #10b981; border: none;">
             <i class="fas fa-file-excel mr-2"></i>Export to Excel
         </button>
     </div>
@@ -226,15 +172,23 @@
 {% block scripts %}
 <script>
 $(function() {
+    // ── Select2 Init ──
+    if ($.fn.select2) {
+        $('.select2').select2({ 
+            theme: 'bootstrap4', 
+            dropdownParent: $('#filterDrawer'), 
+            width: '100%', 
+            allowClear: true, 
+            multiple: true 
+        });
+    }
+
     // ── Drawer Logic ──
     $('#filterLauncher').click(() => {
-        $('#drawerOverlay').show().css('opacity', 1);
-        $('#filterDrawer').addClass('open');
+        $('#filterDrawerOverlay, #filterDrawer').addClass('open');
     });
-    $('#closeDrawer, #drawerOverlay').click(() => {
-        $('#drawerOverlay').css('opacity', 0);
-        setTimeout(() => $('#drawerOverlay').hide(), 300);
-        $('#filterDrawer').removeClass('open');
+    $('#closeDrawer, #filterDrawerOverlay').click(() => {
+        $('#filterDrawerOverlay, #filterDrawer').removeClass('open');
     });
 
     // ── Filter Population ──
@@ -248,7 +202,7 @@ $(function() {
         if (r.length) r.forEach(v => params.append('region', v));
         if (a.length) a.forEach(v => params.append('area', v));
 
-        return fetch('/instructor-summary/filters?' + params.toString())
+        return fetch('/instructor-summary/filters?' + params.toString(), { cache: 'no-store' })
             .then(r => r.json())
             .then(data => {
                 // Year

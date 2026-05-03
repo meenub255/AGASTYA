@@ -1,121 +1,192 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-    <!-- Left Column: Filter Slicers -->
-    <div class="col-md-2 mb-3">
-        <div class="card filter-card shadow-lg">
-            <div class="card-header">
-                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
+<style>
+    .content-header { display: none !important; }
+    .card-header-premium {
+        background: #f1f5f9;
+        border-bottom: 1px solid #e2e8f0 !important;
+        padding: 15px 20px;
+    }
+    #attendanceTable th {
+        background: #f1f5f9 !important;
+        color: #475569 !important;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 15px;
+        border-bottom: 1px solid #e2e8f0 !important;
+    }
+    #attendanceTable td { 
+        padding: 12px 15px; 
+        vertical-align: middle; 
+        color: #1e293b !important;
+        font-size: 0.9rem;
+    }
+    .premium-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        overflow: hidden;
+    }
+    .small-box {
+        border-radius: 12px;
+        transition: transform 0.2s;
+        overflow: hidden;
+    }
+    .small-box:hover { transform: translateY(-3px); }
+</style>
+
+<div class="col-md-12">
+    <!-- Top Action Bar -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="m-0 font-weight-bold" style="font-size: 1.8rem; color: #1e293b;">Attendance</h1>
+            <p class="text-muted small mb-0">Field staff attendance and session overview</p>
+        </div>
+        
+        <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
+            <div class="fl-content">
+                <div class="fl-icon"><i class="fas fa-sliders-h"></i></div>
+                <div class="fl-text">
+                    <span class="fl-label">Data Filters</span>
+                    <span class="fl-value" id="activeFilterCount">All Data</span>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="form-group mb-4">
-                    <label class="filter-label">Region</label>
-                    <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region">
-                    </select>
+            <div class="fl-chevron"><i class="fas fa-chevron-right"></i></div>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div id="kpiContainer" class="row mb-4">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info kpi-card">
+                <div class="inner"><h3 id="kpiTotalStaff">0</h3><p>Total Field Staff</p></div>
+                <div class="icon"><i class="fas fa-users-cog"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success kpi-card">
+                <div class="inner"><h3 id="kpiTotalDays">0</h3><p>Cumulative Days Present</p></div>
+                <div class="icon"><i class="fas fa-calendar-check"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-navy-blue kpi-card">
+                <div class="inner"><h3 id="kpiTotalSessions">0</h3><p>Total Sessions Conducted</p></div>
+                <div class="icon"><i class="fas fa-chalkboard-teacher"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger kpi-card">
+                <div class="inner"><h3 id="kpiAvgSessions">0</h3><p>Avg Sessions / Day</p></div>
+                <div class="icon"><i class="fas fa-chart-line"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row">
+        <div class="col-xl-7 col-lg-7">
+            <div class="card mb-4 white-chart-card premium-card">
+                <div class="card-header d-flex align-items-center justify-content-between" style="background:#f1f5f9;border-bottom:1px solid #e2e8f0 !important;">
+                    <div>
+                        <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-chart-line mr-2" style="color:#3b82f6;"></i>Attendance Trend</h3>
+                        <small class="text-muted">Total sessions conducted over time</small>
+                    </div>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Area</label>
-                    <select id="areaFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="area" data-placeholder="Select Area">
-                    </select>
+                <div class="card-body" style="padding:16px;">
+                    <div style="position:relative;height:350px;"><canvas id="trendChart"></canvas></div>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Year</label>
-                    <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year" data-placeholder="Select Year">
-                    </select>
+            </div>
+        </div>
+        <div class="col-xl-5 col-lg-5">
+            <div class="card mb-4 white-chart-card premium-card">
+                <div class="card-header d-flex align-items-center justify-content-between" style="background:#f1f5f9;border-bottom:1px solid #e2e8f0 !important;">
+                    <div>
+                        <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-map-marked-alt mr-2" style="color:#8b5cf6;"></i>Sessions by Region</h3>
+                        <small class="text-muted">Click a region to drill into table data</small>
+                    </div>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Month</label>
-                    <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month">
-                    </select>
-                </div>
-                
-                <div class="mt-5">
-                    <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-3">
-                        <i class="fas fa-sync-alt mr-2"></i>See Report
-                    </button>
-                    <button id="resetFilters" class="btn btn-outline-light btn-block btn-premium mb-3" style="border-color: rgba(255,255,255,0.2)">
-                        <i class="fas fa-undo mr-2"></i>Reset All
-                    </button>
-                    <button id="exportXlsx" class="btn btn-success btn-block btn-premium mb-3">
-                        <i class="fas fa-file-excel mr-2"></i>Export XLSX
-                    </button>
+                <div class="card-body" style="padding:16px;">
+                    <div style="position:relative;height:350px;"><canvas id="regionChart"></canvas></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Right Column: Dashboard Content -->
-    <div class="col-md-10">
-        <!-- KPI Cards -->
-        <div id="kpiContainer" class="row mb-4">
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-info">
-                    <div class="inner">
-                        <h3 id="kpiTotalStaff">0</h3>
-                        <p>Total Field Staff</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-users-cog"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-success">
-                    <div class="inner">
-                        <h3 id="kpiTotalDays">0</h3>
-                        <p>Cumulative Days Present</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-navy-blue">
-                    <div class="inner">
-                        <h3 id="kpiTotalSessions">0</h3>
-                        <p>Total Sessions Conducted</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-chalkboard-teacher"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-danger">
-                    <div class="inner">
-                        <h3 id="kpiAvgSessions">0</h3>
-                        <p>Avg Sessions / Day</p>
-                    </div>
-                    <div class="icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                </div>
-            </div>
+    <!-- Drilldown Panel -->
+    <div id="drilldownPanel" style="display:none;margin-top:8px;margin-bottom:15px;">
+        <div class="d-flex align-items-center px-1" style="gap:8px;">
+            <span class="text-muted" style="font-size:13px;cursor:pointer;" onclick="clearDrilldown()"><i class="fas fa-chart-bar mr-1"></i>All Data</span>
+            <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
+            <span id="drilldownTitle" style="font-size:13px;font-weight:600;color:#1e3a8a;"></span>
+            <button onclick="clearDrilldown()" class="btn btn-sm ml-auto" style="background:#f1f5f9;border:1px solid #e2e8f0;color:#64748b;font-size:11px;padding:3px 10px;border-radius:20px;">
+                <i class="fas fa-times mr-1"></i>Clear Drilldown
+            </button>
         </div>
+    </div>
 
-        <!-- Table -->
-        <div class="card mt-2">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table id="attendanceTable" class="table table-striped table-hover mb-0 high-contrast-table">
-                        <thead>
-                            <tr>
-                                <th>Instructor</th>
-                                <th>Region</th>
-                                <th>Area</th>
-                                <th class="text-center">Days Present</th>
-                                <th class="text-center">Total Sessions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Populated by JS -->
-                        </tbody>
-                    </table>
-                </div>
+    <!-- Table -->
+    <div class="card premium-card white-chart-card shadow-sm">
+        <div class="card-header card-header-premium d-flex align-items-center">
+            <i class="fas fa-list-alt mr-2" style="color: #3b82f6;"></i>
+            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Detailed Attendance Log</h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="attendanceTable" class="table table-hover mb-0" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Instructor</th>
+                            <th>Region</th>
+                            <th>Area</th>
+                            <th class="text-center">Days Present</th>
+                            <th class="text-center">Total Sessions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Filter Drawer -->
+<div class="filter-drawer-overlay" id="filterDrawerOverlay"></div>
+<div class="filter-drawer shadow-lg" id="filterDrawer">
+    <div class="fd-header">
+        <h3 class="fd-title"><i class="fas fa-sliders-h mr-2" style="color: #3b82f6;"></i>Filters</h3>
+        <button type="button" class="fd-close" id="closeDrawer">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="fd-body">
+        <div class="fd-section">
+            <label class="fd-label">Region</label>
+            <select id="regionFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Region"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Area</label>
+            <select id="areaFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Area"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Fiscal Year</label>
+            <select id="yearFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Year"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Month</label>
+            <select id="monthFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Month"></select>
+        </div>
+    </div>
+    <div class="fd-footer">
+        <button class="btn btn-outline-secondary btn-block shadow-sm" id="resetFilters" style="border-radius: 10px;">
+            <i class="fas fa-undo mr-2"></i>Reset All Filters
+        </button>
+        <button class="btn btn-success btn-block mt-2 shadow-sm" id="exportXlsx" style="border-radius: 10px; background: #10b981; border: none;">
+            <i class="fas fa-file-excel mr-2"></i>Export XLSX
+        </button>
     </div>
 </div>
 {% endblock %}
@@ -123,11 +194,46 @@
 {% block scripts %}
 <script>
 $(function () {
-    const pagination = window.PramanaPagination;
+    let trendChart = null;
+    let regionChart = null;
+    let drilldownRegion = null;
 
-    // Premium Multi-filter initialization
+    // ── Select2 Init ──
     if ($.fn.select2) {
-        window.PramanaDashboard.initMultiFilters();
+        $('.select2').select2({ 
+            theme: 'bootstrap4', 
+            dropdownParent: $('#filterDrawer'), 
+            width: '100%', 
+            allowClear: true, 
+            multiple: true 
+        });
+    }
+
+    // ── Drawer Logic ──
+    $('#filterLauncher').click(() => {
+        $('#filterDrawerOverlay, #filterDrawer').addClass('open');
+    });
+    $('#closeDrawer, #filterDrawerOverlay').click(() => {
+        $('#filterDrawerOverlay, #filterDrawer').removeClass('open');
+    });
+
+    function updateFilterSummary() {
+        const r = $('#regionFilter').val() || [], a = $('#areaFilter').val() || [], y = $('#yearFilter').val() || [], m = $('#monthFilter').val() || [];
+        const total = r.length + a.length + y.length + m.length;
+        $('#activeFilterCount').text(total ? total + ' Filter' + (total>1?'s':'') + ' Applied' : 'All Data');
+    }
+
+    function collectFilters() {
+        let filters = {
+            region: $('#regionFilter').val() || [],
+            area: $('#areaFilter').val() || [],
+            year: $('#yearFilter').val() || [],
+            month: $('#monthFilter').val() || []
+        };
+        if (drilldownRegion) {
+            filters.region = [drilldownRegion];
+        }
+        return filters;
     }
 
     fetch('/attendance/filters')
@@ -142,27 +248,130 @@ $(function () {
             data.areas.forEach(a => areaSelect.append(new Option(a, a)));
             data.years.forEach(y => yearSelect.append(new Option(y, y)));
             data.months.forEach(m => monthSelect.append(new Option(m.name, m.id)));
+            $('.select2').trigger('change.select2', { internal: true });
         });
+
+    function renderCharts(chartData) {
+        if (!chartData) return;
+
+        // Trend Chart
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        if (trendChart) trendChart.destroy();
+        trendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: chartData.trend.labels,
+                datasets: [{
+                    label: 'Total Sessions',
+                    data: chartData.trend.data,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Region Chart
+        const regionCtx = document.getElementById('regionChart').getContext('2d');
+        if (regionChart) regionChart.destroy();
+        
+        // Colors array
+        const bgColors = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#6366f1','#ec4899'];
+        const chartBg = chartData.region.labels.map((_, i) => bgColors[i % bgColors.length]);
+
+        regionChart = new Chart(regionCtx, {
+            type: 'bar',
+            data: {
+                labels: chartData.region.labels.map(l => {
+                    const parts = l.split(/[_ \-]/);
+                    let a = ''; parts.forEach(p => { if (p.length > 0) a += p[0].toUpperCase(); });
+                    return a.length > 1 ? a : l.substring(0, 3).toUpperCase();
+                }),
+                fullLabels: chartData.region.labels, // Store full labels for click event
+                datasets: [{
+                    label: 'Sessions',
+                    data: chartData.region.data,
+                    backgroundColor: chartBg,
+                    borderWidth: 0,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                return context[0].chart.data.fullLabels[context[0].dataIndex];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                    x: { grid: { display: false } }
+                },
+                onClick: (e, activeEls) => {
+                    if (activeEls.length > 0) {
+                        const idx = activeEls[0].index;
+                        const region = regionChart.data.fullLabels[idx];
+                        setDrilldown(region);
+                    }
+                }
+            }
+        });
+    }
+
+    window.setDrilldown = function(region) {
+        drilldownRegion = region;
+        $('#drilldownTitle').text('Region: ' + region);
+        $('#drilldownPanel').slideDown(200);
+        
+        // Reload table
+        $('#attendanceTable').DataTable().ajax.reload();
+        
+        // Scroll to table smoothly
+        $('html, body').animate({
+            scrollTop: $("#drilldownPanel").offset().top - 100
+        }, 500);
+    };
+
+    window.clearDrilldown = function() {
+        drilldownRegion = null;
+        $('#drilldownPanel').slideUp(200);
+        $('#attendanceTable').DataTable().ajax.reload();
+    };
 
     function loadData() {
         window.loadReportData = loadData;
         window.PramanaDashboard.initDataTable('#attendanceTable', {
             ajaxUrl: '/attendance/data',
-            getFilters: function() {
-                return window.PramanaDashboard.collectFilters();
-            },
+            getFilters: collectFilters,
             onDataLoad: function(data) {
-                // Update KPIs
                 if (data.kpis && data.kpis.length >= 4) {
                     $('#kpiTotalStaff').text(data.kpis[0].value.toLocaleString());
                     $('#kpiTotalDays').text(data.kpis[1].value.toLocaleString());
                     $('#kpiTotalSessions').text(data.kpis[2].value.toLocaleString());
                     $('#kpiAvgSessions').text(data.kpis[3].value);
                 }
+                if (data.charts && !drilldownRegion) {
+                    renderCharts(data.charts);
+                }
             },
             columns: [
                 { data: 'instructor_name', render: function(data) {
-                    return `<span class="font-weight-bold text-navy">${data}</span>`;
+                    return `<span class="font-weight-600 text-navy">${data}</span>`;
                 }},
                 { data: 'region', render: function(data) {
                     return `<small class="text-muted"><i class="fas fa-globe mr-1"></i> ${data}</small>`;
@@ -176,17 +385,21 @@ $(function () {
         });
     }
 
-    $('#seeReport').click(function () {
+    // ── Events ──
+    $('.select2').on('change', function(e, opts) {
+        if (opts && opts.internal) return;
+        updateFilterSummary();
+        clearDrilldown(); // Filter change resets drilldown
         loadData();
     });
 
     $('#resetFilters').click(function() {
-        window.PramanaDashboard.resetTable('#attendanceTable', loadData);
+        $('.select2').val(null).trigger('change');
+        clearDrilldown();
     });
 
     $('#exportXlsx').click(function() {
-        const filters = window.PramanaDashboard.collectFilters();
-        const query = $.param(filters, true);
+        const query = $.param(collectFilters(), true);
         window.exportToXLSX(`/attendance/export?${query}`, 'attendance_report.xlsx');
     });
 
