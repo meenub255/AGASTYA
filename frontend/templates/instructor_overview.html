@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="col-md-12">
+    <!-- Top Action Bar -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="m-0 font-weight-bold" style="font-size: 1.5rem; color: #1e293b; font-family: Arial, sans-serif !important;">Instructor Performance</h1>
+            <p class="text-muted small mb-0">Instructor productivity, sessions & impact overview</p>
+        </div>
+        <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
+            <div class="fl-content">
+                <div class="fl-icon"><i class="fas fa-sliders-h"></i></div>
+                <div class="fl-text">
+                    <span class="fl-label">Data Filters</span>
+                    <span class="fl-value" id="activeFilterCount">All Data</span>
+                </div>
+            </div>
+            <div class="fl-chevron"><i class="fas fa-chevron-right"></i></div>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row mb-3" id="kpiRow"></div>
+
+    <!-- Charts Row 1 -->
+    <div class="row">
+        <div class="col-md-5 mb-3">
+            <div class="card h-100 white-chart-card shadow-sm">
+                <div class="card-header border-0 pb-1" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;">Sessions by Instructor Type</h3>
+                </div>
+                <div class="card-body"><div style="height:320px;"><canvas id="chartType"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-7 mb-3">
+            <div class="card h-100 white-chart-card shadow-sm">
+                <div class="card-header border-0 pb-1" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;">Monthly Sessions Trend</h3>
+                </div>
+                <div class="card-body"><div style="height:320px;"><canvas id="chartTrend"></canvas></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="row">
+        <div class="col-12 mb-3">
+            <div class="card white-chart-card shadow-sm">
+                <div class="card-header border-0 pb-1" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;">Top Regions by Sessions</h3>
+                </div>
+                <div class="card-body"><div style="height:300px;"><canvas id="chartRegion"></canvas></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card white-chart-card shadow-sm" style="border-radius:15px; overflow:hidden;">
+        <div class="card-header d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+            <i class="fas fa-table mr-2" style="color:#6366f1;"></i>
+            <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;">Top Instructors</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="overviewTable" class="table table-hover mb-0 high-contrast-table" style="width:100%">
+                    <thead><tr>
+                        <th>Name</th><th>Role</th><th>Region</th>
+                        <th class="text-right">Sessions</th><th class="text-right">Students</th><th class="text-right">Schools</th>
+                    </tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Drawer -->
+<div id="filterDrawerOverlay" class="filter-drawer-overlay"></div>
+<div id="filterDrawer" class="filter-drawer">
+    <div class="fd-header">
+        <h3 class="fd-title"><i class="fas fa-filter mr-2" style="color:#3b82f6;"></i>Filters</h3>
+        <button id="closeDrawer" class="fd-close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="fd-body">
+        <div class="fd-section">
+            <label class="fd-label">Fiscal Year</label>
+            <select id="yearFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Year" data-filter="years"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Regional Hubs</label>
+            <select id="regionFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Region" data-filter="region"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Program Category</label>
+            <select id="programFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Program" data-filter="program"></select>
+        </div>
+    </div>
+    <div class="fd-footer">
+        <button id="resetFilters" class="btn btn-outline-secondary btn-block" style="border-radius:10px;">
+            <i class="fas fa-undo mr-2"></i>Reset All Filters
+        </button>
+    </div>
+</div>
+
+<style>
+    .content-header { display: none !important; }
+    .select2-container--open { z-index: 9999 !important; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(function(){
+    if(typeof Chart !== 'undefined') {
+        Chart.defaults.font.family = 'Arial, Helvetica, sans-serif';
+    }
+    const PALETTE = ['#6366f1','#10b981','#3b82f6','#f59e0b','#ec4899','#8b5cf6','#14b8a6','#f97316'];
+
+    // Drawer logic
+    $('#filterLauncher').click(()=>{ $('#filterDrawer, #filterDrawerOverlay').addClass('open'); });
+    const closeDrawer = ()=>{ $('#filterDrawer, #filterDrawerOverlay').removeClass('open'); };
+    $('#closeDrawer').click(closeDrawer);
+    $('#filterDrawerOverlay').click(closeDrawer);
+
+    if($.fn.select2){ $('.select2').select2({ theme:'bootstrap4', dropdownParent:$('#filterDrawer'), width:'100%', allowClear:true, multiple:true }); }
+
+    // Filters
+    function fetchFilters(target, years, regions){
+        const q = $.param({years:years||[], regions:regions||[]}, true);
+        return fetch(`/dashboard/filters?${q}`).then(r=>r.json()).then(d=>{
+            if(target==='all'){
+                $('#yearFilter').empty(); d.years.forEach(y=>$('#yearFilter').append(new Option(y,y)));
+                $('#regionFilter').empty(); d.regions.forEach(r=>$('#regionFilter').append(new Option(r,r)));
+                $('#programFilter').empty(); d.programs.forEach(p=>$('#programFilter').append(new Option(p,p)));
+                $('.select2').trigger('change.select2');
+            } else if(target==='regions'){
+                const cur=$('#regionFilter').val()||[];
+                $('#regionFilter').empty(); d.regions.forEach(r=>$('#regionFilter').append(new Option(r,r)));
+                $('#regionFilter').val(cur).trigger('change.select2',{internal:true});
+            } else if(target==='programs'){
+                const cur=$('#programFilter').val()||[];
+                $('#programFilter').empty(); d.programs.forEach(p=>$('#programFilter').append(new Option(p,p)));
+                $('#programFilter').val(cur).trigger('change.select2',{internal:true});
+            }
+            updateSummary();
+        });
+    }
+    fetchFilters('all');
+
+    $('#yearFilter').on('change',(e,d)=>{ if(d&&d.internal) return; fetchFilters('regions',$('#yearFilter').val()).then(()=>fetchFilters('programs',$('#yearFilter').val(),$('#regionFilter').val())); loadData(); });
+    $('#regionFilter').on('change',(e,d)=>{ if(d&&d.internal) return; fetchFilters('programs',$('#yearFilter').val(),$('#regionFilter').val()); loadData(); });
+    $('#programFilter').on('change',(e,d)=>{ if(d&&d.internal) return; loadData(); });
+    $('#resetFilters').click(()=>{ $('.select2').val(null).trigger('change',{internal:true}); fetchFilters('all').then(()=>loadData()); });
+
+    function updateSummary(){
+        const t=($('#yearFilter').val()||[]).length+($('#regionFilter').val()||[]).length+($('#programFilter').val()||[]).length;
+        $('#activeFilterCount').text(t?`${t} Filters Applied`:'All Data');
+    }
+    $('.select2').on('change', updateSummary);
+
+    function animateNum(el, target){
+        const $el=$(el); const start=parseInt(($el.text()||'0').replace(/,/g,''))||0;
+        const steps=20, inc=(target-start)/steps; let step=0;
+        const t=setInterval(()=>{ step++; $el.text(Math.round(start+inc*step).toLocaleString()); if(step>=steps){$el.text(target.toLocaleString()); clearInterval(t);} },25);
+    }
+
+    function getParams(){
+        return $.param({years:$('#yearFilter').val()||[], region:$('#regionFilter').val()||[], program:$('#programFilter').val()||[]}, true);
+    }
+
+    let dt=null;
+    function loadData(){
+        const q=getParams();
+        fetch(`/category-overview/instructor?${q}`).then(r=>r.json()).then(data=>{
+            // KPIs
+            const kr=$('#kpiRow').empty();
+            (data.kpis||[]).forEach(k=>{
+                kr.append(`<div class="col-lg-3 col-6 mb-2"><div class="kpi-card-v2" style="background:${k.color};">
+                    <span class="kpi-v2-val" data-target="${k.value}">0</span>
+                    <span class="kpi-v2-lbl">${k.label}</span>
+                    <div class="kpi-v2-icon"><i class="${k.icon}"></i></div>
+                </div></div>`);
+            });
+            kr.find('.kpi-v2-val').each(function(){ animateNum(this, +$(this).data('target')); });
+
+            // Charts
+            const ch=data.charts||{};
+            renderDoughnut('chartType', ch.by_type||[]);
+            renderLine('chartTrend', ch.trend||[]);
+            renderHBar('chartRegion', ch.by_region||[]);
+
+            // Table
+            if(dt){ dt.destroy(); dt=null; }
+            const tb=$('#overviewTable tbody').empty();
+            (data.table||[]).forEach(r=>{
+                tb.append(`<tr><td class="font-weight-600">${r.name}</td><td>${r.role}</td><td>${r.region}</td>
+                    <td class="text-right">${Number(r.sessions||0).toLocaleString()}</td>
+                    <td class="text-right">${Number(r.students||0).toLocaleString()}</td>
+                    <td class="text-right">${Number(r.schools||0).toLocaleString()}</td></tr>`);
+            });
+            dt=PramanaDashboard.initDataTable('#overviewTable',{paging:true,searching:true,pageLength:10,order:[[3,'desc']]});
+        });
+    }
+
+    // Chart helpers
+    let chartInstances={};
+    function destroyChart(id){ if(chartInstances[id]){ chartInstances[id].destroy(); delete chartInstances[id]; } }
+
+    function renderDoughnut(id, points){
+        destroyChart(id);
+        const c=document.getElementById(id); if(!c) return;
+        chartInstances[id]=new Chart(c,{type:'doughnut',data:{
+            labels:points.map(p=>p.label), datasets:[{data:points.map(p=>p.value),
+            backgroundColor:points.map((_,i)=>PALETTE[i%PALETTE.length]), borderWidth:2, borderColor:'#fff'}]},
+            options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
+                plugins:{legend:{display:true,position:'right',labels:{boxWidth:12,padding:12,usePointStyle:true,pointStyle:'circle',color:'#475569',font:{size:11}}},
+                    datalabels:{display:true,color:'#fff',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString()},
+                    tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}}}
+        });
+    }
+
+    function renderLine(id, points){
+        destroyChart(id);
+        const c=document.getElementById(id); if(!c) return;
+        chartInstances[id]=new Chart(c,{type:'line',data:{
+            labels:points.map(p=>p.label), datasets:[{label:'Sessions',data:points.map(p=>p.value),
+            borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.12)',pointBackgroundColor:'#6366f1',
+            pointRadius:3,tension:.35,fill:true,borderWidth:2}]},
+            options:{responsive:true,maintainAspectRatio:false,
+                plugins:{legend:{display:false},datalabels:{display:false},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},
+                scales:{x:{grid:{display:false},ticks:{color:'#64748b',maxRotation:45,font:{size:10}}},
+                        y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}}}}
+        });
+    }
+
+    function renderHBar(id, points){
+        destroyChart(id);
+        const c=document.getElementById(id); if(!c) return;
+        chartInstances[id]=new Chart(c,{type:'bar',data:{
+            labels:points.map(p=>p.label), datasets:[{label:'Sessions',data:points.map(p=>p.value),
+            backgroundColor:points.map((_,i)=>PALETTE[i%PALETTE.length]),borderRadius:6,barThickness:22}]},
+            options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+                plugins:{legend:{display:false},datalabels:{display:true,anchor:'end',align:'end',color:'#334155',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString()},
+                    tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},
+                scales:{x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}},
+                        y:{grid:{display:false},ticks:{color:'#334155',font:{weight:'600'}}}}}
+        });
+    }
+
+    setTimeout(loadData, 300);
+});
+</script>
+{% endblock %}
