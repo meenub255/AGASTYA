@@ -33,9 +33,20 @@ def get_school_visit_filters(region_name: str | list[str] | None = None):
     if region_name:
         programs = [row["program_name"] for row in fetch_all(prog_query + " ORDER BY p.program_name", params)]
 
-    years = [row["year_actual"] for row in fetch_all(f"SELECT DISTINCT year_actual FROM {DATAMART_SCHEMA_NAME}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC")]
+    years = [row["year_actual"] for row in fetch_all(f"""
+        SELECT DISTINCT d.year_actual 
+        FROM {DATAMART_SCHEMA_NAME}.dim_date d
+        INNER JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON d.date_id = f.date_id
+        WHERE d.year_actual IS NOT NULL 
+        ORDER BY d.year_actual DESC
+    """)]
     
-    months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"SELECT DISTINCT month_actual, TO_CHAR(TO_DATE(month_actual::text, 'MM'), 'Month') as month_name FROM {DATAMART_SCHEMA_NAME}.dim_date ORDER BY month_actual")]
+    months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"""
+        SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text, 'MM'), 'Month') as month_name 
+        FROM {DATAMART_SCHEMA_NAME}.dim_date d
+        INNER JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON d.date_id = f.date_id
+        ORDER BY d.month_actual
+    """)]
     
     return {
         "regions": regions,
@@ -103,12 +114,25 @@ def get_school_visit_data(region=None, area=None, program=None, year=None, month
     """
     monthly_res = fetch_one(monthly_sql, params + params)
 
-    kpis = {
-        "total_schools": kpi_res.get("total_schools") or 0,
-        "total_students": int(kpi_res.get("total_students") or 0),
-        "total_sessions": int(kpi_res.get("total_sessions") or 0),
-        "monthly_sessions": int(monthly_res.get("monthly_sessions") or 0) if monthly_res else 0
-    }
+    # Insight Logic
+    top_school_row = fetch_one(f"""
+        SELECT COALESCE(s.school_name, 'Unknown') as school_name,
+               COUNT(DISTINCT f.sk_fact_session_id) as sessions
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
+        WHERE {where_sql}
+        GROUP BY s.school_name
+        ORDER BY sessions DESC
+        LIMIT 1
+    """, params)
+    top_school = top_school_row.get("school_name", "N/A") if top_school_row else "N/A"
+
+    kpis = [
+        {"label": "Total Schools", "value": int(kpi_res.get("total_schools") or 0), "icon": "fas fa-school", "color": "bg-info", "status": "Stable", "reason": f"Active engagement across {int(kpi_res.get('total_schools') or 0)} schools."},
+        {"label": "Total Students", "value": int(kpi_res.get("total_students") or 0), "icon": "fas fa-user-graduate", "color": "bg-success", "status": "Growth", "reason": f"Strong exposure numbers, with {top_school} showing peak interest."},
+        {"label": "Total Sessions", "value": int(kpi_res.get("total_sessions") or 0), "icon": "fas fa-chalkboard-teacher", "color": "bg-navy-blue", "status": "Stable", "reason": f"Steady session delivery. {top_school} is currently the most visited site."},
+        {"label": "Monthly Sessions", "value": int(monthly_res.get("monthly_sessions") or 0) if monthly_res else 0, "icon": "fas fa-calendar-alt", "color": "bg-danger", "status": "Active", "reason": "Current month session count based on ongoing visits."}
+    ]
 
     # DataTable Logic
     search_sql = "TRUE"

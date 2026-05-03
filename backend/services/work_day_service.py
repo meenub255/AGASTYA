@@ -3,12 +3,30 @@ from backend.config import DATAMART_SCHEMA_NAME
 
 
 def get_work_day_filters():
-    # Fetch from new dim_geography and dim_date
-    locations = fetch_all(f"SELECT DISTINCT region_name, area_name AS area FROM {DATAMART_SCHEMA_NAME}.dim_geography WHERE region_name IS NOT NULL ORDER BY region_name, area_name")
+    # INNER JOIN with fact_session to show only locations with data
+    locations_query = f"""
+        SELECT DISTINCT g.region_name, g.area_name AS area 
+        FROM {DATAMART_SCHEMA_NAME}.dim_geography g
+        INNER JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON g.sk_geography_id = f.sk_geography_id
+        WHERE g.region_name IS NOT NULL 
+        ORDER BY g.region_name, g.area_name
+    """
+    locations = fetch_all(locations_query)
     
-    years = [row["year_actual"] for row in fetch_all(f"SELECT DISTINCT year_actual FROM {DATAMART_SCHEMA_NAME}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC")]
+    years = [row["year_actual"] for row in fetch_all(f"""
+        SELECT DISTINCT d.year_actual 
+        FROM {DATAMART_SCHEMA_NAME}.dim_date d
+        INNER JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON d.date_id = f.date_id
+        WHERE d.year_actual IS NOT NULL 
+        ORDER BY d.year_actual DESC
+    """)]
     
-    months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"SELECT DISTINCT month_actual, TO_CHAR(TO_DATE(month_actual::text, 'MM'), 'Month') as month_name FROM {DATAMART_SCHEMA_NAME}.dim_date ORDER BY month_actual")]
+    months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"""
+        SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text, 'MM'), 'Month') as month_name 
+        FROM {DATAMART_SCHEMA_NAME}.dim_date d
+        INNER JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON d.date_id = f.date_id
+        ORDER BY d.month_actual
+    """)]
     
     return {
         "regions": sorted(list(set(row["region_name"] for row in locations))),

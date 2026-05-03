@@ -4,19 +4,46 @@ from backend.config import DATAMART_SCHEMA_NAME, SOURCE_SCHEMA_NAME
 def get_vehicle_report_filters(region_name=None):
     from backend.services.query_utils import get_list_filter_clause
     try:
-        # 1. Available Regions
-        region_query = f"SELECT DISTINCT region_name FROM {DATAMART_SCHEMA_NAME}.dim_geography WHERE region_name IS NOT NULL ORDER BY region_name"
+        # INNER JOIN with txn_vehicle_log to ensure data exists
+        region_query = f"""
+            SELECT DISTINCT r.name as region_name 
+            FROM {SOURCE_SCHEMA_NAME}.mst_region r
+            INNER JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON r.id = a.region_id
+            INNER JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON a.id = v.area_id
+            INNER JOIN {SOURCE_SCHEMA_NAME}.txn_vehicle_log log ON v.id = log.vehicle_id
+            WHERE r.name IS NOT NULL AND log.is_deleted = 0
+            ORDER BY r.name
+        """
         regions = [row["region_name"] for row in fetch_all(region_query)]
         
-        # 2. Available Areas (Centers) - Linked to Region if selected
-        where_sql, params = get_list_filter_clause("region_name", region_name)
-        area_query = f"SELECT DISTINCT area_name FROM {DATAMART_SCHEMA_NAME}.dim_geography WHERE {where_sql} AND area_name IS NOT NULL ORDER BY area_name"
-        
+        # 2. Available Areas (Centers) - Linked to Region if selected AND have logs
+        where_sql, params = get_list_filter_clause("r.name", region_name)
+        area_query = f"""
+            SELECT DISTINCT a.name as area_name 
+            FROM {SOURCE_SCHEMA_NAME}.mst_area a
+            INNER JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON r.id = a.region_id
+            INNER JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON a.id = v.area_id
+            INNER JOIN {SOURCE_SCHEMA_NAME}.txn_vehicle_log log ON v.id = log.vehicle_id
+            WHERE {where_sql} AND a.name IS NOT NULL AND log.is_deleted = 0
+            ORDER BY a.name
+        """
         areas = [row["area_name"] for row in fetch_all(area_query, params)]
         
-        # 3. Years and Months from dim_date
-        years = [row["year_actual"] for row in fetch_all(f"SELECT DISTINCT year_actual FROM {DATAMART_SCHEMA_NAME}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC")]
-        months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"SELECT DISTINCT month_actual, TO_CHAR(TO_DATE(month_actual::text, 'MM'), 'Month') as month_name FROM {DATAMART_SCHEMA_NAME}.dim_date ORDER BY month_actual")]
+        # 3. Years and Months from log dates
+        years = [row["year_actual"] for row in fetch_all(f"""
+            SELECT DISTINCT EXTRACT(YEAR FROM log.DATE)::int as year_actual 
+            FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
+            WHERE log.is_deleted = 0
+            ORDER BY year_actual DESC
+        """)]
+        
+        months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"""
+            SELECT DISTINCT EXTRACT(MONTH FROM log.DATE)::int as month_actual, 
+                   TO_CHAR(log.DATE, 'Month') as month_name 
+            FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
+            WHERE log.is_deleted = 0
+            ORDER BY month_actual
+        """)]
         
         return {
             "regions": regions,

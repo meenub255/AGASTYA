@@ -8,26 +8,43 @@ logger = logging.getLogger(__name__)
 def get_region_summary_filters(region_name: str | list[str] | None = None):
     from backend.services.query_utils import get_list_filter_clause
     try:
-        # 1. Fetch all Regions always
-        region_query = f"SELECT DISTINCT region_name FROM {DATAMART_SCHEMA_NAME}.dim_geography WHERE region_name IS NOT NULL ORDER BY region_name"
+        # 1. Fetch only Regions that have data
+        region_query = f"""
+            SELECT DISTINCT g.region_name 
+            FROM {DATAMART_SCHEMA_NAME}.dim_geography g
+            INNER JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON g.sk_geography_id = f.sk_geography_id
+            WHERE g.region_name IS NOT NULL 
+            ORDER BY g.region_name
+        """
         regions = [row["region_name"] for row in fetch_all(region_query)]
 
-        # 2. Fetch only programs that have associated data (>0) for the selected region
+        # 2. Fetch only programs that have data for the selected region
         where_sql, params = get_list_filter_clause("g.region_name", region_name)
         prog_query = f"""
             SELECT DISTINCT p.program_name 
             FROM {DATAMART_SCHEMA_NAME}.dim_program p
             INNER JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON p.sk_program_id = f.sk_program_id
-            INNER JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = f.sk_geography_id
+            INNER JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
             WHERE p.program_name IS NOT NULL 
             AND {where_sql}
             ORDER BY p.program_name
         """
         programs = [row["program_name"] for row in fetch_all(prog_query, params)]
         
-        years = [row["year_actual"] for row in fetch_all(f"SELECT DISTINCT year_actual FROM {DATAMART_SCHEMA_NAME}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC")]
+        years = [row["year_actual"] for row in fetch_all(f"""
+            SELECT DISTINCT d.year_actual 
+            FROM {DATAMART_SCHEMA_NAME}.dim_date d
+            INNER JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON d.date_id = f.date_id
+            WHERE d.year_actual IS NOT NULL 
+            ORDER BY d.year_actual DESC
+        """)]
         
-        months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"SELECT DISTINCT month_actual, TO_CHAR(TO_DATE(month_actual::text, 'MM'), 'Month') as month_name FROM {DATAMART_SCHEMA_NAME}.dim_date ORDER BY month_actual")]
+        months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"""
+            SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text, 'MM'), 'Month') as month_name 
+            FROM {DATAMART_SCHEMA_NAME}.dim_date d
+            INNER JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON d.date_id = f.date_id
+            ORDER BY d.month_actual
+        """)]
         
         return {
             "regions": regions,
