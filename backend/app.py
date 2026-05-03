@@ -29,6 +29,7 @@ from backend.routers import (
     exposure_session,
     performance_mgmt,
     manpower_vehicle,
+    category_overview,
 )
 
 
@@ -88,6 +89,7 @@ app.include_router(regionwise.router)
 app.include_router(exposure_session.router)
 app.include_router(performance_mgmt.router)
 app.include_router(manpower_vehicle.router)
+app.include_router(category_overview.router)
 
 
 @app.get("/debug-db")
@@ -265,3 +267,15 @@ def manpower_vehicle_dashboard_page(request: Request):
 @app.get("/instructor-feedback", response_class=HTMLResponse)
 def instructor_feedback_page(request: Request):
     return render_page(request, "instructor_feedback.html", "Instructor Feedback", "instructor-feedback")
+
+@app.get("/instructor-overview", response_class=HTMLResponse)
+def instructor_overview_page(request: Request):
+    return render_page(request, "instructor_overview.html", "Instructor Performance Overview", "instructor-overview")
+
+@app.get("/program-impact-overview", response_class=HTMLResponse)
+def program_impact_overview_page(request: Request):
+    return render_page(request, "program_impact_overview.html", "Program Impact Overview", "program-impact-overview")
+
+@app.get("/operations-overview", response_class=HTMLResponse)
+def operations_overview_page(request: Request):
+    return render_page(request, "operations_overview.html", "Operations Overview", "operations-overview")
