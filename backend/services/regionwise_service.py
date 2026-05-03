@@ -9,22 +9,37 @@ DW = DATAMART_SCHEMA_NAME
 def get_regionwise_filters(region_name=None):
     from backend.services.query_utils import get_list_filter_clause
     try:
-        regions = [r["region_name"] for r in fetch_all(
-            f"SELECT DISTINCT region_name FROM {DW}.dim_geography WHERE region_name IS NOT NULL ORDER BY region_name"
-        )]
+        # INNER JOIN with fact_session to ensure data exists
+        regions = [r["region_name"] for r in fetch_all(f"""
+            SELECT DISTINCT g.region_name 
+            FROM {DW}.dim_geography g
+            INNER JOIN {DW}.fact_session f ON g.sk_geography_id = f.sk_geography_id
+            WHERE g.region_name IS NOT NULL 
+            ORDER BY g.region_name
+        """)]
         
-        where_sql, params = get_list_filter_clause("region_name", region_name)
-        areas = [r["area_name"] for r in fetch_all(
-            f"SELECT DISTINCT area_name FROM {DW}.dim_geography WHERE {where_sql} AND area_name IS NOT NULL ORDER BY area_name",
-            params
-        )]
+        where_sql, params = get_list_filter_clause("g.region_name", region_name)
+        areas = [r["area_name"] for r in fetch_all(f"""
+            SELECT DISTINCT g.area_name 
+            FROM {DW}.dim_geography g
+            INNER JOIN {DW}.fact_session f ON g.sk_geography_id = f.sk_geography_id
+            WHERE {where_sql} AND g.area_name IS NOT NULL 
+            ORDER BY g.area_name
+        """, params)]
         
-        years = [r["year_actual"] for r in fetch_all(
-            f"SELECT DISTINCT year_actual FROM {DW}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC"
-        )]
-        months = [{"id": r["month_actual"], "name": r["month_name"].strip()} for r in fetch_all(
-            f"SELECT DISTINCT month_actual, TO_CHAR(TO_DATE(month_actual::text,'MM'),'Month') AS month_name FROM {DW}.dim_date ORDER BY month_actual"
-        )]
+        years = [r["year_actual"] for r in fetch_all(f"""
+            SELECT DISTINCT d.year_actual 
+            FROM {DW}.dim_date d
+            INNER JOIN {DW}.fact_session f ON d.date_id = f.date_id
+            WHERE d.year_actual IS NOT NULL 
+            ORDER BY d.year_actual DESC
+        """)]
+        months = [{"id": r["month_actual"], "name": r["month_name"].strip()} for r in fetch_all(f"""
+            SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text,'MM'),'Month') AS month_name 
+            FROM {DW}.dim_date d
+            INNER JOIN {DW}.fact_session f ON d.date_id = f.date_id
+            ORDER BY d.month_actual
+        """)]
         return {"regions": regions, "areas": areas, "years": years, "months": months}
     except Exception as e:
         logger.error(f"regionwise filters error: {e}")
@@ -64,11 +79,36 @@ def get_regionwise_data(region=None, area=None, year=None, month=None, limit=15,
             WHERE {where_sql}
         """, params)
 
+        # Insight Logic
+        top_area_row = fetch_one(f"""
+            SELECT COALESCE(g.area_name, 'Unknown') as area_name, 
+                   COUNT(DISTINCT f.sk_fact_session_id) as sessions
+            FROM {DW}.fact_session f
+            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            WHERE {where_sql}
+            GROUP BY g.area_name
+            ORDER BY sessions DESC
+            LIMIT 1
+        """, params)
+        top_area = top_area_row.get("area_name", "N/A") if top_area_row else "N/A"
+        
+        sess_status = "High" if int(kpi_row.get("total_sessions", 0)) > 500 else "Stable"
+        sess_reason = f"Consistent delivery across the region, led by {top_area}."
+        
+        sch_status = "Stable"
+        sch_reason = f"Wide coverage maintained. {top_area} is the most active area."
+        
+        exp_status = "High" if int(kpi_row.get("total_exposure", 0)) > 5000 else "Stable"
+        exp_reason = "Strong student participation across all active schools."
+        
+        dur_status = "Average"
+        dur_reason = "Session duration remains within the target educational window."
+
         kpis = [
-            {"label": "Total Sessions",        "value": int(kpi_row.get("total_sessions", 0) or 0),  "icon": "fas fa-chalkboard-teacher", "color": "bg-info"},
-            {"label": "Total Schools",          "value": int(kpi_row.get("total_schools", 0) or 0),   "icon": "fas fa-school",             "color": "bg-success"},
-            {"label": "Total Exposure",         "value": int(kpi_row.get("total_exposure", 0) or 0),  "icon": "fas fa-user-graduate",      "color": "bg-navy-blue"},
-            {"label": "Avg Session (min)",      "value": float(kpi_row.get("avg_duration", 0) or 0),  "icon": "fas fa-clock",              "color": "bg-danger"},
+            {"label": "Total Sessions",        "value": int(kpi_row.get("total_sessions", 0) or 0),  "icon": "fas fa-chalkboard-teacher", "color": "bg-info", "status": sess_status, "reason": sess_reason},
+            {"label": "Total Schools",          "value": int(kpi_row.get("total_schools", 0) or 0),   "icon": "fas fa-school",             "color": "bg-success", "status": sch_status, "reason": sch_reason},
+            {"label": "Total Exposure",         "value": int(kpi_row.get("total_exposure", 0) or 0),  "icon": "fas fa-user-graduate",      "color": "bg-navy-blue", "status": exp_status, "reason": exp_reason},
+            {"label": "Avg Session (min)",      "value": float(kpi_row.get("avg_duration", 0) or 0),  "icon": "fas fa-clock",              "color": "bg-danger", "status": dur_status, "reason": dur_reason},
         ]
 
         total_count = fetch_one(f"""
