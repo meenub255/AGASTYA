@@ -3,12 +3,28 @@ from backend.config import DATAMART_SCHEMA_NAME
 
 
 def get_instructor_detail_filters():
-    # Fetch from new dim_user and dim_date
-    instructors = [row["user_name"] for row in fetch_all(f"SELECT DISTINCT user_name FROM {DATAMART_SCHEMA_NAME}.dim_user WHERE user_name IS NOT NULL ORDER BY user_name")]
+    instructors = [row["user_name"] for row in fetch_all(f"""
+        SELECT DISTINCT u.user_name 
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
+        WHERE u.user_name IS NOT NULL 
+        ORDER BY u.user_name
+    """)]
     
-    years = [row["year_actual"] for row in fetch_all(f"SELECT DISTINCT year_actual FROM {DATAMART_SCHEMA_NAME}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC")]
+    years = [row["year_actual"] for row in fetch_all(f"""
+        SELECT DISTINCT d.year_actual 
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        WHERE d.year_actual IS NOT NULL 
+        ORDER BY d.year_actual DESC
+    """)]
     
-    months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"SELECT DISTINCT month_actual, TO_CHAR(TO_DATE(month_actual::text, 'MM'), 'Month') as month_name FROM {DATAMART_SCHEMA_NAME}.dim_date ORDER BY month_actual")]
+    months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"""
+        SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text, 'MM'), 'Month') as month_name 
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        ORDER BY d.month_actual
+    """)]
     
     return {
         "instructors": instructors,
