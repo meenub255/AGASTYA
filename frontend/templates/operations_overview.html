@@ -47,6 +47,70 @@
             </div>
         </div>
     </div>
+    <div id="drilldownPanel" style="display:none; margin-top: 16px;">
+        <div id="drilldownBreadcrumb" class="d-flex align-items-center mb-3 px-1" style="gap: 8px;">
+            <span class="text-muted" style="font-size:13px; cursor:pointer;" onclick="clearDrilldown()">
+                <i class="fas fa-th-large mr-1"></i>All Regions
+            </span>
+            <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
+            <span id="drilldownRegionLabel" style="font-size:13px; font-weight:600; color:#1e3a8a;"></span>
+            <button onclick="clearDrilldown()" class="btn btn-sm ml-auto"
+                style="background: #f1f5f9; border:1px solid #e2e8f0; color:#64748b; font-size:11px; padding:3px 10px; border-radius:20px;">
+                <i class="fas fa-times mr-1"></i>Clear Selection
+            </button>
+        </div>
+
+        <div class="row mb-3" id="drilldownStats">
+            <div class="col-md-4 mb-2">
+                <div class="kpi-card-v2 kpi-v2-navy">
+                    <span class="kpi-v2-val" id="ddSessions">0</span>
+                    <span class="kpi-v2-lbl">Total Sessions</span>
+                    <div class="kpi-v2-icon"><i class="fas fa-chalkboard"></i></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-2">
+                <div class="kpi-card-v2 kpi-v2-green">
+                    <span class="kpi-v2-val" id="ddStudents">0</span>
+                    <span class="kpi-v2-lbl">Students Reached</span>
+                    <div class="kpi-v2-icon"><i class="fas fa-user-graduate"></i></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-2">
+                <div class="kpi-card-v2 kpi-v2-teal">
+                    <span class="kpi-v2-val" id="ddSchools">0</span>
+                    <span class="kpi-v2-lbl">Schools Visited</span>
+                    <div class="kpi-v2-icon"><i class="fas fa-school"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card white-chart-card shadow-sm" style="border-radius: 15px; overflow: hidden;">
+            <div class="card-header d-flex align-items-center" style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
+                <i class="fas fa-table mr-2" style="color: #6366f1;"></i>
+                <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">
+                    Program Breakdown — <span id="ddTableRegionLabel" style="color: #6366f1;"></span>
+                </h3>
+                <span id="ddProgramCount" class="ml-auto badge badge-pill badge-light text-muted" style="font-size:11px;">0 programs</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table id="drilldownTable" class="table table-hover mb-0" style="width:100%">
+                        <thead style="background: #f8fafc;">
+                            <tr>
+                                <th>Program Name</th>
+                                <th>Donor</th>
+                                <th class="text-right">Sessions</th>
+                                <th class="text-right">Students</th>
+                                <th class="text-right">Schools</th>
+                                <th class="text-right">Instructors</th>
+                            </tr>
+                        </thead>
+                        <tbody id="drilldownTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="card white-chart-card shadow-sm" style="border-radius:15px; overflow:hidden;">
         <div class="card-header d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
@@ -147,21 +211,23 @@ $(function(){
 
     function getParams(){ return $.param({years:$('#yearFilter').val()||[], region:$('#regionFilter').val()||[], program:$('#programFilter').val()||[]}, true); }
 
-    let dt=null;
+    let dt=null; let fullKpis = null;
     function loadData(){
-        fetch(`/category-overview/operations?${getParams()}`).then(r=>r.json()).then(data=>{
+        const q=getParams();
+        fetch(`/category-overview/operations?${q}`).then(r=>r.json()).then(data=>{
+            fullKpis = data.kpis;
             const kr=$('#kpiRow').empty();
             (data.kpis||[]).forEach(k=>{
                 kr.append(`<div class="col-lg-3 col-6 mb-2"><div class="kpi-card-v2" style="background:${k.color};">
-                    <span class="kpi-v2-val" data-target="${k.value}">0</span>
+                    <span class="kpi-v2-val" data-target="${k.value}" id="${k.label.toLowerCase().includes('working day')?'kpiDays':''}">0</span>
                     <span class="kpi-v2-lbl">${k.label}</span>
                     <div class="kpi-v2-icon"><i class="${k.icon}"></i></div></div></div>`);
             });
             kr.find('.kpi-v2-val').each(function(){ animateNum(this, +$(this).data('target')); });
 
             const ch=data.charts||{};
-            renderHBar('chartKm', ch.km_by_region||[], 'KMs');
-            renderDoughnut('chartVehicle', ch.vehicle_usage||[]);
+            renderHBar('chartKm', ch.km_by_region||[], 'KMs Travelled');
+            renderHBar('chartVehicle', ch.vehicle_usage||[], 'Vehicle Count');
             renderLine('chartTrend', ch.trend||[]);
 
             if(dt){ dt.destroy(); dt=null; }
@@ -176,6 +242,54 @@ $(function(){
             dt=PramanaDashboard.initDataTable('#overviewTable',{paging:true,searching:true,pageLength:10,order:[[2,'desc']]});
         });
     }
+
+    // ── Drill-down Logic ─────────────────────────────────────────────
+    function loadDrilldown(regionName) {
+        const q = getParams() + `&region=${encodeURIComponent(regionName)}`;
+        
+        // Update main KPIs for the region
+        fetch(`/category-overview/operations?${q}`).then(r=>r.json()).then(data => {
+            const days = data.kpis.find(k => k.label.toLowerCase().includes('working day'))?.value || 0;
+            animateNum('#kpiDays', days);
+        });
+
+        // Fetch drilldown details
+        fetch(`/dashboard/drill-down?${q}`).then(r=>r.json()).then(data => {
+            if($.fn.DataTable.isDataTable('#drilldownTable')) $('#drilldownTable').DataTable().destroy();
+            
+            $('#drilldownRegionLabel, #ddTableRegionLabel').text(regionName);
+            animateNum('#ddSessions', data.summary.total_sessions);
+            animateNum('#ddStudents', data.summary.total_students);
+            animateNum('#ddSchools',  data.summary.total_schools);
+            
+            const tbody = $('#drilldownTableBody').empty();
+            (data.programs || []).forEach(p => {
+                tbody.append(`<tr>
+                    <td class="font-weight-600">${p.program}</td>
+                    <td class="text-muted">${p.donor}</td>
+                    <td class="text-right">${p.sessions.toLocaleString()}</td>
+                    <td class="text-right">${p.students_reached.toLocaleString()}</td>
+                    <td class="text-right">${p.schools_visited.toLocaleString()}</td>
+                    <td class="text-right">${p.instructors.toLocaleString()}</td>
+                </tr>`);
+            });
+            $('#ddProgramCount').text((data.programs||[]).length + ' programs');
+            
+            PramanaDashboard.initDataTable('#drilldownTable', { paging: true, searching: true, pageLength: 10, order: [[2, 'desc']] });
+            $('#drilldownPanel').show();
+            $('html, body').animate({ scrollTop: $('#drilldownPanel').offset().top - 20 }, 400);
+        });
+    }
+
+    window.clearDrilldown = function() {
+        $('#drilldownPanel').hide();
+        if($.fn.DataTable.isDataTable('#drilldownTable')) $('#drilldownTable').DataTable().destroy();
+        $('#drilldownTableBody').empty();
+        if(fullKpis) {
+            const days = fullKpis.find(k => k.label.toLowerCase().includes('working day'))?.value || 0;
+            animateNum('#kpiDays', days);
+        }
+    };
 
     let chartInstances={};
     function destroyChart(id){ if(chartInstances[id]){ chartInstances[id].destroy(); delete chartInstances[id]; } }
@@ -193,9 +307,24 @@ $(function(){
     }
 
     function renderHBar(id, points, label){
-        destroyChart(id); const c=document.getElementById(id); if(!c) return;
-        chartInstances[id]=new Chart(c,{type:'bar',data:{labels:points.map(p=>p.label),datasets:[{label:label||'Value',data:points.map(p=>p.value),backgroundColor:points.map((_,i)=>PALETTE[i%PALETTE.length]),borderRadius:6,barThickness:22}]},
-            options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},datalabels:{display:true,anchor:'end',align:'end',color:'#334155',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString()},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},scales:{x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}},y:{grid:{display:false},ticks:{color:'#334155',font:{weight:'600'}}}}}});
+        destroyChart(id);
+        const c=document.getElementById(id); if(!c) return;
+        chartInstances[id]=new Chart(c,{type:'bar',data:{
+            labels:points.map(p=>p.label), datasets:[{label:label,data:points.map(p=>p.value),
+            backgroundColor:points.map((_,i)=>PALETTE[i%PALETTE.length]),borderRadius:6,barThickness:22}]},
+            options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const idx = elements[0].index;
+                        const regionName = points[idx].label;
+                        loadDrilldown(regionName);
+                    }
+                },
+                plugins:{legend:{display:false},datalabels:{display:true,anchor:'end',align:'end',color:'#334155',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString()},
+                    tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},
+                scales:{x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}},
+                        y:{grid:{display:false},ticks:{color:'#334155',font:{weight:'600'}}}}}
+        });
     }
 
     setTimeout(loadData, 300);
