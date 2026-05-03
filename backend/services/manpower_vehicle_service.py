@@ -8,15 +8,30 @@ DW = DATAMART_SCHEMA_NAME
 
 def get_manpower_vehicle_filters():
     try:
-        regions = [r["region_name"] for r in fetch_all(
-            f"SELECT DISTINCT region_name FROM {DW}.dim_geography WHERE region_name IS NOT NULL ORDER BY region_name"
-        )]
-        years = [r["year_actual"] for r in fetch_all(
-            f"SELECT DISTINCT year_actual FROM {DW}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC"
-        )]
-        months = [{"id": r["month_actual"], "name": r["month_name"].strip()} for r in fetch_all(
-            f"SELECT DISTINCT month_actual, TO_CHAR(TO_DATE(month_actual::text,'MM'),'Month') AS month_name FROM {DW}.dim_date ORDER BY month_actual"
-        )]
+        # INNER JOIN with fact_vehicle_operations to ensure data exists
+        regions = [r["region_name"] for r in fetch_all(f"""
+            SELECT DISTINCT g.region_name 
+            FROM {DW}.dim_geography g
+            INNER JOIN {DW}.fact_vehicle_operations v ON g.sk_geography_id = v.sk_geography_id
+            WHERE g.region_name IS NOT NULL 
+            ORDER BY g.region_name
+        """)]
+        
+        years = [r["year_actual"] for r in fetch_all(f"""
+            SELECT DISTINCT d.year_actual 
+            FROM {DW}.dim_date d
+            INNER JOIN {DW}.fact_vehicle_operations v ON d.date_id = v.date_id
+            WHERE d.year_actual IS NOT NULL 
+            ORDER BY d.year_actual DESC
+        """)]
+        
+        months = [{"id": r["month_actual"], "name": r["month_name"].strip()} for r in fetch_all(f"""
+            SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text,'MM'),'Month') AS month_name 
+            FROM {DW}.dim_date d
+            INNER JOIN {DW}.fact_vehicle_operations v ON d.date_id = v.date_id
+            ORDER BY d.month_actual
+        """)]
+        
         return {"regions": regions, "years": years, "months": months}
     except Exception as e:
         logger.error(f"manpower vehicle filters error: {e}")
