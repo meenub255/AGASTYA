@@ -3,12 +3,28 @@ from backend.config import DATAMART_SCHEMA_NAME
 
 
 def get_attendance_filters():
-    # Fetch from new dim_geography and dim_date
-    locations = fetch_all(f"SELECT DISTINCT region_name, area_name AS area FROM {DATAMART_SCHEMA_NAME}.dim_geography WHERE region_name IS NOT NULL ORDER BY region_name, area_name")
+    locations = fetch_all(f"""
+        SELECT DISTINCT g.region_name, g.area_name AS area 
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        WHERE g.region_name IS NOT NULL 
+        ORDER BY g.region_name, g.area_name
+    """)
     
-    years = [row["year_actual"] for row in fetch_all(f"SELECT DISTINCT year_actual FROM {DATAMART_SCHEMA_NAME}.dim_date WHERE year_actual IS NOT NULL ORDER BY year_actual DESC")]
+    years = [row["year_actual"] for row in fetch_all(f"""
+        SELECT DISTINCT d.year_actual 
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        WHERE d.year_actual IS NOT NULL 
+        ORDER BY d.year_actual DESC
+    """)]
     
-    months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"SELECT DISTINCT month_actual, TO_CHAR(TO_DATE(month_actual::text, 'MM'), 'Month') as month_name FROM {DATAMART_SCHEMA_NAME}.dim_date ORDER BY month_actual")]
+    months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"""
+        SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text, 'MM'), 'Month') as month_name 
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        ORDER BY d.month_actual
+    """)]
     
     return {
         "regions": sorted(list(set(row["region_name"] for row in locations))),
@@ -114,11 +130,63 @@ def get_attendance_data(region=None, area=None, year=None, month=None, limit=15,
         LIMIT %s OFFSET %s
     """
     rows = fetch_all(sql, params + search_params + [limit, offset])
-    
+
+    # 3. Chart Logic (Trend Chart)
+    # If a specific month is selected, show days in month. Else, show months in year.
+    period_col = "d.full_date" if month else "d.month_actual"
+    period_alias = "period_val"
+
+    trend_rows = fetch_all(f"""
+        SELECT 
+            {period_col} as {period_alias}, 
+            COUNT(f.sk_fact_session_id) as metric
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        WHERE {where_sql}
+        GROUP BY {period_col}
+        ORDER BY {period_col} ASC
+    """, params)
+
+    trend_labels = []
+    trend_data = []
+    import calendar
+    for r in trend_rows:
+        val = r[period_alias]
+        if not month:
+            val = calendar.month_abbr[int(val)] if val else "Unknown"
+        else:
+            val = str(val)  # Date string
+        trend_labels.append(val)
+        trend_data.append(int(r["metric"]))
+
+    # 4. Chart Logic (Region Chart)
+    region_rows = fetch_all(f"""
+        SELECT 
+            COALESCE(g.region_name, 'Unknown') as region_name, 
+            COUNT(f.sk_fact_session_id) as metric
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        WHERE {where_sql}
+        GROUP BY g.region_name
+        ORDER BY metric DESC
+    """, params)
+
+    region_labels = []
+    region_data = []
+    for r in region_rows:
+        region_labels.append(r["region_name"])
+        region_data.append(int(r["metric"]))
+
     return {
         "kpis": kpi_list,
         "table": rows, 
-        "total_count": total_count
+        "total_count": total_count,
+        "charts": {
+            "trend": {"labels": trend_labels, "data": trend_data},
+            "region": {"labels": region_labels, "data": region_data}
+        }
     }
 
 
