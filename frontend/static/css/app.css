@@ -1,7 +1,7 @@
-:root {
-    --page-bg: #f5f7fb;
-    --surface-white: #ffffff;
-    --surface-dark: #2c313d;
+﻿:root {
+    --trend-up: #4ade80;
+    --trend-down: #fca5a5;
+    --trend-neutral: #e2e8f0;
     --surface-dark-soft: #353b48;
     --border-light: #e2e8f0;
     --border-mid: #d7deea;
@@ -2324,7 +2324,7 @@ table.dataTable thead th {
 
 
 /* ==========================================================================
-   PRAMANA SIDEBAR — Premium Rail Design  (All new from scratch)
+   PRAMANA SIDEBAR â€” Premium Rail Design  (All new from scratch)
    ========================================================================== */
 
 :root {
@@ -2344,7 +2344,7 @@ table.dataTable thead th {
     --ps-transition: 0.35s cubic-bezier(0.4,0,0.2,1);
 }
 
-/* ── Shell ─────────────────────────────────────────────────── */
+/* â”€â”€ Shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .pramana-sidebar {
     position: fixed;
     top: 0;
@@ -2370,7 +2370,7 @@ table.dataTable thead th {
     box-shadow: 8px 0 40px rgba(0,0,0,0.45);
 }
 
-/* ── Brand ─────────────────────────────────────────────────── */
+/* â”€â”€ Brand â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ps-brand {
     height: 64px;
     min-height: 64px;
@@ -2424,7 +2424,7 @@ table.dataTable thead th {
     transform: translateX(0);
 }
 
-/* ── Pin Button ────────────────────────────────────────────── */
+/* â”€â”€ Pin Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ps-pin {
     position: absolute;
     top: 16px;
@@ -2463,7 +2463,7 @@ table.dataTable thead th {
     transform: rotate(45deg);
 }
 
-/* ── Nav Scrollable ────────────────────────────────────────── */
+/* â”€â”€ Nav Scrollable â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ps-nav {
     flex: 1;
     overflow-y: auto;
@@ -2479,7 +2479,7 @@ table.dataTable thead th {
     border-radius: 4px;
 }
 
-/* ── Section Label ─────────────────────────────────────────── */
+/* â”€â”€ Section Label â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ps-section-label {
     font-size: 0.62rem;
     font-weight: 700;
@@ -2499,7 +2499,7 @@ table.dataTable thead th {
     max-height: 40px;
 }
 
-/* ── Nav Item (top-level link) ─────────────────────────────── */
+/* â”€â”€ Nav Item (top-level link) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ps-item {
     display: flex;
     align-items: center;
@@ -2537,7 +2537,7 @@ table.dataTable thead th {
     box-shadow: 0 0 10px var(--ps-accent);
 }
 
-/* ── Icons ─────────────────────────────────────────────────── */
+/* â”€â”€ Icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ps-icon {
     width: 36px;
     min-width: 36px;
@@ -2564,7 +2564,7 @@ table.dataTable thead th {
     color: var(--ps-accent);
 }
 
-/* ── Label (hidden when collapsed) ────────────────────────── */
+/* â”€â”€ Label (hidden when collapsed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ps-label {
     font-size: 0.875rem;
     font-weight: 500;
@@ -2582,7 +2582,7 @@ table.dataTable thead th {
     width: auto;
 }
 
-/* ── Group (accordion trigger) ─────────────────────────────── */
+/* â”€â”€ Group (accordion trigger) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ps-group-trigger {
     display: flex;
     align-items: center;
@@ -2622,7 +2622,7 @@ table.dataTable thead th {
     box-shadow: 0 0 10px var(--ps-accent);
 }
 
-/* ── Chevron ───────────────────────────────────────────────── */
+/* â”€â”€ Chevron â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ps-chevron {
     margin-left: auto;
     font-size: 0.7rem;
@@ -2641,7 +2641,7 @@ table.dataTable thead th {
     color: var(--ps-accent);
 }
 
-/* ── Group Items (sub-menu) ────────────────────────────────── */
+/* â”€â”€ Group Items (sub-menu) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ps-group-items {
     max-height: 0;
     overflow: hidden;
@@ -2660,7 +2660,7 @@ table.dataTable thead th {
     max-height: 0 !important;
 }
 
-/* ── Sub Item ──────────────────────────────────────────────── */
+/* â”€â”€ Sub Item â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ps-sub-item {
     display: flex;
     align-items: center;
@@ -2686,7 +2686,7 @@ table.dataTable thead th {
     font-weight: 600;
 }
 
-/* ── Sub dot ───────────────────────────────────────────────── */
+/* â”€â”€ Sub dot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ps-sub-dot {
     width: 6px;
     min-width: 6px;
@@ -2706,7 +2706,7 @@ table.dataTable thead th {
     background: rgba(255,255,255,0.5);
 }
 
-/* ── Footer ────────────────────────────────────────────────── */
+/* â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ps-footer {
     display: flex;
     align-items: center;
@@ -2740,7 +2740,7 @@ table.dataTable thead th {
     color: rgba(255,255,255,0.3);
 }
 
-/* ── Tooltip on collapsed state ───────────────────────────── */
+/* â”€â”€ Tooltip on collapsed state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .pramana-sidebar:not(.ps-expanded) .ps-item,
 .pramana-sidebar:not(.ps-expanded) .ps-group-trigger {
     position: relative;
@@ -2766,7 +2766,7 @@ table.dataTable thead th {
     box-shadow: 0 4px 12px rgba(0,0,0,0.35);
 }
 
-/* ── Body layout adjustment ────────────────────────────────── */
+/* â”€â”€ Body layout adjustment â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .content-wrapper,
 .main-footer,
 .main-header {
@@ -2774,7 +2774,7 @@ table.dataTable thead th {
     transition: margin-left var(--ps-transition);
 }
 
-/* ── Mobile Responsiveness ─────────────────────────────────── */
+/* â”€â”€ Mobile Responsiveness â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 991.98px) {
     :root {
         --ps-rail-w: 0px;
@@ -2801,15 +2801,15 @@ table.dataTable thead th {
     }
 }
 
-/* ── Suppress AdminLTE's own aside/sidebar so it doesn't conflict ─── */
+/* â”€â”€ Suppress AdminLTE's own aside/sidebar so it doesn't conflict â”€â”€â”€ */
 .main-sidebar {
     display: none !important;
 }
 
-/* (old sidebar CSS removed — replaced by pramana-sidebar above) */
-/* ─────────────────────────────────────────────────────────────────────────────
+/* (old sidebar CSS removed â€” replaced by pramana-sidebar above) */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    PREMIUM FILTER UI (Standardized)
-   ───────────────────────────────────────────────────────────────────────────── */
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .filter-launcher {
     background: #fff;
@@ -3010,3 +3010,20 @@ table.dataTable thead th {
 .fd-body::-webkit-scrollbar-thumb:hover {
     background: #cbd5e1;
 }
+/* KPI Trend Indicators */
+.kpi-trend-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-left: 8px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.15);
+}
+.kpi-trend-up { color: var(--trend-up) !important; }
+.kpi-trend-down { color: var(--trend-down) !important; }
+.kpi-trend-neutral { color: var(--trend-neutral) !important; }
+.kpi-popover-table { width: 100%; font-size: 0.8rem; color: #334155; }
+.kpi-popover-table th { text-align: left; padding: 4px 0; border-bottom: 1px solid #e2e8f0; }
+.kpi-popover-table td { padding: 4px 0; }
