@@ -234,18 +234,22 @@ $(function(){
             if(dt){ dt.destroy(); dt=null; }
             const tb=$('#overviewTable tbody').empty();
             (data.table||[]).forEach(r=>{
-                tb.append(`<tr><td class="font-weight-600">${r.name}</td><td>${r.donor}</td>
+                tb.append(`<tr>
+                    <td class="font-weight-600">${r.program}</td>
+                    <td>${r.donor}</td>
                     <td class="text-right">${Number(r.sessions||0).toLocaleString()}</td>
                     <td class="text-right">${Number(r.schools||0).toLocaleString()}</td>
                     <td class="text-right">${Number(r.students||0).toLocaleString()}</td>
-                    <td class="text-right">${Number(r.instructors||0).toLocaleString()}</td></tr>`);
+                    <td class="text-right">${Number(r.instructors||0).toLocaleString()}</td>
+                </tr>`);
             });
             dt=PramanaDashboard.initDataTable('#overviewTable',{paging:true,searching:true,pageLength:10,order:[[2,'desc']]});
         });
     }
 
     // ── Drill-down Logic ─────────────────────────────────────────────
-    function loadDrilldown(regionName) {
+    window.loadDrilldown = function(regionName) {
+        console.log("Loading drilldown for:", regionName);
         const q = getParams() + `&region=${encodeURIComponent(regionName)}`;
         
         // Update main KPIs for the region
@@ -297,7 +301,7 @@ $(function(){
 
     function renderDoughnut(id, points){
         destroyChart(id); const c=document.getElementById(id); if(!c) return;
-        chartInstances[id]=new Chart(c,{type:'doughnut',data:{labels:points.map(p=>p.label),datasets:[{data:points.map(p=>p.value),backgroundColor:PALETTE.map((_,i)=>PALETTE[i%PALETTE.length]),borderWidth:2,borderColor:'#fff'}]},
+        chartInstances[id]=new Chart(c,{type:'doughnut',data:{labels:points.map(p=>p.label),datasets:[{data:points.map(p=>p.value),backgroundColor:points.map((_,i)=>PALETTE[i%PALETTE.length]),borderWidth:2,borderColor:'#fff'}]},
             options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:true,position:'right',labels:{boxWidth:12,padding:12,usePointStyle:true,pointStyle:'circle',color:'#475569',font:{size:11}}},datalabels:{display:true,color:'#fff',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString()},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}}}});
     }
 

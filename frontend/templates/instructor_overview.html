@@ -271,7 +271,8 @@ $(function(){
     }
 
     // ── Drill-down Logic ─────────────────────────────────────────────
-    function loadDrilldown(regionName) {
+    window.loadDrilldown = function(regionName) {
+        console.log("Loading drilldown for:", regionName);
         const q = getParams() + `&region=${encodeURIComponent(regionName)}`;
         
         // Update main KPIs for the region
