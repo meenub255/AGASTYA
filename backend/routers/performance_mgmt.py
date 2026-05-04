@@ -62,8 +62,10 @@ def get_drilldown(
     group_by: str              = Query(default="month"),
     region:   list[str] | None = Query(None),
     year:     list[str] | None = Query(None),
+    month:    list[str] | None = Query(None),
+    quarter:  list[str] | None = Query(None),
 ):
-    return performance_mgmt_service.get_performance_mgmt_drilldown(period, group_by, region, year)
+    return performance_mgmt_service.get_performance_mgmt_drilldown(period, group_by, region, year, month, quarter)
 
 @router.get("/export")
 def export_data(
