@@ -195,6 +195,12 @@ def get_performance_mgmt_data(region=None, year=None, month=None, quarter=None, 
         prev_sessions = int(prev_kpi_row.get("total_sessions", 0) or 0)
         prev_avg = round(prev_sessions / prev_instructors, 1) if prev_instructors else 0
         prev_students = int(prev_kpi_row.get("total_students", 0) or 0)
+        
+        # Determine overall average trend for dynamic coloring
+        overall_trend = calc_trend(avg_per_inst, prev_avg)
+        
+        # Base logic: If ANY filter (year, month, region, quarter) is applied, we switch from Orange.
+        is_filtered = True if (year and len(year) > 0) or (month and len(month) > 0) or (region and len(region) > 0) or (quarter and len(quarter) > 0) else False
 
         kpis = [
             {
@@ -274,7 +280,9 @@ def get_performance_mgmt_data(region=None, year=None, month=None, quarter=None, 
             "kpis": kpis,
             "table": table,
             "recordsTotal": int(total_count),
-            "recordsFiltered": int(total_count)
+            "recordsFiltered": int(total_count),
+            "is_filtered": is_filtered,
+            "overall_trend": overall_trend
         }
     except Exception as e:
         logger.error(f"performance mgmt data error: {e}", exc_info=True)
@@ -425,7 +433,7 @@ def get_performance_mgmt_region_chart(
 def get_performance_mgmt_drilldown(
     period_label: str,
     group_by: str = "month",
-    region=None, year=None
+    region=None, year=None, month=None, quarter=None
 ):
     """Returns instructor-level breakdown for a clicked chart bar."""
     from backend.services.query_utils import get_list_filter_clause
@@ -438,6 +446,10 @@ def get_performance_mgmt_drilldown(
             params.append([r.lower().replace("_", " ") for r in region_list])
         
         c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); clauses.append(c); params.extend(p)
+        c, p = get_list_filter_clause("d.month_actual", month, cast_type="int"); clauses.append(c); params.extend(p)
+        
+        fiscal_q_expr = "CASE WHEN d.month_actual IN (4,5,6) THEN 1 WHEN d.month_actual IN (7,8,9) THEN 2 WHEN d.month_actual IN (10,11,12) THEN 3 ELSE 4 END"
+        c, p = get_list_filter_clause(fiscal_q_expr, quarter, cast_type="int"); clauses.append(c); params.extend(p)
 
         # Parse period label for date filter
         months_short = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -448,6 +460,9 @@ def get_performance_mgmt_drilldown(
                 params.append(parts[0])
                 clauses.append("d.year_actual = %s")
                 params.append(int(parts[1]))
+        elif group_by == "day" and period_label:
+            clauses.append("TO_CHAR(d.full_date, 'DD Mon YYYY') = %s")
+            params.append(period_label)
         elif group_by == "quarter" and period_label:
             parts = period_label.split(" ")
             if len(parts) == 2:
