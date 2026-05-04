@@ -507,7 +507,26 @@
                     renderTrend('#trendInstructors', data.kpis[0].trend);
                     renderTrend('#trendAvgSessions', data.kpis[1].trend);
                     renderTrend('#trendSessions', data.kpis[2].trend);
+                    renderTrend('#trendSessions', data.kpis[2].trend);
                     renderTrend('#trendStudents', data.kpis[3].trend);
+
+                    // Dynamic Color Switching (Independent for each card)
+                    function applyCardColor(cardId, trend, isFiltered) {
+                        let cardClass = 'kpi-v2-orange'; // Base
+                        if (isFiltered) {
+                            if (trend && trend.dir === 'up') {
+                                cardClass = 'kpi-v2-green';
+                            } else if (trend && trend.dir === 'down') {
+                                cardClass = 'kpi-v2-red';
+                            }
+                        }
+                        $(cardId).removeClass('kpi-v2-teal kpi-v2-green kpi-v2-navy kpi-v2-red kpi-v2-orange').addClass(cardClass);
+                    }
+                    
+                    applyCardColor('#kpiCardInstructors', data.kpis[0].trend, data.is_filtered);
+                    applyCardColor('#kpiCardAvgSessions', data.kpis[1].trend, data.is_filtered);
+                    applyCardColor('#kpiCardSessions', data.kpis[2].trend, data.is_filtered);
+                    applyCardColor('#kpiCardStudents', data.kpis[3].trend, data.is_filtered);
 
                     function fmtInsight(i, trend) {
                         if (!i) return 'No data.';
