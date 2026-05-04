@@ -3021,9 +3021,11 @@ table.dataTable thead th {
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.15);
 }
-.kpi-trend-up { color: var(--trend-up) !important; }
-.kpi-trend-down { color: var(--trend-down) !important; }
+.kpi-trend-up { color: #ffffff !important; }
+.kpi-trend-down { color: #ffffff !important; }
 .kpi-trend-neutral { color: var(--trend-neutral) !important; }
 .kpi-popover-table { width: 100%; font-size: 0.8rem; color: #334155; }
 .kpi-popover-table th { text-align: left; padding: 4px 0; border-bottom: 1px solid #e2e8f0; }
 .kpi-popover-table td { padding: 4px 0; }
+
+.kpi-v2-orange { background: #f39c12 !important; }
