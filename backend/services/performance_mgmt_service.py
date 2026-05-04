@@ -146,21 +146,75 @@ def get_performance_mgmt_data(region=None, year=None, month=None, quarter=None, 
         stu_status = "High" if int(kpi_row.get("total_students", 0) or 0) > 10000 else "Average"
         stu_reason = f"Strong attendance, majorly supported by {top_region} ({top_students} students)."
 
+        # Trend Calculation (Period-over-Period)
+        # We need to find the previous period based on the current filters
+        prev_where_sql = "TRUE"
+        prev_params = []
+        
+        # Simple implementation: If one year is selected, compare to previous year.
+        # If one month is selected, compare to previous month.
+        if year and len(year) == 1 and (not month or len(month) == 0):
+            prev_year = [str(int(year[0]) - 1)]
+            c, p = get_list_filter_clause("g.region_name", region); prev_params.extend(p)
+            c, p = get_list_filter_clause("d.year_actual", prev_year, cast_type="int"); prev_params.extend(p)
+            prev_where_sql = " AND ".join([get_list_filter_clause("g.region_name", region)[0], get_list_filter_clause("d.year_actual", prev_year, cast_type="int")[0]])
+        elif month and len(month) == 1 and year and len(year) == 1:
+            m_val = int(month[0])
+            y_val = int(year[0])
+            prev_m = m_val - 1
+            prev_y = y_val
+            if prev_m == 0:
+                prev_m = 12
+                prev_y = y_val - 1
+            
+            c, p = get_list_filter_clause("g.region_name", region); prev_params.extend(p)
+            prev_params.append(prev_y)
+            prev_params.append(prev_m)
+            prev_where_sql = get_list_filter_clause("g.region_name", region)[0] + " AND d.year_actual = %s AND d.month_actual = %s"
+        
+        prev_kpi_row = fetch_one(f"""
+            SELECT
+                COUNT(DISTINCT f.sk_user_id)                   AS total_instructors,
+                COUNT(DISTINCT f.sk_fact_session_id)           AS total_sessions,
+                COALESCE(SUM(e.total_exposure_count), 0)       AS total_students
+            FROM {DW}.fact_session f
+            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
+            LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+            WHERE {prev_where_sql}
+        """, prev_params)
+
+        def calc_trend(curr, prev):
+            if not prev: return {"pct": 0, "dir": "neutral"}
+            diff = curr - prev
+            pct = round((diff / prev) * 100, 1) if prev > 0 else 0
+            direction = "up" if diff > 0 else ("down" if diff < 0 else "neutral")
+            return {"pct": pct, "dir": direction}
+
+        prev_instructors = int(prev_kpi_row.get("total_instructors", 0) or 0)
+        prev_sessions = int(prev_kpi_row.get("total_sessions", 0) or 0)
+        prev_avg = round(prev_sessions / prev_instructors, 1) if prev_instructors else 0
+        prev_students = int(prev_kpi_row.get("total_students", 0) or 0)
+
         kpis = [
             {
                 "label": "Total Instructors", "value": total_instructors, "icon": "fas fa-users", "color": "bg-info",
+                "trend": calc_trend(total_instructors, prev_instructors),
                 "insights": {"top_performing": top_region, "status": inst_status, "reason": inst_reason}
             },
             {
                 "label": "Avg Sessions/Instructor", "value": avg_per_inst, "icon": "fas fa-chart-line", "color": "bg-success",
+                "trend": calc_trend(avg_per_inst, prev_avg),
                 "insights": {"top_performing": top_region, "status": avg_status, "reason": avg_reason}
             },
             {
                 "label": "Total Sessions", "value": total_sessions, "icon": "fas fa-chalkboard-teacher", "color": "bg-navy-blue",
+                "trend": calc_trend(total_sessions, prev_sessions),
                 "insights": {"top_performing": top_region, "status": sess_status, "reason": sess_reason}
             },
             {
                 "label": "Total Students Impacted", "value": int(kpi_row.get("total_students", 0) or 0), "icon": "fas fa-user-graduate", "color": "bg-danger",
+                "trend": calc_trend(int(kpi_row.get("total_students", 0) or 0), prev_students),
                 "insights": {"top_performing": top_region, "status": stu_status, "reason": stu_reason}
             },
         ]
