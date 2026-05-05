@@ -334,11 +334,14 @@ def get_performance_mgmt_chart_data(
                 {label_expr}                              AS period_label,
                 {sort_expr}                               AS sort_key,
                 COUNT(DISTINCT f.sk_fact_session_id)      AS actual_sessions,
+                COUNT(DISTINCT f.sk_user_id)              AS actual_instructors,
+                COALESCE(SUM(e.total_exposure_count), 0)  AS actual_students,
                 MAX(daily.day_sessions)                   AS high_sessions,
                 MIN(daily.day_sessions)                   AS low_sessions
             FROM {DW}.fact_session f
             JOIN {DW}.dim_date d       ON f.date_id = d.date_id
             LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
             JOIN (
                 SELECT date_id, COUNT(DISTINCT sk_fact_session_id) AS day_sessions
                 FROM {DW}.fact_session
@@ -358,14 +361,17 @@ def get_performance_mgmt_chart_data(
             else:
                 target = round(int(rows[i - 1]["actual_sessions"] or 0) * 1.1)
             result.append({
-                "label":   r["period_label"],
-                "actual":  actual,
-                "target":  target,
-                "high":    int(r["high_sessions"] or actual),
-                "low":     int(r["low_sessions"] or actual),
-                "open":    target,   # candlestick open = target
-                "close":   actual,   # candlestick close = actual
-                "met":     actual >= target,
+                "label":       r["period_label"],
+                "actual":      actual,
+                "target":      target,
+                "instructors": int(r["actual_instructors"] or 0),
+                "students":    int(r["actual_students"] or 0),
+                "avg_sessions": round(actual / int(r["actual_instructors"]), 1) if int(r["actual_instructors"]) > 0 else 0,
+                "high":        int(r["high_sessions"] or actual),
+                "low":         int(r["low_sessions"] or actual),
+                "open":        target,   # candlestick open = target
+                "close":       actual,   # candlestick close = actual
+                "met":         actual >= target,
             })
         return {"data": result, "group_by": group_by}
     except Exception as e:
