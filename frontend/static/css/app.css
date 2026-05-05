@@ -3029,3 +3029,88 @@ table.dataTable thead th {
 .kpi-popover-table td { padding: 4px 0; }
 
 .kpi-v2-orange { background: #f39c12 !important; }
+/* Bitcoin Style KPI Cards */
+.kpi-card-bitcoin { cursor: pointer;
+    background: #ffffff !important;
+    border-radius: 20px !important;
+    padding: 1.5rem !important;
+    border: 1px solid #edf2f7 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+    color: #1a202c !important;
+    min-height: 220px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+.kpi-card-bitcoin:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+.kpi-bitcoin-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+.kpi-bitcoin-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    font-size: 1.5rem;
+    color: #fff;
+}
+.kpi-bitcoin-title-box {
+    display: flex;
+    flex-direction: column;
+}
+.kpi-bitcoin-label {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #1a202c;
+    line-height: 1.2;
+}
+.kpi-bitcoin-sublabel {
+    font-size: 0.85rem;
+    color: #718096;
+}
+.kpi-bitcoin-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1a202c;
+    margin-bottom: 0.5rem;
+    font-family: Inter, Arial, sans-serif;
+}
+.kpi-bitcoin-trend-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-right: 8px;
+}
+.kpi-bitcoin-trend-up {
+    background: #e6fffa;
+    color: #047481;
+}
+.kpi-bitcoin-trend-down {
+    background: #fff5f5;
+    color: #c53030;
+}
+.kpi-bitcoin-trend-neutral {
+    background: #f7fafc;
+    color: #4a5568;
+}
+.kpi-bitcoin-footer {
+    font-size: 0.75rem;
+    color: #a0aec0;
+    margin-top: 0.25rem;
+}
+.kpi-mini-chart {
+    margin-top: auto;
+    height: 40px;
+    width: 100%;
+}
