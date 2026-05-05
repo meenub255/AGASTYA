@@ -18,48 +18,80 @@
         </div>
     </div>
     <div class="row mb-4">
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-teal" id="kpiCardInstructors" data-toggle="popover" data-trigger="hover"
-                data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="d-flex align-items-baseline">
-                    <span class="kpi-v2-val" id="kpiInstructors">0</span>
+        <div class="col-lg-3 col-md-6">
+            <div class="kpi-card-bitcoin" id="kpiCardInstructors" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Instructors</span>
+                        <span class="kpi-bitcoin-sublabel">Total Active</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiInstructors">0</div>
+                <div class="d-flex align-items-center mb-2">
                     <div id="trendInstructors"></div>
+                    <span class="kpi-bitcoin-footer">vs previous period</span>
                 </div>
-                <span class="kpi-v2-lbl">Total Instructors</span>
-                <div class="kpi-v2-icon"><i class="fas fa-users"></i></div>
+                <div class="kpi-mini-chart"><canvas id="miniChartInstructors"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-green" id="kpiCardAvgSessions" data-toggle="popover"
-                data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="d-flex align-items-baseline">
-                    <span class="kpi-v2-val" id="kpiAvgSessions">0</span>
+        <div class="col-lg-3 col-md-6">
+            <div class="kpi-card-bitcoin" id="kpiCardAvgSessions" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Avg Sessions</span>
+                        <span class="kpi-bitcoin-sublabel">Per Instructor</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiAvgSessions">0</div>
+                <div class="d-flex align-items-center mb-2">
                     <div id="trendAvgSessions"></div>
+                    <span class="kpi-bitcoin-footer">vs previous period</span>
                 </div>
-                <span class="kpi-v2-lbl">Avg Sessions/Instructor</span>
-                <div class="kpi-v2-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="kpi-mini-chart"><canvas id="miniChartAvgSessions"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-navy" id="kpiCardSessions" data-toggle="popover" data-trigger="hover"
-                data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="d-flex align-items-baseline">
-                    <span class="kpi-v2-val" id="kpiSessions">0</span>
+        <div class="col-lg-3 col-md-6">
+            <div class="kpi-card-bitcoin" id="kpiCardSessions" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Sessions</span>
+                        <span class="kpi-bitcoin-sublabel">Total Delivered</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiSessions">0</div>
+                <div class="d-flex align-items-center mb-2">
                     <div id="trendSessions"></div>
+                    <span class="kpi-bitcoin-footer">vs previous period</span>
                 </div>
-                <span class="kpi-v2-lbl">Total Sessions</span>
-                <div class="kpi-v2-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                <div class="kpi-mini-chart"><canvas id="miniChartSessions"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-red" id="kpiCardStudents" data-toggle="popover" data-trigger="hover"
-                data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="d-flex align-items-baseline">
-                    <span class="kpi-v2-val" id="kpiStudents">0</span>
-                    <div id="trendStudents"></div>
+        <div class="col-lg-3 col-md-6">
+            <div class="kpi-card-bitcoin" id="kpiCardStudents" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Students</span>
+                        <span class="kpi-bitcoin-sublabel">Total Impacted</span>
+                    </div>
                 </div>
-                <span class="kpi-v2-lbl">Total Students Impacted</span>
-                <div class="kpi-v2-icon"><i class="fas fa-user-graduate"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiStudents">0</div>
+                <div class="d-flex align-items-center mb-2">
+                    <div id="trendStudents"></div>
+                    <span class="kpi-bitcoin-footer">vs previous period</span>
+                </div>
+                <div class="kpi-mini-chart"><canvas id="miniChartStudents"></canvas></div>
             </div>
         </div>
     </div>
@@ -486,6 +518,36 @@
             }).catch(e => console.error('Region chart error', e));
         }
 
+        const miniCharts = {};
+        function renderMiniChart(canvasId, dataPoints, color) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            if (miniCharts[canvasId]) miniCharts[canvasId].destroy();
+            miniCharts[canvasId] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dataPoints.map((_, i) => i),
+                    datasets: [{
+                        data: dataPoints,
+                        borderColor: color,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: true,
+                        backgroundColor: color + '15',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false }, 
+                        tooltip: { enabled: false },
+                        datalabels: { display: false } // Explicitly disable labels within KPIs
+                    },
+                    scales: { x: { display: false }, y: { display: false } }
+                }
+            });
+        }
+
         function loadKPIs(period) {
             const f = collectFilters();
             if (period) { f.period = period; f.group_by = currentGroupBy; }
@@ -499,68 +561,43 @@
                     function renderTrend(containerId, trend) {
                         const container = $(containerId).empty();
                         if (!trend || trend.dir === 'neutral') return;
-                        const icon = trend.dir === 'up' ? 'fa-caret-up' : 'fa-caret-down';
-                        const cls = trend.dir === 'up' ? 'kpi-trend-up' : 'kpi-trend-down';
-                        container.append(`<div class="kpi-trend-badge ${cls}"><i class="fas ${icon} mr-1"></i>${Math.abs(trend.pct)}%</div>`);
+                        const icon = trend.dir === 'up' ? '↗' : '↘';
+                        const cls = trend.dir === 'up' ? 'kpi-bitcoin-trend-up' : 'kpi-bitcoin-trend-down';
+                        container.append(`<div class="kpi-bitcoin-trend-pill ${cls}">${Math.abs(trend.pct)}% ${icon}</div>`);
                     }
 
                     renderTrend('#trendInstructors', data.kpis[0].trend);
                     renderTrend('#trendAvgSessions', data.kpis[1].trend);
                     renderTrend('#trendSessions', data.kpis[2].trend);
-                    renderTrend('#trendSessions', data.kpis[2].trend);
                     renderTrend('#trendStudents', data.kpis[3].trend);
 
-                    // Dynamic Color Switching (Independent for each card)
-                    function applyCardColor(cardId, trend, isFiltered) {
-                        let cardClass = 'kpi-v2-orange'; // Base
-                        if (isFiltered) {
-                            if (trend && trend.dir === 'up') {
-                                cardClass = 'kpi-v2-green';
-                            } else if (trend && trend.dir === 'down') {
-                                cardClass = 'kpi-v2-red';
-                            }
-                        }
-                        $(cardId).removeClass('kpi-v2-teal kpi-v2-green kpi-v2-navy kpi-v2-red kpi-v2-orange').addClass(cardClass);
+                    // Render mini sparklines with metric-specific historical data
+                    if (window._chartRawData && window._chartRawData.length) {
+                        const instrData = window._chartRawData.map(d => d.instructors);
+                        const avgSessData = window._chartRawData.map(d => d.avg_sessions);
+                        const totalSessData = window._chartRawData.map(d => d.actual);
+                        const studentData = window._chartRawData.map(d => d.students);
+
+                        renderMiniChart('miniChartInstructors', instrData, '#f39c12');
+                        renderMiniChart('miniChartAvgSessions', avgSessData, '#3498db');
+                        renderMiniChart('miniChartSessions', totalSessData, '#2ecc71');
+                        renderMiniChart('miniChartStudents', studentData, '#e74c3c');
                     }
-                    
-                    applyCardColor('#kpiCardInstructors', data.kpis[0].trend, data.is_filtered);
-                    applyCardColor('#kpiCardAvgSessions', data.kpis[1].trend, data.is_filtered);
-                    applyCardColor('#kpiCardSessions', data.kpis[2].trend, data.is_filtered);
-                    applyCardColor('#kpiCardStudents', data.kpis[3].trend, data.is_filtered);
 
                     function fmtInsight(i, trend) {
                         if (!i) return 'No data.';
                         let sc = i.status === 'High' ? '#10b981' : (i.status === 'Low/Decline' ? '#f43f5e' : '#f59e0b');
-                        let trendHtml = '';
-                        if (trend && trend.dir !== 'neutral') {
-                            const tColor = trend.dir === 'up' ? '#10b981' : '#f43f5e';
-                            const tIcon = trend.dir === 'up' ? '↑' : '↓';
-                            trendHtml = `<div style="margin-bottom:8px; padding:6px; background:#f8fafc; border-radius:6px; border-left:3px solid ${tColor}">
-                                <span style="font-size:0.75rem; color:#64748b; text-transform:uppercase; font-weight:700">Period Trend</span><br>
-                                <strong style="color:${tColor}; font-size:1.1rem">${tIcon} ${Math.abs(trend.pct)}%</strong> 
-                                <span style="font-size:0.8rem; color:#64748b">vs previous period</span>
-                            </div>`;
-                        }
-
                         return `<div style="font-size:.85rem;line-height:1.4;color:#334155; min-width:200px;">
-                            ${trendHtml}
                             <div style="margin-bottom:4px"><strong>Top Region:</strong> ${i.top_performing}</div>
                             <div style="margin-bottom:4px"><strong>Status:</strong> <span style="font-weight:600;color:${sc}">${i.status}</span></div>
                             <div style="margin-bottom:10px"><strong>Reason:</strong> ${i.reason}</div>
-                            <div style="border-top:1px solid #e2e8f0; padding-top:8px; margin-top:8px;">
-                                <span style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase; font-weight:700">Weekly Performance</span>
-                                <div class="d-flex justify-content-between mt-1" style="font-size:0.75rem">
-                                    <span>Average Delivery</span>
-                                    <span class="font-weight-bold" style="color:#1e293b">Consistent</span>
-                                </div>
-                            </div>
                         </div>`;
                     }
                     $('#kpiCardInstructors').attr('data-content', fmtInsight(data.kpis[0].insights, data.kpis[0].trend));
                     $('#kpiCardAvgSessions').attr('data-content', fmtInsight(data.kpis[1].insights, data.kpis[1].trend));
                     $('#kpiCardSessions').attr('data-content', fmtInsight(data.kpis[2].insights, data.kpis[2].trend));
                     $('#kpiCardStudents').attr('data-content', fmtInsight(data.kpis[3].insights, data.kpis[3].trend));
-                    $('.kpi-card-v2').popover('dispose').popover();
+                    $('.kpi-card-bitcoin').popover('dispose').popover();
                 }
             });
         }
