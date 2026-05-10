@@ -59,6 +59,61 @@ def get_overview_kpis(year: list[int] | list[str] | None = None, region: list[st
         "total_programs": int(kpis_row.get("total_programs", 0) or 0),
     }
 
+def get_overview_trends(year: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
+    """Returns monthly historical trend data for sparklines."""
+    where_clause, params = _build_filters(year=year, region=region, program=program)
+    
+    # We fetch monthly data for the last 12 periods based on filters
+    # If years are selected, we show data for those years
+    rows = fetch_all(f"""
+        SELECT 
+            d.year_actual,
+            d.month_actual,
+            MIN(d.full_date) as sort_key,
+            COUNT(DISTINCT f.sk_user_id) as instructors,
+            COUNT(DISTINCT g.nk_region_id) as states,
+            COUNT(DISTINCT p.program_name) as programs
+        FROM dw.fact_session f
+        LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
+        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+        LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+        {where_clause}
+        GROUP BY d.year_actual, d.month_actual
+        ORDER BY sort_key
+        LIMIT 24
+    """, params)
+
+    driver_rows = fetch_all(f"""
+        SELECT 
+            d.year_actual,
+            d.month_actual,
+            MIN(d.full_date) as sort_key,
+            COUNT(DISTINCT f.sk_driver_id) as drivers
+        FROM dw.fact_vehicle_operations f
+        LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
+        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+        LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+        {where_clause}
+        GROUP BY d.year_actual, d.month_actual
+        ORDER BY sort_key
+        LIMIT 24
+    """, params)
+
+    # Merge driver data into rows mapping
+    driver_map = {(r["year_actual"], r["month_actual"]): r["drivers"] for r in driver_rows}
+    
+    trends = []
+    for r in rows:
+        key = (r["year_actual"], r["month_actual"])
+        trends.append({
+            "instructors": r["instructors"],
+            "states": r["states"],
+            "programs": r["programs"],
+            "drivers": driver_map.get(key, 0)
+        })
+    
+    return trends
+
 def get_overview_charts(year: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
     where_clause, params = _build_filters(year=year, region=region, program=program)
     
