@@ -396,11 +396,50 @@
             }, stepTime);
         }
 
-        function updateKpis(kpis) {
+        const miniCharts = {};
+        function renderMiniChart(canvasId, dataPoints, color) {
+            const el = document.getElementById(canvasId);
+            if (!el) return;
+            const ctx = el.getContext('2d');
+            if (miniCharts[canvasId]) miniCharts[canvasId].destroy();
+            miniCharts[canvasId] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dataPoints.map((_, i) => i),
+                    datasets: [{
+                        data: dataPoints,
+                        borderColor: color,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: true,
+                        backgroundColor: color + '15',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false }, 
+                        tooltip: { enabled: false },
+                        datalabels: { display: false }
+                    },
+                    scales: { x: { display: false }, y: { display: false } }
+                }
+            });
+        }
+
+        function updateKpis(kpis, trends = []) {
             animateNumber($('#kpiInstructors'), kpis.total_instructors);
             animateNumber($('#kpiDrivers'),     kpis.total_drivers);
             animateNumber($('#kpiStates'),      kpis.total_states);
             animateNumber($('#kpiPrograms'),    kpis.total_programs);
+
+            if (trends && trends.length) {
+                renderMiniChart('miniChartInstructors', trends.map(t => t.instructors), '#f39c12');
+                renderMiniChart('miniChartDrivers',     trends.map(t => t.drivers),     '#3498db');
+                renderMiniChart('miniChartStates',      trends.map(t => t.states),      '#2ecc71');
+                renderMiniChart('miniChartPrograms',    trends.map(t => t.programs),    '#e74c3c');
+            }
         }
 
         // ── Bar Chart ────────────────────────────────────────────────────
@@ -595,7 +634,8 @@
                 .then(r => r.json())
                 .then(data => {
                     fullKpis = data.kpis;
-                    updateKpis(data.kpis);
+                    fullTrends = data.trends;
+                    updateKpis(data.kpis, data.trends);
                     regionMapping = {};
                     renderPolarAreaChart(data.charts.instructors_by_region);
                     renderBarChart(data.charts.programs_by_region);
@@ -612,7 +652,7 @@
             // Update KPIs to region-filtered view with cache-busting
             fetch(`/dashboard/data?${query}`, { cache: 'no-store' })
                 .then(r => r.json())
-                .then(data => updateKpis(data.kpis));
+                .then(data => updateKpis(data.kpis, data.trends));
 
             // Fetch drill-down detail with cache-busting
             fetch(`/dashboard/drill-down?${query}`, { cache: 'no-store' })
@@ -685,7 +725,7 @@
             }
 
             // Restore full KPIs
-            if (restoreKpis && fullKpis) updateKpis(fullKpis);
+            if (restoreKpis && fullKpis) updateKpis(fullKpis, fullTrends);
         };
 
         // ── Button handlers ──────────────────────────────────────────────
