@@ -109,9 +109,12 @@ def get_data(
         }
     }
 
+    trends = overview_service.get_overview_trends(years, region, program)
+
     return {
         "kpis": kpis,
-        "charts": formatted_charts
+        "charts": formatted_charts,
+        "trends": trends
     }
 
 @router.get("/drill-down")
