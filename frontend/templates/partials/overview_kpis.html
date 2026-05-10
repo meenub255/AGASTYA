@@ -1,30 +1,62 @@
 <div class="row">
-    <div class="col-lg-3 col-6">
-        <a href="/instructor-overview" class="kpi-card-v2 kpi-v2-teal">
-            <span class="kpi-v2-val" id="kpiInstructors">0</span>
-            <span class="kpi-v2-lbl">Total Instructors</span>
-            <div class="kpi-v2-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <a href="/instructor-overview" class="kpi-card-bitcoin" id="kpiCardInstructors" style="text-decoration:none;">
+            <div class="kpi-bitcoin-header">
+                <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <div class="kpi-bitcoin-title-box">
+                    <span class="kpi-bitcoin-label">Instructors</span>
+                    <span class="kpi-bitcoin-sublabel">Total Active</span>
+                </div>
+            </div>
+            <div class="kpi-bitcoin-value" id="kpiInstructors">0</div>
+            <div class="kpi-mini-chart"><canvas id="miniChartInstructors"></canvas></div>
         </a>
     </div>
-    <div class="col-lg-3 col-6">
-        <a href="/operations-overview" class="kpi-card-v2 kpi-v2-green">
-            <span class="kpi-v2-val" id="kpiDrivers">0</span>
-            <span class="kpi-v2-lbl">Total Drivers</span>
-            <div class="kpi-v2-icon"><i class="fas fa-truck"></i></div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <a href="/operations-overview" class="kpi-card-bitcoin" id="kpiCardDrivers" style="text-decoration:none;">
+            <div class="kpi-bitcoin-header">
+                <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="kpi-bitcoin-title-box">
+                    <span class="kpi-bitcoin-label">Drivers</span>
+                    <span class="kpi-bitcoin-sublabel">Active Logistics</span>
+                </div>
+            </div>
+            <div class="kpi-bitcoin-value" id="kpiDrivers">0</div>
+            <div class="kpi-mini-chart"><canvas id="miniChartDrivers"></canvas></div>
         </a>
     </div>
-    <div class="col-lg-3 col-6">
-        <div class="kpi-card-v2 kpi-v2-navy">
-            <span class="kpi-v2-val" id="kpiStates">0</span>
-            <span class="kpi-v2-lbl">States Reached</span>
-            <div class="kpi-v2-icon"><i class="fas fa-map-marked-alt"></i></div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="kpi-card-bitcoin" id="kpiCardStates">
+            <div class="kpi-bitcoin-header">
+                <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);">
+                    <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <div class="kpi-bitcoin-title-box">
+                    <span class="kpi-bitcoin-label">Coverage</span>
+                    <span class="kpi-bitcoin-sublabel">States Reached</span>
+                </div>
+            </div>
+            <div class="kpi-bitcoin-value" id="kpiStates">0</div>
+            <div class="kpi-mini-chart"><canvas id="miniChartStates"></canvas></div>
         </div>
     </div>
-    <div class="col-lg-3 col-6">
-        <a href="/program-impact-overview" class="kpi-card-v2 kpi-v2-red">
-            <span class="kpi-v2-val" id="kpiPrograms">0</span>
-            <span class="kpi-v2-lbl">Total Programs</span>
-            <div class="kpi-v2-icon"><i class="fas fa-project-diagram"></i></div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <a href="/program-impact-overview" class="kpi-card-bitcoin" id="kpiCardPrograms" style="text-decoration:none;">
+            <div class="kpi-bitcoin-header">
+                <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                    <i class="fas fa-project-diagram"></i>
+                </div>
+                <div class="kpi-bitcoin-title-box">
+                    <span class="kpi-bitcoin-label">Programs</span>
+                    <span class="kpi-bitcoin-sublabel">Active Initiatives</span>
+                </div>
+            </div>
+            <div class="kpi-bitcoin-value" id="kpiPrograms">0</div>
+            <div class="kpi-mini-chart"><canvas id="miniChartPrograms"></canvas></div>
         </a>
     </div>
 </div>
