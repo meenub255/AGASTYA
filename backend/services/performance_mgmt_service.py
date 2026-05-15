@@ -57,7 +57,9 @@ def get_performance_mgmt_data(region=None, year=None, month=None, quarter=None, 
         c, p = get_list_filter_clause("g.region_name", region)
         clauses.append(c); params.extend(p)
         
-        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int")
+        # Default to 2026 if no year provided
+        effective_year = year if year is not None and len(year) > 0 else [2026]
+        c, p = get_list_filter_clause("d.year_actual", effective_year, cast_type="int")
         clauses.append(c); params.extend(p)
         
         # Quarter Filter (Fiscal)
@@ -303,7 +305,9 @@ def get_performance_mgmt_chart_data(
     try:
         clauses, params = [], []
         c, p = get_list_filter_clause("g.region_name", region); clauses.append(c); params.extend(p)
-        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); clauses.append(c); params.extend(p)
+        # Default to 2026 if no year provided
+        effective_year = year if year is not None and len(year) > 0 else [2026]
+        c, p = get_list_filter_clause("d.year_actual", effective_year, cast_type="int"); clauses.append(c); params.extend(p)
         c, p = get_list_filter_clause("d.month_actual", month, cast_type="int"); clauses.append(c); params.extend(p)
         
         fiscal_q_expr = "CASE WHEN d.month_actual IN (4,5,6) THEN 1 WHEN d.month_actual IN (7,8,9) THEN 2 WHEN d.month_actual IN (10,11,12) THEN 3 ELSE 4 END"
@@ -386,7 +390,9 @@ def get_performance_mgmt_region_chart(
     try:
         clauses, params = [], []
         c, p = get_list_filter_clause("g.region_name", region); clauses.append(c); params.extend(p)
-        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); clauses.append(c); params.extend(p)
+        # Default to 2026 if no year provided
+        effective_year = year if year is not None and len(year) > 0 else [2026]
+        c, p = get_list_filter_clause("d.year_actual", effective_year, cast_type="int"); clauses.append(c); params.extend(p)
         c, p = get_list_filter_clause("d.month_actual", month, cast_type="int"); clauses.append(c); params.extend(p)
         
         fiscal_q_expr = "CASE WHEN d.month_actual IN (4,5,6) THEN 1 WHEN d.month_actual IN (7,8,9) THEN 2 WHEN d.month_actual IN (10,11,12) THEN 3 ELSE 4 END"
@@ -451,7 +457,9 @@ def get_performance_mgmt_drilldown(
             clauses.append("REPLACE(LOWER(g.region_name), '_', ' ') = ANY(%s)")
             params.append([r.lower().replace("_", " ") for r in region_list])
         
-        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); clauses.append(c); params.extend(p)
+        # Default to 2026 if no year provided
+        effective_year = year if year is not None and len(year) > 0 else [2026]
+        c, p = get_list_filter_clause("d.year_actual", effective_year, cast_type="int"); clauses.append(c); params.extend(p)
         c, p = get_list_filter_clause("d.month_actual", month, cast_type="int"); clauses.append(c); params.extend(p)
         
         fiscal_q_expr = "CASE WHEN d.month_actual IN (4,5,6) THEN 1 WHEN d.month_actual IN (7,8,9) THEN 2 WHEN d.month_actual IN (10,11,12) THEN 3 ELSE 4 END"
@@ -502,7 +510,7 @@ def get_performance_mgmt_drilldown(
             WHERE {where}
             GROUP BY u.user_name, u.role_name, g.region_name
             ORDER BY sessions DESC
-            LIMIT 50
+            LIMIT 2000
         """, params)
         return {"table": table, "period": period_label}
     except Exception as e:
