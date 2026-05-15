@@ -6,12 +6,11 @@ PROGRAM_EXPRESSION = "p.program_name"
 
 
 
+from backend.config import DEFAULT_YEAR
+
 def _build_filters(year: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
-    # Default to current year (2026) for performance if no year is selected
-    effective_year = year if year is not None and len(year) > 0 else [2026]
-    
     return build_dimension_filters(
-        year=effective_year,
+        year=year,
         region=region,
         program=program,
         year_expression="d.year_actual",
@@ -202,7 +201,7 @@ def get_program_targets(year: list[int] | list[str] | None = None, region: list[
             COALESCE(p.donor_name, 'Unknown') AS donor,
             COALESCE(p.instructor_capacity, 0) AS target_sessions,
             COALESCE(COUNT(DISTINCT f.sk_fact_session_id), 0) AS completed_sessions,
-            COALESCE(SUM(fa.total_exposure_count), 0) AS reached_students,
+            COALESCE(SUM(fa.total_exposure_count + f.community_men_count + f.community_women_count), 0) AS reached_students,
             p.end_date AS end_date
         FROM dw.dim_program p
         LEFT JOIN dw.fact_session f ON p.sk_program_id = f.sk_program_id
@@ -317,7 +316,7 @@ def get_drilldown_data(
         f"""
         SELECT
             COUNT(DISTINCT f.sk_fact_session_id)        AS total_sessions,
-            COALESCE(SUM(fa.total_exposure_count), 0)   AS total_students,
+            COALESCE(SUM(fa.total_exposure_count + f.community_men_count + f.community_women_count), 0)   AS total_students,
             COUNT(DISTINCT f.sk_school_id)              AS total_schools
         FROM dw.fact_session f
         LEFT JOIN dw.dim_date d       ON d.date_id        = f.date_id
@@ -336,7 +335,7 @@ def get_drilldown_data(
             COALESCE(p.program_name, 'Unknown')         AS program_name,
             COALESCE(p.donor_name, 'Unknown')           AS donor,
             COUNT(DISTINCT f.sk_fact_session_id)        AS sessions,
-            COALESCE(SUM(fa.total_exposure_count), 0)   AS students_reached,
+            COALESCE(SUM(fa.total_exposure_count + f.community_men_count + f.community_women_count), 0)   AS students_reached,
             COUNT(DISTINCT f.sk_school_id)              AS schools_visited,
             COUNT(DISTINCT f.sk_user_id)                AS instructors
         FROM dw.fact_session f
