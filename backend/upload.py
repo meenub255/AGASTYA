@@ -16,7 +16,7 @@ from fastapi.templating import Jinja2Templates
 from psycopg2 import sql
 from psycopg2.extras import execute_values
 
-from backend.config import MANAGED_SOURCE_TABLES, SOURCE_DB_NAME, TEMPLATES_DIR
+from backend.config import MANAGED_SOURCE_TABLES, SOURCE_DB_NAME, TEMPLATES_DIR, SOURCE_SCHEMA_NAME
 from backend.db import get_source_conn
 from backend.elt_runner import run_elt
 from backend.models.schemas import ApiMessage
@@ -25,7 +25,6 @@ from backend.models.schemas import ApiMessage
 router = APIRouter(tags=["upload"])
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 IGNORE_SHEET_VALUE = "__ignore__"
-SOURCE_SCHEMA_NAME = "source_data_schema"
 INTEGER_RANGES = {
     "int2": (-32768, 32767),
     "int4": (-2147483648, 2147483647),
