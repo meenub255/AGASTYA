@@ -92,10 +92,10 @@ def get_data(
             }]
         },
         "drivers_by_region": {
-            "labels": ["N/A"],
+            "labels": [item["label"] for item in charts["drivers_by_region"]],
             "datasets": [{
                 "label": "Drivers",
-                "data": [0],
+                "data": [item["value"] for item in charts["drivers_by_region"]],
                 "backgroundColor": "#10b981"
             }]
         },
