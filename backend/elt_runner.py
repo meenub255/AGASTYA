@@ -14,6 +14,8 @@ from backend.config import (
     FDW_SOURCE_SCHEMA,
     MANAGED_SOURCE_TABLES,
     SOURCE_DB_NAME,
+    SOURCE_SCHEMA_NAME,
+    DATAMART_SCHEMA_NAME,
     SQL_DIR,
 )
 from backend.db import get_datamart_conn
@@ -33,7 +35,7 @@ def run_elt(script_name: str = DEFAULT_RUN_FILE) -> list[str]:
         _ensure_foreign_source_access(conn)
         
         with conn.cursor() as cur:
-            cur.execute(f"SET search_path = dw_data_schema, {FDW_SOURCE_SCHEMA}, public")
+            cur.execute(f"SET search_path = {DATAMART_SCHEMA_NAME}, {SOURCE_SCHEMA_NAME}, {FDW_SOURCE_SCHEMA}, public")
 
         executed_files: list[str] = []
         for sql_text, resolved_path in _expand_script(script_path):
@@ -67,7 +69,8 @@ def _ensure_foreign_source_access(conn) -> None:
             [DB_USER, DB_PASSWORD],
         )
         cur.execute(
-            sql.SQL("IMPORT FOREIGN SCHEMA source_data_schema LIMIT TO ({}) FROM SERVER {} INTO {}").format(
+            sql.SQL("IMPORT FOREIGN SCHEMA {} LIMIT TO ({}) FROM SERVER {} INTO {}").format(
+                sql.Identifier(SOURCE_SCHEMA_NAME),
                 sql.SQL(", ").join(sql.Identifier(t) for t in MANAGED_SOURCE_TABLES),
                 sql.Identifier(FDW_SERVER_NAME),
                 sql.Identifier(FDW_SOURCE_SCHEMA),
