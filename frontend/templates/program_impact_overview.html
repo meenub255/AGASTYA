@@ -175,7 +175,14 @@ $(function(){
         const q = $.param({years:years||[], regions:regions||[]}, true);
         return fetch(`/dashboard/filters?${q}`).then(r=>r.json()).then(d=>{
             if(target==='all'){
-                $('#yearFilter').empty(); d.years.forEach(y=>$('#yearFilter').append(new Option(y,y)));
+                $('#yearFilter').empty(); 
+                d.years.forEach(y=>$('#yearFilter').append(new Option(y,y)));
+                
+                // Default to 2026 if available and nothing is selected
+                if(!($('#yearFilter').val()||[]).length && d.years.includes(2026)){
+                    $('#yearFilter').val([2026]);
+                }
+                
                 $('#regionFilter').empty(); d.regions.forEach(r=>$('#regionFilter').append(new Option(r,r)));
                 $('#programFilter').empty(); d.programs.forEach(p=>$('#programFilter').append(new Option(p,p)));
                 $('.select2').trigger('change.select2');
