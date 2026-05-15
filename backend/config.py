@@ -1,5 +1,8 @@
 from pathlib import Path
 import os
+from datetime import datetime
+
+DEFAULT_YEAR = datetime.now().year
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,25 +19,10 @@ DB_HOST = os.getenv("PRAMANA_DB_HOST", "192.168.113.15")
 DB_PORT = os.getenv("PRAMANA_DB_PORT", "5432")
 DB_SSL_MODE = os.getenv("PRAMANA_DB_SSL_MODE", "require")
 
-''' # For Local Instance 
-DB_USER = os.getenv("PRAMANA_DB_USER", "postgres")
-DB_PASSWORD = os.getenv("PRAMANA_DB_PASSWORD", "postgres")
-DB_HOST = os.getenv("PRAMANA_DB_HOST", "localhost")
-DB_PORT = os.getenv("PRAMANA_DB_PORT", "5432")
-DB_SSL_MODE = os.getenv("PRAMANA_DB_PORT", "disable")
-'''
-
-
 # For Production 
 ADMIN_DB_NAME = os.getenv("PRAMANA_ADMIN_DB_NAME", "pramanadb")
 SOURCE_DB_NAME = os.getenv("PRAMANA_SOURCE_DB_NAME", "pramanadb")
 DATAMART_DB_NAME = os.getenv("PRAMANA_DATAMART_DB_NAME", "pramanadb")
-
-''' # For Local Instance
-ADMIN_DB_NAME = os.getenv("PRAMANA_ADMIN_DB_NAME", "pramana_v4_db")
-SOURCE_DB_NAME = os.getenv("PRAMANA_SOURCE_DB_NAME", "pramana_v4_db")
-DATAMART_DB_NAME = os.getenv("PRAMANA_DATAMART_DB_NAME", "pramana_v4_db")
-'''
 
 
 
