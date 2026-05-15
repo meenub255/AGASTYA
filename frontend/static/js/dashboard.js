@@ -78,7 +78,7 @@
         }
         
         const page = getPage();
-        const mainPages = ["dashboard", "sessions", "region", "instructor", "programs"];
+        const mainPages = ["sessions", "region", "instructor", "programs"];
         
         if (mainPages.includes(page)) {
             syncRangeLabels();
