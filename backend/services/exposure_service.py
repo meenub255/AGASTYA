@@ -23,14 +23,25 @@ def get_total_students(
     where_clause, params = _base_where(start, end, region, program)
     row = fetch_one(
         f"""
-        SELECT COALESCE(SUM(fae.total_exposure_count), 0) AS total_students
-        FROM dw.fact_attendance_exposure fae
-        LEFT JOIN dw.dim_date d ON d.date_id = fae.date_id
-        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = fae.sk_geography_id
-        LEFT JOIN dw.dim_program p ON p.sk_program_id = fae.sk_program_id
-        {where_clause}
+        SELECT (COALESCE(e_sum.total_exposure_count, 0) + COALESCE(f_sum.comm_count, 0)) AS total_students
+        FROM (
+            SELECT COALESCE(SUM(fae.total_exposure_count), 0) AS total_exposure_count
+            FROM dw.fact_attendance_exposure fae
+            LEFT JOIN dw.dim_date d ON d.date_id = fae.date_id
+            LEFT JOIN dw.dim_geography g ON g.sk_geography_id = fae.sk_geography_id
+            LEFT JOIN dw.dim_program p ON p.sk_program_id = fae.sk_program_id
+            {where_clause}
+        ) e_sum,
+        (
+            SELECT COALESCE(SUM(f.community_men_count + f.community_women_count), 0) AS comm_count
+            FROM dw.fact_session f
+            LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
+            LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+            LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+            {where_clause}
+        ) f_sum
         """,
-        params,
+        params * 2,
     )
     return int(row.get("total_students", 0) or 0)
 
@@ -46,10 +57,17 @@ def get_exposure_kpis(
     row = fetch_one(
         f"""
         SELECT
-            (SELECT COALESCE(SUM(total_exposure_count), 0) FROM dw.fact_attendance_exposure fae 
-             LEFT JOIN dw.dim_date d ON d.date_id = fae.date_id 
-             LEFT JOIN dw.dim_geography g ON g.sk_geography_id = fae.sk_geography_id 
-             LEFT JOIN dw.dim_program p ON p.sk_program_id = fae.sk_program_id {where_clause}) AS total_students,
+            (
+                (SELECT COALESCE(SUM(total_exposure_count), 0) FROM dw.fact_attendance_exposure fae 
+                 LEFT JOIN dw.dim_date d ON d.date_id = fae.date_id 
+                 LEFT JOIN dw.dim_geography g ON g.sk_geography_id = fae.sk_geography_id 
+                 LEFT JOIN dw.dim_program p ON p.sk_program_id = fae.sk_program_id {where_clause})
+                +
+                (SELECT COALESCE(SUM(community_men_count + community_women_count), 0) FROM dw.fact_session f
+                 LEFT JOIN dw.dim_date d ON d.date_id = f.date_id 
+                 LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id 
+                 LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id {where_clause})
+            ) AS total_students,
             COALESCE(SUM(f.no_of_teachers_participated), 0) AS teachers_reached,
             (SELECT COALESCE(AVG(total_exposure_count), 0) FROM dw.fact_attendance_exposure fae 
              LEFT JOIN dw.dim_date d ON d.date_id = fae.date_id 
@@ -61,7 +79,7 @@ def get_exposure_kpis(
         LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
         {where_clause}
         """,
-        params,
+        params * 4,
     )
     return {
         "total_students": int(row.get("total_students", 0) or 0),
@@ -206,7 +224,7 @@ def get_cohort_breakdown(
         LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
         {where_clause}
         """,
-        params,
+        params * 2,
     )
     return [
         {"label": "Students", "value": float(row.get("students", 0) or 0)},

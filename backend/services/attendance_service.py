@@ -6,7 +6,7 @@ def get_attendance_filters():
     locations = fetch_all(f"""
         SELECT DISTINCT g.region_name, g.area_name AS area 
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         WHERE g.region_name IS NOT NULL 
         ORDER BY g.region_name, g.area_name
     """)
@@ -14,7 +14,7 @@ def get_attendance_filters():
     years = [row["year_actual"] for row in fetch_all(f"""
         SELECT DISTINCT d.year_actual 
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         WHERE d.year_actual IS NOT NULL 
         ORDER BY d.year_actual DESC
     """)]
@@ -22,7 +22,7 @@ def get_attendance_filters():
     months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"""
         SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text, 'MM'), 'Month') as month_name 
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         ORDER BY d.month_actual
     """)]
     
@@ -61,8 +61,8 @@ def get_attendance_data(region=None, area=None, year=None, month=None, limit=15,
             COUNT(f.sk_fact_session_id) as total_sessions,
             COUNT(DISTINCT CONCAT(f.sk_user_id, '_', f.date_id)) as total_days_present
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-        JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         WHERE {where_sql}
     """
     kpis_raw = fetch_one(kpi_sql, params)
@@ -102,9 +102,9 @@ def get_attendance_data(region=None, area=None, year=None, month=None, limit=15,
         SELECT COUNT(*) FROM (
             SELECT u.user_name
             FROM {DATAMART_SCHEMA_NAME}.fact_session f
-            JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
-            JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-            JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
             WHERE {where_sql} AND {search_sql}
             GROUP BY u.user_name, g.region_name, g.area_name
         ) as sub
@@ -121,9 +121,9 @@ def get_attendance_data(region=None, area=None, year=None, month=None, limit=15,
             COUNT(DISTINCT d.full_date) as days_present,
             COUNT(f.sk_fact_session_id) as total_sessions
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
-        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-        JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         WHERE {where_sql} AND {search_sql}
         GROUP BY u.user_name, g.region_name, g.area_name
         {sort_sql}
@@ -141,8 +141,8 @@ def get_attendance_data(region=None, area=None, year=None, month=None, limit=15,
             {period_col} as {period_alias}, 
             COUNT(f.sk_fact_session_id) as metric
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-        JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         WHERE {where_sql}
         GROUP BY {period_col}
         ORDER BY {period_col} ASC
@@ -166,8 +166,8 @@ def get_attendance_data(region=None, area=None, year=None, month=None, limit=15,
             COALESCE(g.region_name, 'Unknown') as region_name, 
             COUNT(f.sk_fact_session_id) as metric
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-        JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         WHERE {where_sql}
         GROUP BY g.region_name
         ORDER BY metric DESC
