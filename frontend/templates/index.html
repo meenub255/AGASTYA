@@ -331,6 +331,11 @@
                         yf.empty();
                         data.years.forEach(y => yf.append(new Option(y, y)));
                         
+                        // Default to 2026 if available and nothing is selected
+                        if (!currentYears.length && data.years.includes(2026)) {
+                            yf.val([2026]);
+                        }
+                        
                         rf.empty();
                         data.regions.forEach(r => rf.append(new Option(r, r)));
                         
@@ -338,9 +343,9 @@
                         data.programs.forEach(p => pf.append(new Option(p, p)));
                         
                         // Notify Select2
-                        yf.trigger('change.select2');
-                        rf.trigger('change.select2');
-                        pf.trigger('change.select2');
+                        yf.trigger('change.select2', { internal: true });
+                        rf.trigger('change.select2', { internal: true });
+                        pf.trigger('change.select2', { internal: true });
                     } else if (target === 'regions') {
                         const currentSel = rf.val() || [];
                         rf.empty();
