@@ -54,13 +54,18 @@ def get_instructor_detail_data(instructor_name=None, year=None, month=None, limi
         kpi_sql = f"""
             SELECT 
                 COUNT(DISTINCT f.session_nk_id) as total_sessions,
-                SUM(COALESCE(e.total_exposure_count, 0)) as total_students,
+                SUM(COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0)) as total_students,
                 COUNT(DISTINCT f.sk_school_id) as unique_schools,
-                SUM(COALESCE(f.no_of_teachers_participated, 0)) as teachers_trained
+                SUM(CASE 
+                    WHEN a.activity_name ILIKE ANY (ARRAY['%%Meeting%%', '%%Training%%']) 
+                    THEN GREATEST(COALESCE(f.no_of_teachers_participated, 0), COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0), 1)
+                    ELSE COALESCE(f.no_of_teachers_participated, 0)
+                END) as teachers_trained
             FROM {DATAMART_SCHEMA_NAME}.fact_session f
             JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
             WHERE {where_sql}
         """
         kpi_res = fetch_one(kpi_sql, params)
@@ -97,8 +102,8 @@ def get_instructor_detail_data(instructor_name=None, year=None, month=None, limi
             FROM {DATAMART_SCHEMA_NAME}.fact_session f
             JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-            JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
             WHERE {where_sql} AND {search_sql}
@@ -106,25 +111,32 @@ def get_instructor_detail_data(instructor_name=None, year=None, month=None, limi
         count_res = fetch_one(count_sql, params + search_params)
         total_count = int(count_res.get("count", 0)) if count_res else 0
 
-        # 4. Get paginated granular data (9 Columns)
+        # 4. Get paginated granular data (10 Columns)
         sql = f"""
             SELECT 
                 COALESCE(p.program_name, 'N/A') as program_name,
                 d.full_date as date,
                 COALESCE(a.activity_name, 'N/A') as activity_name,
                 COALESCE(s.school_name, 'N/A') as school_name,
-                COALESCE(e.class_name, 'N/A') as class_name,
-                'N/A' as topic_name,
+                COALESCE(e.class_name, 'Adhoc') as class_name,
+                COALESCE(st.topic_description, ra.details, 'N/A') as topic_name,
                 COALESCE(e.boys_count, 0) as boys,
                 COALESCE(e.girls_count, 0) as girls,
-                COALESCE(f.no_of_teachers_participated, 0) as teachers
+                COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0) as community,
+                CASE 
+                    WHEN a.activity_name ILIKE ANY (ARRAY['%%Meeting%%', '%%Training%%']) 
+                    THEN GREATEST(COALESCE(f.no_of_teachers_participated, 0), COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0))
+                    ELSE COALESCE(f.no_of_teachers_participated, 0)
+                END as teachers
             FROM {DATAMART_SCHEMA_NAME}.fact_session f
             JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-            JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_subject_topic st ON f.sk_subject_topic_id = st.sk_subject_topic_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+            LEFT JOIN source.rpt_adhoc_feedback ra ON (f.session_nk_id - 1000000)::TEXT = ra.adhoc_id AND f.session_nk_id >= 1000000
             WHERE {where_sql} AND {search_sql}
             {sort_sql}
             LIMIT %s OFFSET %s
