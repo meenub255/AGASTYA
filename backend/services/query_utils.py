@@ -3,8 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_YEAR = 2026 # Default year for dashboard performance
-
+from backend.config import DEFAULT_YEAR
 from backend.db import get_datamart_conn
 
 def get_list_filter_clause(column: str, value: str | list[str] | None, cast_type: str | None = None, use_default_year: bool = True) -> tuple[str, list]:
@@ -12,11 +11,14 @@ def get_list_filter_clause(column: str, value: str | list[str] | None, cast_type
     Returns a SQL clause and params for both single values and lists.
     Uses ANY() for PostgreSQL lists.
     """
-    if (value is None or value == "" or (isinstance(value, list) and not value)):
+    if value is None:
         if use_default_year and ("year" in column.lower() or "date" in column.lower()):
             value = [DEFAULT_YEAR]
         else:
             return "TRUE", []
+    
+    if value == "" or (isinstance(value, list) and not value):
+        return "TRUE", []
     
     if isinstance(value, list):
         # Filter out empty strings from list
@@ -73,7 +75,7 @@ def build_dimension_filters(
 
     # Support 'year' as an alternative to start/end if multi-select is used
     effective_year = year
-    if (effective_year is None or (isinstance(effective_year, list) and not effective_year)) and use_default_year:
+    if effective_year is None and use_default_year:
         effective_year = [DEFAULT_YEAR]
 
     if effective_year is not None:

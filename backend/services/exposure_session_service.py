@@ -83,6 +83,7 @@ def get_exposure_session_data(region=None, program=None, year=None, month=None, 
                    COALESCE(SUM(e.total_exposure_count), 0) as students
             FROM {DW}.fact_session f
             LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DW}.dim_date d ON f.date_id = d.date_id
             LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
             WHERE {where_sql}
             GROUP BY g.region_name

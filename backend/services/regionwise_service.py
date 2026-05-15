@@ -85,6 +85,7 @@ def get_regionwise_data(region=None, area=None, year=None, month=None, limit=15,
                    COUNT(DISTINCT f.sk_fact_session_id) as sessions
             FROM {DW}.fact_session f
             LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
             WHERE {where_sql}
             GROUP BY g.area_name
             ORDER BY sessions DESC

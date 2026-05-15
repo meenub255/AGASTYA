@@ -1,6 +1,6 @@
 import logging
 from backend.services.query_utils import fetch_all, fetch_one
-from backend.config import DATAMART_SCHEMA_NAME
+from backend.config import DATAMART_SCHEMA_NAME, DEFAULT_YEAR
 
 logger = logging.getLogger(__name__)
 DW = DATAMART_SCHEMA_NAME
@@ -57,8 +57,8 @@ def get_performance_mgmt_data(region=None, year=None, month=None, quarter=None, 
         c, p = get_list_filter_clause("g.region_name", region)
         clauses.append(c); params.extend(p)
         
-        # Default to 2026 if no year provided
-        effective_year = year if year is not None and len(year) > 0 else [2026]
+        # Default to current year if no year provided
+        effective_year = year if year is not None and len(year) > 0 else [DEFAULT_YEAR]
         c, p = get_list_filter_clause("d.year_actual", effective_year, cast_type="int")
         clauses.append(c); params.extend(p)
         

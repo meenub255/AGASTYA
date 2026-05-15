@@ -8,10 +8,10 @@ def get_vehicle_report_filters(region_name=None):
         region_query = f"""
             SELECT DISTINCT r.name as region_name 
             FROM {SOURCE_SCHEMA_NAME}.mst_region r
-            INNER JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON r.id = a.region_id
-            INNER JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON a.id = v.area_id
-            INNER JOIN {SOURCE_SCHEMA_NAME}.txn_vehicle_log log ON v.id = log.vehicle_id
-            WHERE r.name IS NOT NULL AND log.is_deleted = 0
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON r.mst_region_id = a.region_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON a.mst_area_id = v.area_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.txn_vehicle_log log ON v.mst_vehicle_id = log.vehicle_id
+            WHERE r.name IS NOT NULL AND log.is_deleted = '0' AND log.DATE != '0000-00-00'
             ORDER BY r.name
         """
         regions = [row["region_name"] for row in fetch_all(region_query)]
@@ -21,27 +21,27 @@ def get_vehicle_report_filters(region_name=None):
         area_query = f"""
             SELECT DISTINCT a.name as area_name 
             FROM {SOURCE_SCHEMA_NAME}.mst_area a
-            INNER JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON r.id = a.region_id
-            INNER JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON a.id = v.area_id
-            INNER JOIN {SOURCE_SCHEMA_NAME}.txn_vehicle_log log ON v.id = log.vehicle_id
-            WHERE {where_sql} AND a.name IS NOT NULL AND log.is_deleted = 0
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON r.mst_region_id = a.region_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON a.mst_area_id = v.area_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.txn_vehicle_log log ON v.mst_vehicle_id = log.vehicle_id
+            WHERE {where_sql} AND a.name IS NOT NULL AND log.is_deleted = '0' AND log.DATE != '0000-00-00'
             ORDER BY a.name
         """
         areas = [row["area_name"] for row in fetch_all(area_query, params)]
         
         # 3. Years and Months from log dates
         years = [row["year_actual"] for row in fetch_all(f"""
-            SELECT DISTINCT EXTRACT(YEAR FROM log.DATE)::int as year_actual 
+            SELECT DISTINCT EXTRACT(YEAR FROM log.DATE::TIMESTAMP)::int as year_actual 
             FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
-            WHERE log.is_deleted = 0
+            WHERE log.is_deleted = '0' AND log.DATE != '0000-00-00'
             ORDER BY year_actual DESC
         """)]
         
         months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"""
-            SELECT DISTINCT EXTRACT(MONTH FROM log.DATE)::int as month_actual, 
-                   TO_CHAR(log.DATE, 'Month') as month_name 
+            SELECT DISTINCT EXTRACT(MONTH FROM log.DATE::TIMESTAMP)::int as month_actual, 
+                   TO_CHAR(log.DATE::TIMESTAMP, 'Month') as month_name 
             FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
-            WHERE log.is_deleted = 0
+            WHERE log.is_deleted = '0' AND log.DATE != '0000-00-00'
             ORDER BY month_actual
         """)]
         
@@ -68,26 +68,26 @@ def get_vehicle_report_data(region=None, area=None, year=None, month=None, limit
         clauses.append(c); params.extend(p)
         
         # Year/Month are from the log.date column in this service
-        c, p = get_list_filter_clause("EXTRACT(YEAR FROM log.DATE)", year, cast_type="int")
+        c, p = get_list_filter_clause("EXTRACT(YEAR FROM log.DATE::TIMESTAMP)", year, cast_type="int")
         clauses.append(c); params.extend(p)
         
-        c, p = get_list_filter_clause("EXTRACT(MONTH FROM log.DATE)", month, cast_type="int")
+        c, p = get_list_filter_clause("EXTRACT(MONTH FROM log.DATE::TIMESTAMP)", month, cast_type="int", use_default_year=False)
         clauses.append(c); params.extend(p)
         
-        where_sql = " AND ".join(clauses)
+        where_sql = " AND ".join(clauses) + " AND log.DATE != '0000-00-00'"
 
         # 1. KPIs
         kpi_sql = f"""
             SELECT 
-                SUM(COALESCE(log.closed_reading, 0) - COALESCE(log.open_reading, 0)) as total_kms,
-                SUM(COALESCE(log.fuel_quantity, 0)) as total_fuel_qty,
-                SUM(COALESCE(log.fuel_quantity, 0) * COALESCE(log.fuel_price, 0)) as total_fuel_cost,
+                SUM(COALESCE(log.closed_reading::numeric, 0) - COALESCE(log.open_reading::numeric, 0)) as total_kms,
+                SUM(COALESCE(log.fuel_quantity::numeric, 0)) as total_fuel_qty,
+                SUM(COALESCE(log.fuel_quantity::numeric, 0) * COALESCE(log.fuel_price::numeric, 0)) as total_fuel_cost,
                 COUNT(DISTINCT log.date) as used_days
             FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
-            JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON log.vehicle_id = v.id
-            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON v.area_id = a.id
-            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON a.region_id = r.id
-            WHERE {where_sql} AND log.is_deleted = 0
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON log.vehicle_id = v.mst_vehicle_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON v.area_id = a.mst_area_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON a.region_id = r.mst_region_id
+            WHERE {where_sql} AND log.is_deleted = '0'
         """
         kpi_res = fetch_one(kpi_sql, params)
         total_kms = float(kpi_res.get("total_kms") or 0)
@@ -113,11 +113,11 @@ def get_vehicle_report_data(region=None, area=None, year=None, month=None, limit
         count_sql = f"""
             SELECT COUNT(*) as count
             FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
-            JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON log.vehicle_id = v.id
-            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_user dr ON log.driver_id = dr.id
-            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON v.area_id = a.id
-            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON a.region_id = r.id
-            WHERE {where_sql} AND {search_sql} AND log.is_deleted = 0
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON log.vehicle_id = v.mst_vehicle_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_user dr ON log.driver_id = dr.mst_user_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON v.area_id = a.mst_area_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON a.region_id = r.mst_region_id
+            WHERE {where_sql} AND {search_sql} AND log.is_deleted = '0'
         """
         total_count = fetch_one(count_sql, params + search_params).get("count", 0)
 
@@ -125,20 +125,20 @@ def get_vehicle_report_data(region=None, area=None, year=None, month=None, limit
         sql = f"""
             SELECT 
                 v.vehicle_name,
-                log.date,
+                log.date::TIMESTAMP as date,
                 v.vehicle_number as registration_no,
                 COALESCE(a.name, 'N/A') as center_name,
                 COALESCE(r.name, 'N/A') as region_name,
                 dr.name as driver_name,
                 log.open_reading as initial_km,
                 log.closed_reading as end_km,
-                (COALESCE(log.closed_reading, 0) - COALESCE(log.open_reading, 0)) as total_kms
+                (COALESCE(log.closed_reading::numeric, 0) - COALESCE(log.open_reading::numeric, 0)) as total_kms
             FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
-            JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON log.vehicle_id = v.id
-            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_user dr ON log.driver_id = dr.id
-            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON v.area_id = a.id
-            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON a.region_id = r.id
-            WHERE {where_sql} AND {search_sql} AND log.is_deleted = 0
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON log.vehicle_id = v.mst_vehicle_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_user dr ON log.driver_id = dr.mst_user_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON v.area_id = a.mst_area_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON a.region_id = r.mst_region_id
+            WHERE {where_sql} AND {search_sql} AND log.is_deleted = '0'
             {sort_sql}
             LIMIT %s OFFSET %s
         """

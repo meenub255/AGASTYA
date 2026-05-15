@@ -91,14 +91,20 @@ def get_instructor_summary_data(region=None, area=None, year=None, month=None, l
         SELECT 
             COUNT(DISTINCT d.full_date) as days_worked,
             COUNT(f.sk_fact_session_id) as total_sessions,
-            SUM(COALESCE(e.total_exposure_count, 0)) as total_exposures,
-            SUM(CASE WHEN a.activity_name ILIKE ANY (ARRAY['%%YIL%%', '%%SF%%', '%%CV%%']) THEN COALESCE(e.total_exposure_count, 0) ELSE 0 END) as combined_exposures
+            SUM(COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0)) as total_exposures,
+            SUM(CASE WHEN 
+                a.activity_name ILIKE ANY (ARRAY['%%YIL%%', '%%Young Instructor Leader%%', '%%SF%%', '%%Science Fair%%', '%%CV%%', '%%Community Visit%%']) 
+                OR p.program_name ILIKE ANY (ARRAY['%%YIL%%', '%%SF%%', '%%CV%%', '%%Community%%'])
+                OR st.topic_description ILIKE ANY (ARRAY['%%YIL%%', '%%Science Fair%%'])
+                THEN COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0) ELSE 0 END) as combined_exposures
         FROM {DATAMART_SCHEMA_NAME}.dim_user u
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON u.sk_user_id = f.sk_user_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_subject_topic st ON f.sk_subject_topic_id = st.sk_subject_topic_id
         WHERE {where_sql or 'TRUE'}
     """
     kpi_res = fetch_one(kpi_sql, params)
@@ -147,22 +153,24 @@ def get_instructor_summary_data(region=None, area=None, year=None, month=None, l
         SELECT 
             u.user_name as instructor_name,
             COUNT(DISTINCT d.full_date) as days_worked,
-            COUNT(DISTINCT f.sk_fact_session_id) as school_sessions,
+            COUNT(DISTINCT CASE WHEN a.activity_name ILIKE '%%School%%' OR a.activity_name ILIKE '%%Direct%%' THEN f.sk_fact_session_id END) as school_sessions,
             COUNT(f.sk_fact_session_id) as total_sessions,
-            SUM(COALESCE(e.total_exposure_count, 0)) as total_exposures,
-            COUNT(DISTINCT CASE WHEN a.activity_name ILIKE '%%Fair%%' THEN f.sk_fact_session_id END) as fair_count,
-            SUM(CASE WHEN a.activity_name ILIKE '%%Training%%' THEN COALESCE(e.total_exposure_count, 0) ELSE 0 END) as training_exposures,
-            SUM(CASE WHEN a.activity_name ILIKE '%%SF%%' THEN COALESCE(e.total_exposure_count, 0) ELSE 0 END) as sf_exposures,
-            COUNT(DISTINCT CASE WHEN a.activity_name ILIKE '%%YIL%%' THEN f.sk_fact_session_id END) as yil_sessions,
-            SUM(CASE WHEN a.activity_name ILIKE '%%YIL%%' THEN COALESCE(e.total_exposure_count, 0) ELSE 0 END) as yil_exposures,
-            COUNT(DISTINCT CASE WHEN a.activity_name ILIKE '%%CV%%' THEN f.sk_fact_session_id END) as cv_visits,
-            SUM(CASE WHEN a.activity_name ILIKE '%%CV%%' THEN COALESCE(e.total_exposure_count, 0) ELSE 0 END) as cv_exposures
+            SUM(COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0)) as total_exposures,
+            COUNT(DISTINCT CASE WHEN a.activity_name ILIKE '%%Fair%%' OR p.program_name ILIKE '%%Fair%%' OR st.topic_description ILIKE '%%Fair%%' THEN f.sk_fact_session_id END) as fair_count,
+            COUNT(DISTINCT CASE WHEN a.activity_name ILIKE '%%Training%%' OR a.activity_name ILIKE '%%Meeting%%' THEN f.sk_fact_session_id END) as training_exposures,
+            SUM(CASE WHEN a.activity_name ILIKE '%%Science Fair%%' OR p.program_name ILIKE '%%SF%%' OR st.topic_description ILIKE '%%Science Fair%%' THEN COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0) ELSE 0 END) as sf_exposures,
+            COUNT(DISTINCT CASE WHEN a.activity_name ILIKE '%%Young Instructor Leader%%' OR p.program_name ILIKE '%%YIL%%' OR st.topic_description ILIKE '%%YIL%%' THEN f.sk_fact_session_id END) as yil_sessions,
+            SUM(CASE WHEN a.activity_name ILIKE '%%Young Instructor Leader%%' OR p.program_name ILIKE '%%YIL%%' OR st.topic_description ILIKE '%%YIL%%' THEN COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0) ELSE 0 END) as yil_exposures,
+            COUNT(DISTINCT CASE WHEN a.activity_name ILIKE '%%Community Visit%%' OR p.program_name ILIKE '%%CV%%' OR p.program_name ILIKE '%%Community%%' THEN f.sk_fact_session_id END) as cv_visits,
+            SUM(CASE WHEN a.activity_name ILIKE '%%Community Visit%%' OR p.program_name ILIKE '%%CV%%' OR p.program_name ILIKE '%%Community%%' THEN COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0) ELSE 0 END) as cv_exposures
         FROM {DATAMART_SCHEMA_NAME}.dim_user u
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON u.sk_user_id = f.sk_user_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_subject_topic st ON f.sk_subject_topic_id = st.sk_subject_topic_id
         WHERE {where_sql or 'TRUE'} AND {search_sql}
         GROUP BY u.sk_user_id, u.user_name
         {sort_sql}

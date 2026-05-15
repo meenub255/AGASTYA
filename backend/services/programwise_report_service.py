@@ -61,8 +61,8 @@ def get_programwise_report_data(category=None, year=None, month=None, limit=15, 
             COALESCE(COUNT(DISTINCT f.sk_fact_session_id), 0) as total_sessions,
             COALESCE(SUM(e.total_exposure_count), 0) as total_students
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
-        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
         WHERE {where_sql}
     """
@@ -73,7 +73,8 @@ def get_programwise_report_data(category=None, year=None, month=None, limit=15, 
         SELECT COALESCE(p.donor_name, 'Unknown') as donor_name,
                COUNT(DISTINCT f.sk_fact_session_id) as sessions
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         WHERE {where_sql}
         GROUP BY p.donor_name
         ORDER BY sessions DESC
@@ -109,9 +110,9 @@ def get_programwise_report_data(category=None, year=None, month=None, limit=15, 
         SELECT COUNT(*) FROM (
             SELECT p.program_name
             FROM {DATAMART_SCHEMA_NAME}.fact_session f
-            JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
-            JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-            JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
             WHERE {where_sql} AND {search_sql}
             GROUP BY p.program_name, g.region_name, g.area_name, p.donor_name
         ) as sub
@@ -132,9 +133,9 @@ def get_programwise_report_data(category=None, year=None, month=None, limit=15, 
             ROUND(AVG(COALESCE(f.session_duration_minutes, 0)), 2) as "Average Session Durat",
             SUM(COALESCE(e.total_exposure_count, 0)) as "Total Exposure"
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
-        JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
         WHERE {where_sql} AND {search_sql}
         GROUP BY g.region_name, g.area_name, p.program_name, p.donor_name

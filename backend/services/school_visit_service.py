@@ -109,7 +109,7 @@ def get_school_visit_data(region=None, area=None, program=None, year=None, month
             JOIN {DATAMART_SCHEMA_NAME}.dim_date d2 ON f2.date_id = d2.date_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_geography g2 ON f2.sk_geography_id = g2.sk_geography_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_program p2 ON f2.sk_program_id = p2.sk_program_id
-            WHERE {where_sql}
+            WHERE {where_sql.replace('d.', 'd2.').replace('g.', 'g2.').replace('p.', 'p2.')}
         )
     """
     monthly_res = fetch_one(monthly_sql, params + params)
@@ -119,7 +119,8 @@ def get_school_visit_data(region=None, area=None, program=None, year=None, month
         SELECT COALESCE(s.school_name, 'Unknown') as school_name,
                COUNT(DISTINCT f.sk_fact_session_id) as sessions
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         WHERE {where_sql}
         GROUP BY s.school_name
         ORDER BY sessions DESC
@@ -154,11 +155,11 @@ def get_school_visit_data(region=None, area=None, program=None, year=None, month
         SELECT COUNT(*) FROM (
             SELECT s.school_name
             FROM {DATAMART_SCHEMA_NAME}.fact_session f
-            INNER JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
-            INNER JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
-            INNER JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-            INNER JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-            INNER JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
             WHERE {where_sql} AND {search_sql}
             GROUP BY s.school_name, p.program_name, e.class_name, e.section_name
         ) as sub
@@ -175,11 +176,11 @@ def get_school_visit_data(region=None, area=None, program=None, year=None, month
             COUNT(DISTINCT f.session_nk_id) as sessions,
             SUM(COALESCE(e.total_exposure_count, 0)) as exposures
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        INNER JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
-        INNER JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
-        INNER JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-        INNER JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-        INNER JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
         WHERE {where_sql} AND {search_sql}
         GROUP BY s.school_name, p.program_name, e.class_name, e.section_name
         {sort_sql}
@@ -192,9 +193,9 @@ def get_school_visit_data(region=None, area=None, program=None, year=None, month
         SELECT COALESCE(p.program_name, 'Unknown') AS label,
                COUNT(DISTINCT f.sk_fact_session_id) AS value
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        INNER JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
-        INNER JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-        INNER JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         WHERE {where_sql}
         GROUP BY p.program_name ORDER BY value DESC LIMIT 8
     """, params)
@@ -204,8 +205,8 @@ def get_school_visit_data(region=None, area=None, program=None, year=None, month
         SELECT TO_CHAR(d.full_date, 'YYYY-MM') AS label,
                COUNT(DISTINCT f.sk_fact_session_id) AS value
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        INNER JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-        INNER JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         WHERE {where_sql} AND d.full_date IS NOT NULL
         GROUP BY TO_CHAR(d.full_date, 'YYYY-MM')
         ORDER BY label

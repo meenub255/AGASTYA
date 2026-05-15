@@ -16,7 +16,7 @@ def get_session_count(start: int | None = None, end: int | None = None) -> int:
     )
     row = fetch_one(
         f"""
-        SELECT COALESCE(SUM(f.session_count), 0) AS count
+        SELECT COUNT(f.sk_fact_session_id) AS count
         FROM dw.fact_session f
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         {where_clause}
@@ -44,7 +44,7 @@ def get_session_kpis(
     row = fetch_one(
         f"""
         SELECT
-            COALESCE(SUM(f.session_count), 0) AS total_sessions,
+            COUNT(f.sk_fact_session_id) AS total_sessions,
             COUNT(DISTINCT f.sk_user_id) AS total_instructors,
             COUNT(DISTINCT g.region_name) AS active_regions,
             COUNT(DISTINCT p.program_name) AS total_programs
@@ -83,7 +83,7 @@ def get_monthly_sessions(
         f"""
         SELECT
             TO_CHAR(DATE_TRUNC('month', d.full_date), 'YYYY-MM') AS label,
-            COALESCE(SUM(f.session_count), 0) AS value
+            COUNT(f.sk_fact_session_id) AS value
         FROM dw.fact_session f
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
@@ -116,7 +116,7 @@ def get_sessions_by_region(
         f"""
         SELECT
             COALESCE(g.region_name, 'Unknown') AS label,
-            COALESCE(SUM(f.session_count), 0) AS value
+            COUNT(f.sk_fact_session_id) AS value
         FROM dw.fact_session f
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id

@@ -100,7 +100,11 @@ def get_instructor_feedback_data(instructor_name=None, year=None, limit=15, offs
             SELECT
                 COALESCE(u.user_name, 'Unknown')                    AS instructor_name,
                 d.full_date                                          AS session_date,
-                COALESCE(sc.school_name, 'Unknown')                 AS school_name,
+                COALESCE(
+                    NULLIF(NULLIF(sc.school_name, 'NULL'), 'Unknown'), 
+                    NULLIF(ra.village, ''), 
+                    'N/A'
+                ) AS school_name,
                 COALESCE(a.activity_name, 'Unknown')                AS activity_name,
                 COALESCE(f.demo_session_count, 0)                   AS demo_sessions,
                 COALESCE(f.hands_on_session_count, 0)               AS hands_on_sessions,
@@ -110,6 +114,7 @@ def get_instructor_feedback_data(instructor_name=None, year=None, limit=15, offs
             LEFT JOIN {DW}.dim_date d          ON f.date_id = d.date_id
             LEFT JOIN {DW}.dim_school sc       ON f.sk_school_id = sc.sk_school_id
             LEFT JOIN {DW}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
+            LEFT JOIN source.rpt_adhoc_feedback ra ON (f.session_nk_id - 1000000)::TEXT = ra.adhoc_id AND f.session_nk_id >= 1000000
             WHERE {where_sql} AND {search_sql}
             {sort_sql}
             LIMIT %s OFFSET %s
