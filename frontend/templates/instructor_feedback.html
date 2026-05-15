@@ -184,7 +184,14 @@ $(function () {
         .then(data => {
             data.instructors.forEach(i => $('#instructorFilter').append(new Option(i, i)));
             data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
+            
+            // Default to 2026 if available and nothing is selected
+            if (!$('#yearFilter').val()?.length && data.years.includes(2026)) {
+                $('#yearFilter').val([2026]);
+            }
+            
             $('.select2').trigger('change.select2', { internal: true });
+            updateFilterSummary();
         });
 
     function loadData() {

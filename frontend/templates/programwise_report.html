@@ -269,8 +269,15 @@ $(function () {
             const monthSelect = $('#monthFilter');
             data.categories.forEach(c => categorySelect.append(new Option(c, c)));
             data.years.forEach(y => yearSelect.append(new Option(y, y)));
+            
+            // Default to 2026 if available and nothing is selected
+            if (!$('#yearFilter').val()?.length && data.years.includes(2026)) {
+                $('#yearFilter').val([2026]);
+            }
+            
             data.months.forEach(m => monthSelect.append(new Option(m.name, m.id)));
             $('.select2').trigger('change.select2', { internal: true });
+            updateFilterSummary();
         });
 
     window.setDrilldown = function(region) {

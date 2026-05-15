@@ -163,8 +163,15 @@ $(function () {
             data.regions.forEach(r => $('#regionFilter').append(new Option(r, r)));
             data.areas.forEach(a => $('#areaFilter').append(new Option(a, a)));
             data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
+            
+            // Default to 2026 if available and nothing is selected
+            if (!$('#yearFilter').val()?.length && data.years.includes(2026)) {
+                $('#yearFilter').val([2026]);
+            }
+            
             data.months.forEach(m => $('#monthFilter').append(new Option(m.name, m.id)));
             $('.select2').trigger('change.select2', { internal: true });
+            updateFilterSummary();
         });
 
     function loadData() {

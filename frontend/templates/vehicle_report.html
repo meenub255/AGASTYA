@@ -161,6 +161,12 @@ $(function () {
                 if (!filtersInitialized) {
                     data.regions.forEach(r => $('#regionFilter').append(new Option(r, r)));
                     data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
+                    
+                    // Default to 2026 if available and nothing is selected
+                    if (!$('#yearFilter').val()?.length && data.years.includes(2026)) {
+                        $('#yearFilter').val([2026]);
+                    }
+                    
                     data.months.forEach(m => $('#monthFilter').append(new Option(m.name, m.id)));
                     filtersInitialized = true;
                 }

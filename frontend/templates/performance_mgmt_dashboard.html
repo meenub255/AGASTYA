@@ -325,7 +325,13 @@
                         const currentYear = $('#yearFilter').val();
                         $('#yearFilter').empty();
                         data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
-                        if (currentYear) $('#yearFilter').val(currentYear);
+                        
+                        // Default to 2026 if available and nothing is selected
+                        if (!$('#yearFilter').val()?.length && data.years.includes(2026)) {
+                            $('#yearFilter').val([2026]);
+                        } else if (currentYear) {
+                            $('#yearFilter').val(currentYear);
+                        }
                     }
 
                     // Update Regions

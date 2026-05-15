@@ -209,6 +209,11 @@ $(function() {
                 if (!$('#yearFilter').val()?.length) {
                     $('#yearFilter').empty();
                     data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
+                    
+                    // Default to 2026 if available and nothing is selected
+                    if (data.years.includes(2026)) {
+                        $('#yearFilter').val([2026]);
+                    }
                 }
                 // Region
                 const curR = $('#regionFilter').val();

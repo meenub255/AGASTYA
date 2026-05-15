@@ -253,8 +253,15 @@
             .then(r => r.json())
             .then(data => {
                 data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
+                
+                // Default to 2026 if available and nothing is selected
+                if (!$('#yearFilter').val()?.length && data.years.includes(2026)) {
+                    $('#yearFilter').val([2026]);
+                }
+                
                 data.regions.forEach(r => $('#regionFilter').append(new Option(r, r)));
                 $('.select2').trigger('change.select2', { internal: true });
+                updateFilterSummary();
             });
 
         function renderLineChartWithTrend(canvasId, chartData, chartRef) {
