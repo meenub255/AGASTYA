@@ -198,9 +198,10 @@ $(function(){
                 $('#yearFilter').empty(); 
                 d.years.forEach(y=>$('#yearFilter').append(new Option(y,y)));
                 
-                // Default to 2026 if available and nothing is selected
-                if(!($('#yearFilter').val()||[]).length && d.years.includes(2026)){
-                    $('#yearFilter').val([2026]);
+                // Default to current year if available and nothing is selected
+                const currentYear = new Date().getFullYear();
+                if(!($('#yearFilter').val()||[]).length && d.years.includes(currentYear)){
+                    $('#yearFilter').val([currentYear]);
                 }
                 
                 $('#regionFilter').empty(); d.regions.forEach(r=>$('#regionFilter').append(new Option(r,r)));

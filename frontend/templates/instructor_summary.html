@@ -210,9 +210,10 @@ $(function() {
                     $('#yearFilter').empty();
                     data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
                     
-                    // Default to 2026 if available and nothing is selected
-                    if (data.years.includes(2026)) {
-                        $('#yearFilter').val([2026]);
+                    // Default to current year if available and nothing is selected
+                    const currentYear = new Date().getFullYear();
+                    if (data.years.includes(currentYear)) {
+                        $('#yearFilter').val([currentYear]);
                     }
                 }
                 // Region

@@ -118,6 +118,7 @@
                             <th>Topic</th>
                             <th class="text-center">Boys</th>
                             <th class="text-center">Girls</th>
+                            <th class="text-center">Community</th>
                             <th class="text-center">Teachers</th>
                         </tr>
                     </thead>
@@ -208,9 +209,10 @@ $(function () {
             data.instructors.forEach(i => instructorSelect.append(new Option(i, i)));
             data.years.forEach(y => yearSelect.append(new Option(y, y)));
             
-            // Default to 2026 if available and nothing is selected
-            if (!$('#yearFilter').val()?.length && data.years.includes(2026)) {
-                $('#yearFilter').val([2026]);
+            // Default to current year if available and nothing is selected
+            const currentYear = new Date().getFullYear();
+            if (!$('#yearFilter').val()?.length && data.years.includes(currentYear)) {
+                $('#yearFilter').val([currentYear]);
             }
             
             data.months.forEach(m => monthSelect.append(new Option(m.name, m.id)));
@@ -241,6 +243,7 @@ $(function () {
                 { data: 'topic_name' },
                 { data: 'boys', className: 'text-center font-weight-bold' },
                 { data: 'girls', className: 'text-center font-weight-bold' },
+                { data: 'community', className: 'text-center font-weight-bold' },
                 { data: 'teachers', className: 'text-center text-primary font-weight-bold' }
             ]
         });

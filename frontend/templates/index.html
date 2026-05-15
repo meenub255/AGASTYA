@@ -180,15 +180,15 @@
     <div class="fd-body">
         <div class="fd-section">
             <label class="fd-label">Fiscal Year</label>
-            <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-placeholder="Select Year"></select>
+            <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="years" data-placeholder="Select Year"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Regional Hubs</label>
-            <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-placeholder="Select Region"></select>
+            <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Program Category</label>
-            <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple" data-placeholder="Select Program"></select>
+            <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program" data-placeholder="Select Program"></select>
         </div>
     </div>
     <div class="fd-footer">
@@ -331,9 +331,10 @@
                         yf.empty();
                         data.years.forEach(y => yf.append(new Option(y, y)));
                         
-                        // Default to 2026 if available and nothing is selected
-                        if (!currentYears.length && data.years.includes(2026)) {
-                            yf.val([2026]);
+                        // Default to current year if available and nothing is selected
+                        const currentYear = String(new Date().getFullYear());
+                        if (!currentYears.length && data.years.includes(currentYear)) {
+                            yf.val([currentYear]);
                         }
                         
                         rf.empty();
@@ -632,7 +633,6 @@
         function loadData() {
             clearDrilldown(false);  // reset without re-fetching
             const filters = window.PramanaDashboard.collectFilters();
-            if (filters.year) filters.years = filters.year;
             const query = $.param(filters, true);
 
             fetch(`/dashboard/data?${query}`)

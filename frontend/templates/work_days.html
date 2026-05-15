@@ -116,9 +116,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     populateDropdown('#region_filter', data.regions);
                     populateDropdown('#year_filter', data.years.map(y => ({id: y, name: y})));
                     
-                    // Default to 2026 if available and nothing is selected
-                    if (!$('#year_filter').val()?.length && data.years.includes(2026)) {
-                        $('#year_filter').val([2026]).trigger('change.select2');
+                    // Default to current year if available and nothing is selected
+                    const currentYear = new Date().getFullYear();
+                    if (!$('#year_filter').val()?.length && data.years.includes(currentYear)) {
+                        $('#year_filter').val([currentYear]).trigger('change.select2');
                     }
                     
                     populateDropdown('#month_filter', data.months);

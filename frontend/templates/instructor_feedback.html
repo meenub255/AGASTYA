@@ -185,9 +185,10 @@ $(function () {
             data.instructors.forEach(i => $('#instructorFilter').append(new Option(i, i)));
             data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
             
-            // Default to 2026 if available and nothing is selected
-            if (!$('#yearFilter').val()?.length && data.years.includes(2026)) {
-                $('#yearFilter').val([2026]);
+            // Default to current year if available and nothing is selected
+            const currentYear = new Date().getFullYear();
+            if (!$('#yearFilter').val()?.length && data.years.includes(currentYear)) {
+                $('#yearFilter').val([currentYear]);
             }
             
             $('.select2').trigger('change.select2', { internal: true });

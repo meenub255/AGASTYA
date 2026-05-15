@@ -12,25 +12,11 @@
                 <div class="form-group mb-4">
                     <label class="filter-label">Start Year</label>
                     <select id="startYear" class="form-control select2 filter-multi" multiple="multiple" data-filter="start_year" data-placeholder="Select Start Year">
-                        <option value="2020">2020</option>
-                        <option value="2021">2021</option>
-                        <option value="2022">2022</option>
-                        <option value="2023">2023</option>
-                        <option value="2024">2024</option>
-                        <option value="2025">2025</option>
-                        <option value="2026" selected>2026</option>
                     </select>
                 </div>
                 <div class="form-group mb-4">
                     <label class="filter-label">End Year</label>
                     <select id="endYear" class="form-control select2 filter-multi" multiple="multiple" data-filter="end_year" data-placeholder="Select End Year">
-                        <option value="2020">2020</option>
-                        <option value="2021">2021</option>
-                        <option value="2022">2022</option>
-                        <option value="2023">2023</option>
-                        <option value="2024">2024</option>
-                        <option value="2025">2025</option>
-                        <option value="2026" selected>2026</option>
                     </select>
                 </div>
                 <div class="form-group mb-4">
@@ -175,20 +161,33 @@
 <script>
 $(function () {
     // Premium Multi-filter initialization
+    const rf = $('#regionFilter');
+    const pf = $('#programFilter');
+    pf.prop('disabled', true);
+
     if ($.fn.select2) {
         window.PramanaDashboard.initMultiFilters();
     }
 
-    const rf = $('#regionFilter');
-    const pf = $('#programFilter');
-
-    // Initially disable programs
-    pf.prop('disabled', true);
-
     fetch('/dashboard/filters')
         .then(res => res.json())
         .then(data => {
+            const sy = $('#startYear');
+            const ey = $('#endYear');
+            data.years.forEach(y => {
+                sy.append(new Option(y, y));
+                ey.append(new Option(y, y));
+            });
+            
             data.regions.forEach(r => rf.append(new Option(r, r)));
+            
+            // Set dynamic defaults
+            const currentYear = new Date().getFullYear().toString();
+            if (data.years.includes(parseInt(currentYear))) {
+                sy.val([currentYear]);
+                ey.val([currentYear]);
+            }
+            $('.select2').trigger('change.select2', { internal: true });
         });
 
     rf.on('change', function () {

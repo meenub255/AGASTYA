@@ -69,13 +69,6 @@
                 <div class="form-group mb-0">
                     <label>Years</label>
                     <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="year">
-                        <option value="2020">2020</option>
-                        <option value="2021">2021</option>
-                        <option value="2022">2022</option>
-                        <option value="2023">2023</option>
-                        <option value="2024">2024</option>
-                        <option value="2025">2025</option>
-                        <option value="2026" selected>2026</option>
                     </select>
                 </div>
             </div>
@@ -180,21 +173,28 @@
 $(function () {
     const pagination = window.PramanaPagination;
 
+    const rf = $('#regionFilter');
+    const pf = $('#programFilter');
+    pf.prop('disabled', true);
+
     if ($.fn.select2) {
         $('.select2:not(.filter-multi)').select2({ theme: 'bootstrap4' });
         window.PramanaDashboard.initMultiFilters();
     }
 
-    const rf = $('#regionFilter');
-    const pf = $('#programFilter');
-
-    // Initially disable programs
-    pf.prop('disabled', true);
-
     fetch('/dashboard/filters')
         .then(res => res.json())
         .then(data => {
+            const yf = $('#yearFilter');
+            data.years.forEach(y => yf.append(new Option(y, y)));
             data.regions.forEach(r => rf.append(new Option(r, r)));
+            
+            // Set dynamic defaults
+            const currentYear = new Date().getFullYear().toString();
+            if (data.years.includes(parseInt(currentYear))) {
+                yf.val([currentYear]);
+            }
+            $('.select2').trigger('change.select2', { internal: true });
         });
 
     rf.on('change', function () {
