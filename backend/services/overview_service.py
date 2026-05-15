@@ -7,8 +7,11 @@ PROGRAM_EXPRESSION = "p.program_name"
 
 
 def _build_filters(year: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
+    # Default to current year (2026) for performance if no year is selected
+    effective_year = year if year is not None and len(year) > 0 else [2026]
+    
     return build_dimension_filters(
-        year=year,
+        year=effective_year,
         region=region,
         program=program,
         year_expression="d.year_actual",
@@ -296,7 +299,7 @@ def get_drilldown_data(
     Returns rich drill-down stats for a specific region click.
     Uses hardened matching to ensure data integrity.
     """
-    # 1. Build base filters (excluding region for now to apply custom matching)
+    # 1. Build base filters (default to 2026 if none provided)
     where_clause, params = _build_filters(year=year, program=program)
     
     # 2. Add hardened region filter
@@ -344,7 +347,7 @@ def get_drilldown_data(
         {where_clause}
         GROUP BY p.program_name, p.donor_name
         ORDER BY sessions DESC
-        LIMIT 50
+        LIMIT 2000
         """,
         params,
     )
