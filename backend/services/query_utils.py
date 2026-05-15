@@ -1,14 +1,22 @@
 from collections.abc import Sequence
+import logging
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_YEAR = 2026 # Default year for dashboard performance
 
 from backend.db import get_datamart_conn
 
-def get_list_filter_clause(column: str, value: str | list[str] | None, cast_type: str | None = None) -> tuple[str, list]:
+def get_list_filter_clause(column: str, value: str | list[str] | None, cast_type: str | None = None, use_default_year: bool = True) -> tuple[str, list]:
     """
     Returns a SQL clause and params for both single values and lists.
     Uses ANY() for PostgreSQL lists.
     """
-    if value is None or value == "" or (isinstance(value, list) and not value):
-        return "TRUE", []
+    if (value is None or value == "" or (isinstance(value, list) and not value)):
+        if use_default_year and ("year" in column.lower() or "date" in column.lower()):
+            value = [DEFAULT_YEAR]
+        else:
+            return "TRUE", []
     
     if isinstance(value, list):
         # Filter out empty strings from list
@@ -41,6 +49,7 @@ def build_dimension_filters(
     program_expression: str | None = None,
     instructor: str | list[str] | None = None,
     instructor_expression: str | None = None,
+    use_default_year: bool = True, # Default to True for dashboard performance
 ) -> tuple[str, list[object]]:
     clauses: list[str] = []
     params: list[object] = []
@@ -63,8 +72,12 @@ def build_dimension_filters(
             params.append(val)
 
     # Support 'year' as an alternative to start/end if multi-select is used
-    if year is not None:
-        add_list_filter(year_expression or f"EXTRACT(YEAR FROM {date_expression})", year, cast_type="int")
+    effective_year = year
+    if (effective_year is None or (isinstance(effective_year, list) and not effective_year)) and use_default_year:
+        effective_year = [DEFAULT_YEAR]
+
+    if effective_year is not None:
+        add_list_filter(year_expression or f"EXTRACT(YEAR FROM {date_expression})", effective_year, cast_type="int")
 
     if start is not None:
         if isinstance(start, list):
