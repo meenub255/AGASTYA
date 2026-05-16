@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 DW = DATAMART_SCHEMA_NAME
 
 
-def get_performance_mgmt_filters(region=None, year=None):
+def get_performance_mgmt_filters(region=None, years=None):
     from backend.services.query_utils import get_list_filter_clause
     try:
         # 1. Available Years (always shown based on all fact data)
@@ -15,7 +15,7 @@ def get_performance_mgmt_filters(region=None, year=None):
         )]
 
         # 2. Available Regions (filtered by selected year)
-        y_clauses, y_params = get_list_filter_clause("d.year_actual", year, cast_type="int")
+        y_clauses, y_params = get_list_filter_clause("d.year_actual", years, cast_type="int")
         regions = [r["region_name"] for r in fetch_all(f"""
             SELECT DISTINCT g.region_name 
             FROM {DW}.fact_session f 
@@ -28,7 +28,7 @@ def get_performance_mgmt_filters(region=None, year=None):
         # 3. Available Months (filtered by selected year AND region)
         m_clauses = []
         m_params = []
-        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); m_clauses.append(c); m_params.extend(p)
+        c, p = get_list_filter_clause("d.year_actual", years, cast_type="int"); m_clauses.append(c); m_params.extend(p)
         c, p = get_list_filter_clause("g.region_name", region); m_clauses.append(c); m_params.extend(p)
         m_where = " AND ".join(m_clauses) if m_clauses else "TRUE"
 
@@ -48,7 +48,7 @@ def get_performance_mgmt_filters(region=None, year=None):
         return {"regions": [], "years": [], "months": [], "quarters": []}
 
 
-def get_performance_mgmt_data(region=None, year=None, month=None, quarter=None, limit=15, offset=0, dt_params=None, period=None, group_by="month"):
+def get_performance_mgmt_data(region=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None, period=None, group_by="month"):
     from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
     try:
         clauses = []
@@ -58,7 +58,7 @@ def get_performance_mgmt_data(region=None, year=None, month=None, quarter=None, 
         clauses.append(c); params.extend(p)
         
         # Default to current year if no year provided
-        effective_year = year if year is not None and len(year) > 0 else [DEFAULT_YEAR]
+        effective_year = years if years is not None and len(years) > 0 else [DEFAULT_YEAR]
         c, p = get_list_filter_clause("d.year_actual", effective_year, cast_type="int")
         clauses.append(c); params.extend(p)
         
@@ -155,14 +155,14 @@ def get_performance_mgmt_data(region=None, year=None, month=None, quarter=None, 
         
         # Simple implementation: If one year is selected, compare to previous year.
         # If one month is selected, compare to previous month.
-        if year and len(year) == 1 and (not month or len(month) == 0):
-            prev_year = [str(int(year[0]) - 1)]
+        if years and len(years) == 1 and (not month or len(month) == 0):
+            prev_year = [str(int(years[0]) - 1)]
             c, p = get_list_filter_clause("g.region_name", region); prev_params.extend(p)
             c, p = get_list_filter_clause("d.year_actual", prev_year, cast_type="int"); prev_params.extend(p)
             prev_where_sql = " AND ".join([get_list_filter_clause("g.region_name", region)[0], get_list_filter_clause("d.year_actual", prev_year, cast_type="int")[0]])
-        elif month and len(month) == 1 and year and len(year) == 1:
+        elif month and len(month) == 1 and years and len(years) == 1:
             m_val = int(month[0])
-            y_val = int(year[0])
+            y_val = int(years[0])
             prev_m = m_val - 1
             prev_y = y_val
             if prev_m == 0:
@@ -297,7 +297,7 @@ def get_performance_mgmt_data(region=None, year=None, month=None, quarter=None, 
 
 
 def get_performance_mgmt_chart_data(
-    region=None, year=None, month=None, quarter=None,
+    region=None, years=None, month=None, quarter=None,
     group_by="month"  # 'day', 'month', 'quarter', 'year'
 ):
     """Returns session trend data (actual + computed target + daily hi/lo) for candlestick chart."""
@@ -306,7 +306,7 @@ def get_performance_mgmt_chart_data(
         clauses, params = [], []
         c, p = get_list_filter_clause("g.region_name", region); clauses.append(c); params.extend(p)
         # Default to 2026 if no year provided
-        effective_year = year if year is not None and len(year) > 0 else [2026]
+        effective_year = years if years is not None and len(years) > 0 else [2026]
         c, p = get_list_filter_clause("d.year_actual", effective_year, cast_type="int"); clauses.append(c); params.extend(p)
         c, p = get_list_filter_clause("d.month_actual", month, cast_type="int"); clauses.append(c); params.extend(p)
         
@@ -383,7 +383,7 @@ def get_performance_mgmt_chart_data(
         return {"data": [], "group_by": group_by}
 
 def get_performance_mgmt_region_chart(
-    region=None, year=None, month=None, quarter=None, period=None, group_by="month"
+    region=None, years=None, month=None, quarter=None, period=None, group_by="month"
 ):
     """Returns top 5 regions by sessions and students impacted for an insightful secondary chart."""
     from backend.services.query_utils import get_list_filter_clause
@@ -391,7 +391,7 @@ def get_performance_mgmt_region_chart(
         clauses, params = [], []
         c, p = get_list_filter_clause("g.region_name", region); clauses.append(c); params.extend(p)
         # Default to 2026 if no year provided
-        effective_year = year if year is not None and len(year) > 0 else [2026]
+        effective_year = years if years is not None and len(years) > 0 else [2026]
         c, p = get_list_filter_clause("d.year_actual", effective_year, cast_type="int"); clauses.append(c); params.extend(p)
         c, p = get_list_filter_clause("d.month_actual", month, cast_type="int"); clauses.append(c); params.extend(p)
         
@@ -445,7 +445,7 @@ def get_performance_mgmt_region_chart(
 def get_performance_mgmt_drilldown(
     period_label: str,
     group_by: str = "month",
-    region=None, year=None, month=None, quarter=None
+    region=None, years=None, month=None, quarter=None
 ):
     """Returns instructor-level breakdown for a clicked chart bar."""
     from backend.services.query_utils import get_list_filter_clause
@@ -458,7 +458,7 @@ def get_performance_mgmt_drilldown(
             params.append([r.lower().replace("_", " ") for r in region_list])
         
         # Default to 2026 if no year provided
-        effective_year = year if year is not None and len(year) > 0 else [2026]
+        effective_year = years if years is not None and len(years) > 0 else [2026]
         c, p = get_list_filter_clause("d.year_actual", effective_year, cast_type="int"); clauses.append(c); params.extend(p)
         c, p = get_list_filter_clause("d.month_actual", month, cast_type="int"); clauses.append(c); params.extend(p)
         

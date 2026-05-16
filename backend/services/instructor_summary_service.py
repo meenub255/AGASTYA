@@ -2,7 +2,7 @@ from backend.services.query_utils import fetch_all, fetch_one
 from backend.config import DATAMART_SCHEMA_NAME
 
 
-def get_instructor_summary_filters(year=None, region=None, area=None):
+def get_instructor_summary_filters(years=None, region=None, area=None):
     from backend.services.query_utils import get_list_filter_clause
     try:
         # 1. Available Years
@@ -11,7 +11,7 @@ def get_instructor_summary_filters(year=None, region=None, area=None):
         )]
 
         # 2. Available Regions (filtered by year)
-        y_clauses, y_params = get_list_filter_clause("d.year_actual", year, cast_type="int")
+        y_clauses, y_params = get_list_filter_clause("d.year_actual", years, cast_type="int")
         regions = [r["region_name"] for r in fetch_all(f"""
             SELECT DISTINCT g.region_name 
             FROM {DATAMART_SCHEMA_NAME}.fact_session f 
@@ -23,7 +23,7 @@ def get_instructor_summary_filters(year=None, region=None, area=None):
 
         # 3. Available Areas (filtered by year and region)
         a_clauses, a_params = [], []
-        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); a_clauses.append(c); a_params.extend(p)
+        c, p = get_list_filter_clause("d.year_actual", years, cast_type="int"); a_clauses.append(c); a_params.extend(p)
         c, p = get_list_filter_clause("g.region_name", region); a_clauses.append(c); a_params.extend(p)
         a_where = " AND ".join(a_clauses)
         areas = [r["area_name"] for r in fetch_all(f"""
@@ -37,7 +37,7 @@ def get_instructor_summary_filters(year=None, region=None, area=None):
 
         # 4. Available Months (filtered by year, region, and area)
         m_clauses, m_params = [], []
-        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); m_clauses.append(c); m_params.extend(p)
+        c, p = get_list_filter_clause("d.year_actual", years, cast_type="int"); m_clauses.append(c); m_params.extend(p)
         c, p = get_list_filter_clause("g.region_name", region); m_clauses.append(c); m_params.extend(p)
         c, p = get_list_filter_clause("g.area_name", area); m_clauses.append(c); m_params.extend(p)
         m_where = " AND ".join(m_clauses)
@@ -62,7 +62,7 @@ def get_instructor_summary_filters(year=None, region=None, area=None):
         return {"regions": [], "areas": [], "years": [], "months": []}
 
 
-def get_instructor_summary_data(region=None, area=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+def get_instructor_summary_data(region=None, area=None, years=None, month=None, limit=15, offset=0, dt_params=None):
     from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
  
     where_clauses = []
@@ -76,7 +76,7 @@ def get_instructor_summary_data(region=None, area=None, year=None, month=None, l
     where_clauses.append(a_clause)
     params.extend(a_params)
 
-    y_clause, y_params = get_list_filter_clause("d.year_actual", year, cast_type="int")
+    y_clause, y_params = get_list_filter_clause("d.year_actual", years, cast_type="int")
     where_clauses.append(y_clause)
     params.extend(y_params)
 
@@ -185,7 +185,7 @@ def get_instructor_summary_data(region=None, area=None, year=None, month=None, l
     }
 
 
-def get_monthly_instructor_summary(region=None, area=None, year=None, month=None):
+def get_monthly_instructor_summary(region=None, area=None, years=None, month=None):
     from backend.services.query_utils import get_list_filter_clause
     
     where_clauses = []
@@ -199,7 +199,7 @@ def get_monthly_instructor_summary(region=None, area=None, year=None, month=None
     where_clauses.append(a_clause)
     params.extend(a_params)
 
-    y_clause, y_params = get_list_filter_clause("d.year_actual", year, cast_type="int")
+    y_clause, y_params = get_list_filter_clause("d.year_actual", years, cast_type="int")
     where_clauses.append(y_clause)
     params.extend(y_params)
 
@@ -210,7 +210,7 @@ def get_monthly_instructor_summary(region=None, area=None, year=None, month=None
     where_sql = " AND ".join(where_clauses)
     
     # Check if we should group by year (comparison mode)
-    is_multi_year = isinstance(year, list) and len([v for v in year if v]) > 1
+    is_multi_year = isinstance(years, list) and len([v for v in years if v]) > 1
     
     group_col = "d.year_actual::text" if is_multi_year else "'All Years'"
     

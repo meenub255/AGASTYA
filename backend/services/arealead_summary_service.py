@@ -36,7 +36,7 @@ def get_arealead_summary_filters():
     }
 
 
-def get_arealead_summary_data(region=None, area=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+def get_arealead_summary_data(region=None, area=None, years=None, month=None, limit=15, offset=0, dt_params=None):
     from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
     clauses = []
     params = []
@@ -47,7 +47,7 @@ def get_arealead_summary_data(region=None, area=None, year=None, month=None, lim
     c, p = get_list_filter_clause("g.area_name", area)
     clauses.append(c); params.extend(p)
     
-    c, p = get_list_filter_clause("d.year_actual", year, cast_type="int")
+    c, p = get_list_filter_clause("d.year_actual", years, cast_type="int")
     clauses.append(c); params.extend(p)
     
     c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")

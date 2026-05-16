@@ -8,9 +8,9 @@ PROGRAM_EXPRESSION = "p.program_name"
 
 from backend.config import DEFAULT_YEAR
 
-def _build_filters(year: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
+def _build_filters(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
     return build_dimension_filters(
-        year=year,
+        year=years,
         region=region,
         program=program,
         year_expression="d.year_actual",
@@ -20,8 +20,8 @@ def _build_filters(year: list[int] | list[str] | None = None, region: list[str] 
 
 
 
-def get_overview_kpis(year: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
-    where_clause, params = _build_filters(year=year, region=region, program=program)
+def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
+    where_clause, params = _build_filters(years=years, region=region, program=program)
 
     # 1. Main session-based KPIs
     kpis_row = fetch_one(
@@ -61,9 +61,9 @@ def get_overview_kpis(year: list[int] | list[str] | None = None, region: list[st
         "total_programs": int(kpis_row.get("total_programs", 0) or 0),
     }
 
-def get_overview_trends(year: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
+def get_overview_trends(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
     """Returns monthly historical trend data for sparklines."""
-    where_clause, params = _build_filters(year=year, region=region, program=program)
+    where_clause, params = _build_filters(years=years, region=region, program=program)
     
     # We fetch monthly data for the last 12 periods based on filters
     # If years are selected, we show data for those years
@@ -116,8 +116,8 @@ def get_overview_trends(year: list[int] | list[str] | None = None, region: list[
     
     return trends
 
-def get_overview_charts(year: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
-    where_clause, params = _build_filters(year=year, region=region, program=program)
+def get_overview_charts(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
+    where_clause, params = _build_filters(years=years, region=region, program=program)
     
     # 1. Instructors per region
     instructors_rows = fetch_all(
@@ -183,8 +183,8 @@ def get_overview_charts(year: list[int] | list[str] | None = None, region: list[
     }
 
 
-def get_program_targets(year: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, limit: int = 10, offset: int = 0):
-    where_clause, params = _build_filters(year=year, region=region, program=program)
+def get_program_targets(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, limit: int = 10, offset: int = 0):
+    where_clause, params = _build_filters(years=years, region=region, program=program)
     
     total_count = fetch_one(
         f"""
@@ -244,8 +244,8 @@ def get_program_targets(year: list[int] | list[str] | None = None, region: list[
     return {"table": items, "total_count": total_count}
 
 
-def get_sessions_by_activity(year: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
-    where_clause, params = _build_filters(year=year, region=region, program=program)
+def get_sessions_by_activity(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
+    where_clause, params = _build_filters(years=years, region=region, program=program)
     rows = fetch_all(
         f"""
         SELECT
@@ -267,8 +267,8 @@ def get_sessions_by_activity(year: list[int] | list[str] | None = None, region: 
     return [{"label": row["label"], "value": float(row["value"])} for row in rows]
 
 
-def get_sessions_by_donor(year: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
-    where_clause, params = _build_filters(year=year, region=region, program=program)
+def get_sessions_by_donor(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
+    where_clause, params = _build_filters(years=years, region=region, program=program)
     rows = fetch_all(
         f"""
         SELECT
@@ -291,7 +291,7 @@ def get_sessions_by_donor(year: list[int] | list[str] | None = None, region: lis
 
 def get_drilldown_data(
     region: str,
-    year: list[int] | list[str] | None = None,
+    years: list[int] | list[str] | None = None,
     program: list[str] | None = None,
 ):
     """
@@ -299,7 +299,7 @@ def get_drilldown_data(
     Uses hardened matching to ensure data integrity.
     """
     # 1. Build base filters (default to 2026 if none provided)
-    where_clause, params = _build_filters(year=year, program=program)
+    where_clause, params = _build_filters(years=years, program=program)
     
     # 2. Add hardened region filter
     region_norm = region.lower().replace("_", " ")

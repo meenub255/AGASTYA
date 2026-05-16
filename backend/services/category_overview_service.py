@@ -6,10 +6,10 @@ logger = logging.getLogger(__name__)
 DW = DATAMART_SCHEMA_NAME
 
 
-def _build_clauses(region=None, year=None, program=None):
+def _build_clauses(region=None, years=None, program=None):
     clauses, params = [], []
     c, p = get_list_filter_clause("g.region_name", region); clauses.append(c); params.extend(p)
-    c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); clauses.append(c); params.extend(p)
+    c, p = get_list_filter_clause("d.year_actual", years, cast_type="int"); clauses.append(c); params.extend(p)
     c, p = get_list_filter_clause("p.program_name", program); clauses.append(c); params.extend(p)
     return " AND ".join(clauses), params
 
@@ -18,8 +18,8 @@ def _build_clauses(region=None, year=None, program=None):
 #  INSTRUCTOR PERFORMANCE OVERVIEW
 # ═══════════════════════════════════════════════════════════════
 
-def get_instructor_overview(region=None, year=None, program=None, limit=15, offset=0, dt_params=None):
-    where_sql, params = _build_clauses(region, year, program)
+def get_instructor_overview(region=None, years=None, program=None, limit=15, offset=0, dt_params=None):
+    where_sql, params = _build_clauses(region, years, program)
     try:
         # KPIs
         kpi = fetch_one(f"""
@@ -101,7 +101,7 @@ def get_instructor_overview(region=None, year=None, program=None, limit=15, offs
             search_sql, search_params = s, sp
             if so: sort_sql = so
 
-        count = fetch_one(f"""
+        count_row = fetch_one(f"""
             SELECT COUNT(*) FROM (
                 SELECT u.sk_user_id FROM {DW}.fact_session f
                 LEFT JOIN {DW}.dim_user u ON f.sk_user_id = u.sk_user_id
@@ -111,7 +111,8 @@ def get_instructor_overview(region=None, year=None, program=None, limit=15, offs
                 WHERE {where_sql} AND {search_sql}
                 GROUP BY u.sk_user_id
             ) sub
-        """, params + search_params).get("count", 0)
+        """, params + search_params)
+        count = count_row.get("count", 0) if count_row else 0
 
         table = fetch_all(f"""
             SELECT COALESCE(u.user_name,'Unknown') AS name,
@@ -141,8 +142,8 @@ def get_instructor_overview(region=None, year=None, program=None, limit=15, offs
 #  PROGRAM IMPACT OVERVIEW
 # ═══════════════════════════════════════════════════════════════
 
-def get_program_impact_overview(region=None, year=None, program=None, limit=15, offset=0, dt_params=None):
-    where_sql, params = _build_clauses(region, year, program)
+def get_program_impact_overview(region=None, years=None, program=None, limit=15, offset=0, dt_params=None):
+    where_sql, params = _build_clauses(region, years, program)
     try:
         kpi = fetch_one(f"""
             SELECT COUNT(DISTINCT p.program_name) AS total_programs,
@@ -219,7 +220,7 @@ def get_program_impact_overview(region=None, year=None, program=None, limit=15, 
             search_sql, search_params = s, sp
             if so: sort_sql = so
 
-        count = fetch_one(f"""
+        count_row = fetch_one(f"""
             SELECT COUNT(*) FROM (
                 SELECT p.sk_program_id FROM {DW}.fact_session f
                 LEFT JOIN {DW}.dim_program p ON f.sk_program_id = p.sk_program_id
@@ -228,7 +229,8 @@ def get_program_impact_overview(region=None, year=None, program=None, limit=15, 
                 WHERE {where_sql} AND {search_sql}
                 GROUP BY p.sk_program_id
             ) sub
-        """, params + search_params).get("count", 0)
+        """, params + search_params)
+        count = count_row.get("count", 0) if count_row else 0
 
         table = fetch_all(f"""
             SELECT COALESCE(p.program_name,'Unknown') AS program,
@@ -257,8 +259,8 @@ def get_program_impact_overview(region=None, year=None, program=None, limit=15, 
 #  OPERATIONS OVERVIEW
 # ═══════════════════════════════════════════════════════════════
 
-def get_operations_overview(region=None, year=None, program=None, limit=15, offset=0, dt_params=None):
-    where_sql, params = _build_clauses(region, year, program)
+def get_operations_overview(region=None, years=None, program=None, limit=15, offset=0, dt_params=None):
+    where_sql, params = _build_clauses(region, years, program)
     try:
         # KPIs – combine session + vehicle facts
         sess_kpi = fetch_one(f"""
@@ -274,7 +276,7 @@ def get_operations_overview(region=None, year=None, program=None, limit=15, offs
         # Vehicle KPIs – need separate where without program filter on vehicle table
         veh_where, veh_params = [], []
         c, p = get_list_filter_clause("g.region_name", region); veh_where.append(c); veh_params.extend(p)
-        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int"); veh_where.append(c); veh_params.extend(p)
+        c, p = get_list_filter_clause("d.year_actual", years, cast_type="int"); veh_where.append(c); veh_params.extend(p)
         veh_where_sql = " AND ".join(veh_where)
 
         veh_kpi = fetch_one(f"""
@@ -344,7 +346,7 @@ def get_operations_overview(region=None, year=None, program=None, limit=15, offs
             search_sql, search_params = s, sp
             if so: sort_sql = so
 
-        count = fetch_one(f"""
+        count_row = fetch_one(f"""
             SELECT COUNT(*) FROM (
                 SELECT g.region_name FROM {DW}.fact_session f
                 LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
@@ -353,7 +355,8 @@ def get_operations_overview(region=None, year=None, program=None, limit=15, offs
                 WHERE {where_sql} AND {search_sql} AND g.region_name IS NOT NULL
                 GROUP BY g.region_name
             ) sub
-        """, params + search_params).get("count", 0)
+        """, params + search_params)
+        count = count_row.get("count", 0) if count_row else 0
 
         table = fetch_all(f"""
             SELECT COALESCE(g.region_name,'Unknown') AS region,

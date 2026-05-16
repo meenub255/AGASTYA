@@ -57,7 +57,7 @@ def get_school_visit_filters(region_name: str | list[str] | None = None):
     }
 
 
-def get_school_visit_data(region=None, area=None, program=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+def get_school_visit_data(region=None, area=None, program=None, years=None, month=None, limit=15, offset=0, dt_params=None):
     from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
 
     clauses = []
@@ -72,7 +72,7 @@ def get_school_visit_data(region=None, area=None, program=None, year=None, month
     c, p = get_list_filter_clause("p.program_name", program)
     clauses.append(c); params.extend(p)
     
-    c, p = get_list_filter_clause("d.year_actual", year, cast_type="int")
+    c, p = get_list_filter_clause("d.year_actual", years, cast_type="int")
     clauses.append(c); params.extend(p)
     
     c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
@@ -218,7 +218,7 @@ def get_school_visit_data(region=None, area=None, program=None, year=None, month
         "kpis": kpis,
         "charts": {
             "sessions_by_program": [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_program],
-            "sessions_by_month":   [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_month],
+            "sessions_trend_monthly": [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_month],
         }
     }
 

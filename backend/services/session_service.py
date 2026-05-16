@@ -6,10 +6,9 @@ PROGRAM_EXPRESSION = "p.program_name"
 YEAR_EXPRESSION = "d.year_actual"
 
 
-def get_session_count(start: int | None = None, end: int | None = None) -> int:
+def get_session_count(years: list[int | str] | None = None) -> int:
     where_clause, params = build_dimension_filters(
-        start=start,
-        end=end,
+        year=years,
         region=None,
         program=None,
         year_expression=YEAR_EXPRESSION,
@@ -27,14 +26,12 @@ def get_session_count(start: int | None = None, end: int | None = None) -> int:
 
 
 def get_session_kpis(
-    start: int | None = None,
-    end: int | None = None,
-    region: str | None = None,
-    program: str | None = None,
+    years: list[int | str] | None = None,
+    region: str | list[str] | None = None,
+    program: str | list[str] | None = None,
 ) -> dict[str, int]:
     where_clause, params = build_dimension_filters(
-        start=start,
-        end=end,
+        year=years,
         region=region,
         program=program,
         year_expression=YEAR_EXPRESSION,
@@ -65,14 +62,12 @@ def get_session_kpis(
 
 
 def get_monthly_sessions(
-    start: int | None = None,
-    end: int | None = None,
-    region: str | None = None,
-    program: str | None = None,
+    years: list[int | str] | None = None,
+    region: str | list[str] | None = None,
+    program: str | list[str] | None = None,
 ) -> list[dict]:
     where_clause, params = build_dimension_filters(
-        start=start,
-        end=end,
+        year=years,
         region=region,
         program=program,
         year_expression=YEAR_EXPRESSION,
@@ -98,14 +93,12 @@ def get_monthly_sessions(
 
 
 def get_sessions_by_region(
-    start: int | None = None,
-    end: int | None = None,
-    region: str | None = None,
-    program: str | None = None,
+    years: list[int | str] | None = None,
+    region: str | list[str] | None = None,
+    program: str | list[str] | None = None,
 ) -> list[dict]:
     where_clause, params = build_dimension_filters(
-        start=start,
-        end=end,
+        year=years,
         region=region,
         program=program,
         year_expression=YEAR_EXPRESSION,
@@ -142,4 +135,3 @@ def get_available_years() -> list[int]:
         """
     )
     return [int(row["year"]) for row in rows if row.get("year") is not None]
-

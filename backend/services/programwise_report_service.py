@@ -33,7 +33,7 @@ def get_programwise_report_filters():
     }
 
 
-def get_programwise_report_data(category=None, year=None, month=None, limit=15, offset=0, dt_params=None):
+def get_programwise_report_data(category=None, years=None, month=None, limit=15, offset=0, dt_params=None):
     from backend.services.query_utils import parse_datatables_params, get_datatables_sql
     where_clauses = []
     params = []
@@ -43,7 +43,7 @@ def get_programwise_report_data(category=None, year=None, month=None, limit=15, 
     where_clauses.append(c_clause)
     params.extend(c_params)
     
-    y_clause, y_params = get_list_filter_clause("d.year_actual", year, cast_type="int")
+    y_clause, y_params = get_list_filter_clause("d.year_actual", years, cast_type="int")
     where_clauses.append(y_clause)
     params.extend(y_params)
     
@@ -167,7 +167,7 @@ def get_programwise_report_data(category=None, year=None, month=None, limit=15, 
     """, params)
 
     # Chart 2: Sessions by Donor (pie chart) - usually doesn't need grouping unless comparing years
-    compare_year = isinstance(year, list) and len([v for v in year if v]) > 1
+    compare_year = isinstance(years, list) and len([v for v in years if v]) > 1
     yr_group_sql = ""
     yr_group_select = ""
     if compare_year:

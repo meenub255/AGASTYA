@@ -28,13 +28,13 @@ def get_nationwide_filters():
         return {"regions": [], "years": []}
 
 
-def get_nationwide_data(year=None, region=None, limit=15, offset=0, dt_params=None):
+def get_nationwide_data(years=None, region=None, limit=15, offset=0, dt_params=None):
     from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
     try:
         clauses = []
         params = []
         
-        c, p = get_list_filter_clause("d.year_actual", year, cast_type="int")
+        c, p = get_list_filter_clause("d.year_actual", years, cast_type="int")
         clauses.append(c); params.extend(p)
         
         c, p = get_list_filter_clause("g.region_name", region)
