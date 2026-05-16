@@ -1,48 +1,52 @@
-﻿from fastapi import APIRouter, Query
-
-from backend.models.schemas import KPIBundle, OptionsResponse, SeriesBundle
+from fastapi import APIRouter, Query
 from backend.services import region_service
-
 
 router = APIRouter(prefix="/region", tags=["region"])
 
-
-@router.get("/kpis", response_model=KPIBundle)
-def region_kpis(
-    start: str | None = Query(default=None),
-    end: str | None = Query(default=None),
-    region: str | None = Query(default=None),
-    program: str | None = Query(default=None),
+@router.get("/data")
+def get_region_data(
+    years:      list[str] | None = Query(None),
+    region:     list[str] | None = Query(None),
+    program:    list[str] | None = Query(None)
 ):
-    return {"metrics": region_service.get_region_kpis(start=start, end=end, region=region, program=program)}
+    """Unified data endpoint for Region Dashboard."""
+    return region_service.get_unified_region_data(years=years, region=region, program=program)
 
+@router.get("/filters")
+def get_filters():
+    from backend.services import dashboard_service
+    return dashboard_service._get_filter_options()
 
-@router.get("/impact", response_model=SeriesBundle)
+@router.get("/kpis")
+def region_kpis(
+    years:      list[str] | None = Query(None),
+    region:     list[str] | None = Query(None),
+    program:    list[str] | None = Query(None)
+):
+    return {"metrics": region_service.get_region_kpis(years=years, region=region, program=program)}
+
+@router.get("/impact")
 def region_impact(
-    start: str | None = Query(default=None),
-    end: str | None = Query(default=None),
-    region: str | None = Query(default=None),
-    program: str | None = Query(default=None),
+    years:      list[str] | None = Query(None),
+    region:     list[str] | None = Query(None),
+    program:    list[str] | None = Query(None)
 ):
     return {
         "title": "Region Impact",
-        "data": region_service.get_region_impact(start=start, end=end, region=region, program=program),
+        "data": region_service.get_region_impact(years=years, region=region, program=program),
     }
 
-
-@router.get("/monthly-impact", response_model=SeriesBundle)
+@router.get("/monthly-impact")
 def monthly_region_impact(
-    start: str | None = Query(default=None),
-    end: str | None = Query(default=None),
-    region: str | None = Query(default=None),
-    program: str | None = Query(default=None),
+    years:      list[str] | None = Query(None),
+    region:     list[str] | None = Query(None),
+    program:    list[str] | None = Query(None)
 ):
     return {
         "title": "Monthly Region Impact",
-        "data": region_service.get_monthly_region_impact(start=start, end=end, region=region, program=program),
+        "data": region_service.get_monthly_region_impact(years=years, region=region, program=program),
     }
 
-
-@router.get("/options", response_model=OptionsResponse)
+@router.get("/options")
 def region_options():
     return {"regions": region_service.get_region_options()}
