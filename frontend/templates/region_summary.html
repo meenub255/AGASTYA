@@ -96,19 +96,19 @@
     <div class="fd-body">
         <div class="fd-section">
             <label class="fd-label">Region</label>
-            <select id="regionFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Region"></select>
+            <select id="regionFilter" class="form-control select2 filter-multi" data-filter="region" multiple data-placeholder="Select Region"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Program Type</label>
-            <select id="programTypeFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Program"></select>
+            <select id="programTypeFilter" class="form-control select2 filter-multi" data-filter="program_type" multiple data-placeholder="Select Program"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Fiscal Year</label>
-            <select id="yearFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Year"></select>
+            <select id="yearFilter" class="form-control select2 filter-multi" data-filter="years" multiple data-placeholder="Select Year"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Month</label>
-            <select id="monthFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Month"></select>
+            <select id="monthFilter" class="form-control select2 filter-multi" data-filter="month" multiple data-placeholder="Select Month"></select>
         </div>
     </div>
     <div class="fd-footer">
@@ -152,12 +152,7 @@ $(function () {
     }
 
     function collectFilters() {
-        return {
-            region: $('#regionFilter').val() || [],
-            program_type: $('#programTypeFilter').val() || [],
-            year: $('#yearFilter').val() || [],
-            month: $('#monthFilter').val() || []
-        };
+        return window.PramanaDashboard.collectFilters();
     }
 
     function loadFilters() {

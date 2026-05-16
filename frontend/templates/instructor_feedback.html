@@ -126,11 +126,11 @@
     <div class="fd-body">
         <div class="fd-section">
             <label class="fd-label">Instructor</label>
-            <select id="instructorFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Instructor"></select>
+            <select id="instructorFilter" class="form-control select2 filter-multi" data-filter="instructor_name" multiple data-placeholder="Select Instructor"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Fiscal Year</label>
-            <select id="yearFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Year"></select>
+            <select id="yearFilter" class="form-control select2 filter-multi" data-filter="years" multiple data-placeholder="Select Year"></select>
         </div>
     </div>
     <div class="fd-footer">
@@ -173,10 +173,7 @@ $(function () {
     }
 
     function collectFilters() {
-        return {
-            instructor_name: $('#instructorFilter').val() || [],
-            year: $('#yearFilter').val() || []
-        };
+        return window.PramanaDashboard.collectFilters();
     }
 
     fetch('/instructor-feedback/filters')

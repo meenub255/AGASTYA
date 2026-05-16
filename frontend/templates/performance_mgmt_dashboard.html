@@ -177,18 +177,18 @@
     <div class="fd-body">
         <div class="fd-section">
             <label class="fd-label">Fiscal Year</label>
-            <select id="yearFilter" class="form-control select2" multiple="multiple"
-                data-placeholder="All Years"></select>
+            <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple"
+                data-filter="years" data-placeholder="All Years"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Regional Hubs</label>
-            <select id="regionFilter" class="form-control select2" multiple="multiple"
-                data-placeholder="All Regions"></select>
+            <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple"
+                data-filter="region" data-placeholder="All Regions"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Month</label>
-            <select id="monthFilter" class="form-control select2" multiple="multiple"
-                data-placeholder="All Months"></select>
+            <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple"
+                data-filter="month" data-placeholder="All Months"></select>
         </div>
 
         <hr style="border-color:#e2e8f0;margin:20px 0;">
@@ -196,8 +196,8 @@
         <div class="fd-section">
             <p class="fd-label" style="margin-bottom:6px;">Chart Settings</p>
             <label class="fd-label mt-2">Quarter</label>
-            <select id="quarterFilter" class="form-control select2" multiple="multiple"
-                data-placeholder="All Quarters"></select>
+            <select id="quarterFilter" class="form-control select2 filter-multi" multiple="multiple"
+                data-filter="quarter" data-placeholder="All Quarters"></select>
         </div>
 
         <div class="fd-section">
@@ -304,18 +304,13 @@
         }
 
         function collectFilters() {
-            return {
-                region: $('#regionFilter').val() || [], year: $('#yearFilter').val() || [],
-                month: $('#monthFilter').val() || [], quarter: $('#quarterFilter').val() || []
-            };
+            return window.PramanaDashboard.collectFilters();
         }
 
         // ── Populate Filters ──
         function loadFilters(selected = {}) {
-            const params = $.param({
-                year: $('#yearFilter').val() || [],
-                region: $('#regionFilter').val() || []
-            }, true);
+            const f = collectFilters();
+            const params = $.param(f, true);
 
             return fetch('/performance-mgmt/filters?' + params)
                 .then(r => r.json())

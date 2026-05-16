@@ -218,7 +218,7 @@ $(function(){
         const t=setInterval(()=>{ step++; $el.text(Math.round(start+inc*step).toLocaleString()); if(step>=steps){$el.text(target.toLocaleString()); clearInterval(t);} },25);
     }
 
-    function getParams(){ return $.param({years:$('#yearFilter').val()||[], region:$('#regionFilter').val()||[], program:$('#programFilter').val()||[]}, true); }
+    function getParams(){ return $.param(window.PramanaDashboard.collectFilters(), true); }
 
     let dt=null, fullKpis = null;
     function loadData(){

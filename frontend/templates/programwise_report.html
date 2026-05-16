@@ -152,15 +152,15 @@
     <div class="fd-body">
         <div class="fd-section">
             <label class="fd-label">Donor Name</label>
-            <select id="categoryFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Donor"></select>
+            <select id="categoryFilter" class="form-control select2 filter-multi" multiple data-filter="category" data-placeholder="Select Donor"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Fiscal Year</label>
-            <select id="yearFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Year"></select>
+            <select id="yearFilter" class="form-control select2 filter-multi" multiple data-filter="years" data-placeholder="Select Year"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Month</label>
-            <select id="monthFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Month"></select>
+            <select id="monthFilter" class="form-control select2 filter-multi" multiple data-filter="month" data-placeholder="Select Month"></select>
         </div>
         <div class="fd-section">
             <div class="custom-control custom-switch mt-2">
@@ -250,9 +250,14 @@ $(function () {
     }
 
     function collectFilters() {
+        if (window.PramanaDashboard && typeof window.PramanaDashboard.collectFilters === 'function') {
+            const f = window.PramanaDashboard.collectFilters();
+            if (drilldownRegion) f.region = [drilldownRegion];
+            return f;
+        }
         let filters = {
             category: $('#categoryFilter').val() || [],
-            year: $('#yearFilter').val() || [],
+            years: $('#yearFilter').val() || [],
             month: $('#monthFilter').val() || []
         };
         if (drilldownRegion) {

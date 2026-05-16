@@ -5,44 +5,37 @@
 {% include "partials/kpi_cards.html" %}
 
 <!-- Filters -->
-<div class="card card-default">
-    <div class="card-body">
+<div class="card card-default premium-card shadow-sm mb-4">
+    <div class="card-body p-3">
         <div class="row align-items-end">
-            <div class="col-md-2">
+            <div class="col-md-3">
                 <div class="form-group mb-0">
-                    <label>Start Year</label>
-                    <select id="startYear" class="form-control select2">
+                    <label class="small text-muted font-weight-bold uppercase">Financial Years</label>
+                    <select id="yearFilter" class="form-control select2 filter-multi" data-filter="years" multiple data-placeholder="Select Years">
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group mb-0">
+                    <label class="small text-muted font-weight-bold uppercase">Region</label>
+                    <select id="regionFilter" class="form-control select2 filter-multi" data-filter="region" multiple data-placeholder="Select Regions">
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group mb-0">
+                    <label class="small text-muted font-weight-bold uppercase">Program</label>
+                    <select id="programFilter" class="form-control select2 filter-multi" data-filter="program" multiple data-placeholder="Select Programs">
                     </select>
                 </div>
             </div>
             <div class="col-md-2">
-                <div class="form-group mb-0">
-                    <label>End Year</label>
-                    <select id="endYear" class="form-control select2">
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="form-group mb-0">
-                    <label>Region</label>
-                    <select id="regionFilter" class="form-control select2">
-                        <option value="">All Regions</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="form-group mb-0">
-                    <label>Program</label>
-                    <select id="programFilter" class="form-control select2">
-                        <option value="">All Programs</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <button id="seeReport" class="btn btn-primary btn-sm btn-block">See Report</button>
+                <button id="seeReport" class="btn btn-primary btn-block shadow-sm" style="border-radius: 8px;">
+                    <i class="fas fa-sync-alt mr-2"></i>Apply
+                </button>
             </div>
             <div class="col-md-1">
-                <button id="exportXlsx" class="btn btn-export btn-sm btn-block">
+                <button id="exportXlsx" class="btn btn-outline-success btn-block shadow-sm" style="border-radius: 8px;">
                     <i class="fas fa-file-excel"></i>
                 </button>
             </div>
@@ -52,9 +45,9 @@
 
 <div class="row mt-2">
     <div class="col-lg-7 mb-3">
-        <section class="card h-100 white-chart-card">
-            <div class="card-header border-0 d-flex justify-content-between align-items-center">
-                <h3 class="card-title">Region impact</h3>
+        <section class="card h-100 white-chart-card premium-card shadow-sm">
+            <div class="card-header border-0 d-flex justify-content-between align-items-center bg-transparent pt-3">
+                <h3 class="card-title text-sm uppercase">Region Impact</h3>
                 <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
                    style="cursor: pointer;"
                    data-toggle="popover" 
@@ -65,17 +58,19 @@
                    data-content="Loading..."></i>
             </div>
             <div class="card-body">
-                <div style="height:250px;">
+                <div style="height:300px;">
                     <canvas id="regionStateChart"></canvas>
                 </div>
             </div>
         </section>
     </div>
     <div class="col-lg-5 mb-3">
-        <section class="card h-100 white-chart-card">
-            <div class="card-header border-0"><h3 class="card-title">Monthly region impact</h3></div>
+        <section class="card h-100 white-chart-card premium-card shadow-sm">
+            <div class="card-header border-0 bg-transparent pt-3">
+                <h3 class="card-title text-sm uppercase">Monthly Region Impact</h3>
+            </div>
             <div class="card-body">
-                <div style="height:250px;">
+                <div style="height:300px;">
                     <canvas id="regionMonthlyChart"></canvas>
                 </div>
             </div>
@@ -89,27 +84,8 @@
 $(function () {
     let regionMapping = {};
     if ($.fn.select2) {
-        $('.select2').select2({ theme: 'bootstrap4' });
+        $('.select2').select2({ theme: 'bootstrap4', width: '100%' });
     }
-
-    fetch('/dashboard/filters')
-        .then(res => res.json())
-        .then(data => {
-            const sy = $('#startYear');
-            const ey = $('#endYear');
-            data.years.forEach(y => {
-                sy.append(new Option(y, y));
-                ey.append(new Option(y, y));
-            });
-            
-            // Set dynamic defaults
-            const currentYear = new Date().getFullYear().toString();
-            if (data.years.includes(parseInt(currentYear))) {
-                sy.val(currentYear);
-                ey.val(currentYear);
-            }
-            $('.select2').trigger('change.select2');
-        });
 
     // Initialize popovers
     $('.region-legend-trigger').popover({
@@ -121,129 +97,98 @@ $(function () {
 
     function getAcronym(str) {
         if (!str) return '';
-        const parts = str.split('_');
-        if (parts.length === 1 && str.length > 5) {
-            return str.substring(0, 3).toUpperCase();
-        }
+        const parts = str.split(/[ \-_]/);
+        if (parts.length === 1 && str.length > 8) return str.substring(0, 3).toUpperCase();
         let acronym = '';
-        parts.forEach(p => {
-            if (p.length > 0) acronym += p[0].toUpperCase();
-        });
-        return acronym;
+        parts.forEach(p => { if (p.length > 0) acronym += p[0].toUpperCase(); });
+        return acronym.length > 1 ? acronym : str.substring(0, 3).toUpperCase();
     }
 
     function updateLegendPopover() {
-        let content = '<div class="small" style="max-height: 200px; overflow-y: auto;"><table class="table table-sm mb-0">';
+        let content = '<div class="region-mapping-popover"><table class="table table-sm pb-0 mb-0" style="font-size:11px">';
         const sortedKeys = Object.keys(regionMapping).sort();
         if (sortedKeys.length === 0) {
-            content = "No regions displayed";
+            content = "No data available";
         } else {
             sortedKeys.forEach(code => {
                 content += `<tr><td class="font-weight-bold pr-2" style="border-top:0">${code}</td><td style="border-top:0">: ${regionMapping[code]}</td></tr>`;
             });
             content += '</table></div>';
         }
-        $('.region-legend-trigger').each(function() {
-            $(this).attr('data-content', content);
-            const popover = $(this).data('bs.popover');
-            if (popover) popover.config.content = content;
-        });
+        $('.region-legend-trigger').attr('data-content', content);
     }
 
-    const rf = $('#regionFilter');
-    const pf = $('#programFilter');
-
-    // Initially disable programs
-    pf.prop('disabled', true);
-
+    // Load Initial Filters
     fetch('/dashboard/filters')
         .then(res => res.json())
         .then(data => {
+            const yf = $('#yearFilter');
+            const rf = $('#regionFilter');
+            const pf = $('#programFilter');
+            
+            data.years.forEach(y => yf.append(new Option(y, y)));
             data.regions.forEach(r => rf.append(new Option(r, r)));
+            data.programs.forEach(p => pf.append(new Option(p, p)));
+            
+            // Set dynamic defaults
+            const currentYear = new Date().getFullYear().toString();
+            if (data.years.includes(parseInt(currentYear))) {
+                yf.val([currentYear]);
+            }
+            $('.select2').trigger('change.select2', { internal: true });
+            
+            loadData();
         });
 
-    rf.on('change', function () {
-        const selectedRegion = $(this).val();
-        pf.empty().append(new Option('All Programs', ''));
-        
-        if (selectedRegion) {
-            fetch(`/dashboard/filters?region_name=${encodeURIComponent(selectedRegion)}`)
-                .then(res => res.json())
-                .then(data => {
-                    data.programs.forEach(p => pf.append(new Option(p, p)));
-                    pf.prop('disabled', false);
-                });
-        } else {
-            pf.prop('disabled', true);
-        }
-    });
-
-
     function loadData() {
-        const filters = {
-            start_year: $('#startYear').val(),
-            end_year: $('#endYear').val(),
-            region: $('#regionFilter').val(),
-            program: $('#programFilter').val()
-        };
+        const filters = window.PramanaDashboard.collectFilters();
+        const query = $.param(filters, true);
         
-        const query = new URLSearchParams(filters).toString();
         fetch(`/region/data?${query}`)
             .then(res => res.json())
             .then(data => {
-                $('#regionStudentsReached').text(data.kpis.total_students.toLocaleString());
-                $('#regionStates').text(data.kpis.total_states);
-                $('#regionPrograms').text(data.kpis.total_programs);
-                $('#regionAverageImpact').text(data.kpis.average_impact.toLocaleString());
+                // Update KPIs
+                $('#kpi_total_students_reached').text(data.kpis.total_students_reached.toLocaleString());
+                $('#kpi_total_states').text(data.kpis.total_states.toLocaleString());
+                $('#kpi_total_sessions').text(data.kpis.total_sessions.toLocaleString());
+                $('#kpi_avg_students_per_state_period').text(data.kpis.avg_students_per_state_period.toLocaleString());
 
                 // State Chart
                 const ctxState = document.getElementById('regionStateChart').getContext('2d');
                 if (window.stateChart) window.stateChart.destroy();
+                
                 regionMapping = {};
-                if (data.charts.state.labels) {
-                    data.charts.state.labels = data.charts.state.labels.map(label => {
-                        const code = getAcronym(label);
-                        regionMapping[code] = label;
-                        return code;
-                    });
-                }
+                const labels = data.impact.map(item => {
+                    const code = getAcronym(item.label);
+                    regionMapping[code] = item.label;
+                    return code;
+                });
+                const values = data.impact.map(item => item.value);
 
                 window.stateChart = new Chart(ctxState, {
                     type: 'bar',
-                    data: data.charts.state,
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Students Reached',
+                            data: values,
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 6
+                        }]
+                    },
                     options: { 
                         maintainAspectRatio: false, 
                         plugins: {
-                            legend: {
-                                display: true,
-                                position: 'bottom',
-                                align: 'start',
-                                labels: { color: '#000000' }
-                            },
+                            legend: { display: false },
                             tooltip: {
                                 callbacks: {
-                                    title: function(context) {
-                                        const code = context[0].label;
-                                        return regionMapping[code] || code;
-                                    }
+                                    title: (ctx) => regionMapping[ctx[0].label] || ctx[0].label
                                 }
                             }
                         },
                         scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: { display: false },
-                                ticks: { color: '#000000' }
-                            },
-                            x: {
-                                grid: { display: false },
-                                ticks: { 
-                                    color: '#000000',
-                                    autoSkip: false,
-                                    maxRotation: 0,
-                                    minRotation: 0
-                                }
-                            }
+                            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#64748b' } },
+                            x: { grid: { display: false }, ticks: { color: '#64748b' } }
                         }
                     }
                 });
@@ -253,31 +198,28 @@ $(function () {
                 // Monthly Chart
                 const ctxMonthly = document.getElementById('regionMonthlyChart').getContext('2d');
                 if (window.monthlyChart) window.monthlyChart.destroy();
+                
                 window.monthlyChart = new Chart(ctxMonthly, {
                     type: 'line',
-                    data: data.charts.monthly,
+                    data: {
+                        labels: data.monthly_impact.map(d => d.label),
+                        datasets: [{
+                            label: 'Monthly Students',
+                            data: data.monthly_impact.map(d => d.value),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16,185,129,0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
                     options: { 
                         maintainAspectRatio: false, 
                         plugins: {
-                            legend: {
-                                display: true,
-                                position: 'bottom',
-                                align: 'start',
-                                labels: { color: '#000000' }
-                            }
-
-
+                            legend: { display: false }
                         },
                         scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: { display: false },
-                                ticks: { color: '#000000' }
-                            },
-                            x: {
-                                grid: { display: false },
-                                ticks: { color: '#000000' }
-                            }
+                            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#64748b' } },
+                            x: { grid: { display: false }, ticks: { color: '#64748b' } }
                         }
                     }
                 });
@@ -289,18 +231,10 @@ $(function () {
     });
 
     $('#exportXlsx').click(function() {
-        const filters = {
-            start_year: $('#startYear').val(),
-            end_year: $('#endYear').val(),
-            region: $('#regionFilter').val(),
-            program: $('#programFilter').val()
-        };
-        const query = new URLSearchParams(filters).toString();
+        const filters = window.PramanaDashboard.collectFilters();
+        const query = $.param(filters, true);
         window.exportToXLSX(`/region/export?${query}`, 'region_report.xlsx');
     });
-
-    // Auto-load
-    setTimeout(loadData, 300);
 });
 </script>
 {% endblock %}

@@ -134,11 +134,11 @@
     <div class="fd-body">
         <div class="fd-section">
             <label class="fd-label">Fiscal Year</label>
-            <select id="yearFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Year"></select>
+            <select id="yearFilter" class="form-control select2 filter-multi" data-filter="years" multiple data-placeholder="Select Year"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Region</label>
-            <select id="regionFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Region"></select>
+            <select id="regionFilter" class="form-control select2 filter-multi" data-filter="region" multiple data-placeholder="Select Region"></select>
         </div>
         <div class="fd-section">
             <div class="custom-control custom-switch mt-2">
@@ -225,10 +225,7 @@
         }
 
         function collectFilters() {
-            let filters = {
-                region: $('#regionFilter').val() || [],
-                year: $('#yearFilter').val() || []
-            };
+            let filters = window.PramanaDashboard.collectFilters();
             if (drilldownRegion) {
                 filters.region = [drilldownRegion];
             }

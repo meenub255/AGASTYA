@@ -239,7 +239,7 @@ $(function(){
     }
 
     function getParams(){
-        return $.param({years:$('#yearFilter').val()||[], region:$('#regionFilter').val()||[], program:$('#programFilter').val()||[]}, true);
+        return $.param(window.PramanaDashboard.collectFilters(), true);
     }
 
     let dt=null;

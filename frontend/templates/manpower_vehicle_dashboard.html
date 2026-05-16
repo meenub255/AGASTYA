@@ -110,15 +110,15 @@
     <div class="fd-body">
         <div class="fd-section">
             <label class="fd-label">Region</label>
-            <select id="regionFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Region"></select>
+            <select id="regionFilter" class="form-control select2 filter-multi" data-filter="region" multiple data-placeholder="Select Region"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Fiscal Year</label>
-            <select id="yearFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Year"></select>
+            <select id="yearFilter" class="form-control select2 filter-multi" data-filter="years" multiple data-placeholder="Select Year"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Month</label>
-            <select id="monthFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Month"></select>
+            <select id="monthFilter" class="form-control select2 filter-multi" data-filter="month" multiple data-placeholder="Select Month"></select>
         </div>
     </div>
     <div class="fd-footer">
@@ -163,13 +163,7 @@ $(function () {
     }
 
     function collectFilters() {
-        let filters = {
-            region: $('#regionFilter').val() || [],
-            year: $('#yearFilter').val() || [],
-            month: $('#monthFilter').val() || []
-        };
-        if (drilldownRegion) filters.region = [drilldownRegion];
-        return filters;
+        return window.PramanaDashboard.collectFilters();
     }
 
     fetch('/manpower-vehicle-dashboard/filters')

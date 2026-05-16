@@ -1236,22 +1236,28 @@
         },
         collectFilters: function() {
             const filters = {};
-            // Multi-selects
-            $('.filter-multi').each(function() {
-                const id = $(this).attr('id');
-                const key = $(this).data('filter') || id;
-                const val = $(this).val();
-                filters[key] = (val && val.length > 0) ? val : [];
-            });
-            // Standard select2 or inputs
-            $('.select2:not(.filter-multi), select:not(.filter-multi), input').each(function() {
-                const id = $(this).attr('id');
-                if (!id) return;
-                const key = $(this).data('filter') || id;
-                if (filters[key] === undefined) {
-                    filters[key] = $(this).val();
+            
+            // Collect from all selects/inputs with data-filter or standard IDs
+            $('.select2, select, input').each(function() {
+                const $el = $(this);
+                const id = $el.attr('id');
+                if (!id && !$el.attr('data-filter')) return;
+                
+                let key = $el.attr('data-filter') || id.replace('Filter', '');
+                
+                // Standardize plural/singular for common keys
+                if (key === 'year') key = 'years';
+                if (key === 'regions') key = 'region';
+                if (key === 'programs') key = 'program';
+                if (key === 'areas') key = 'area';
+                if (key === 'months') key = 'month';
+                
+                const val = $el.val();
+                if (val !== null && val !== undefined && (Array.isArray(val) ? val.length > 0 : val !== "")) {
+                    filters[key] = val;
                 }
             });
+            
             return filters;
         },
         renderChart: renderChart,
