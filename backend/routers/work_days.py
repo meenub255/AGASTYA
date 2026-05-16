@@ -12,20 +12,20 @@ async def work_days_filters(region: list[str] | None = Query(None)):
 async def work_days_data(
     region: list[str] | None = Query(None),
     area: list[str] | None = Query(None),
-    year: list[str] | None = Query(None),
+    years: list[str] | None = Query(None),
     month: list[str] | None = Query(None),
     limit: int = 15,
     offset: int = 0
 ):
-    return get_work_days_data(region, area, year, month, limit, offset)
+    return get_work_days_data(region, area, years, month, limit, offset)
 
 @router.get("/export")
 async def work_days_export(
     region: list[str] | None = Query(None),
     area: list[str] | None = Query(None),
-    year: list[str] | None = Query(None),
+    years: list[str] | None = Query(None),
     month: list[str] | None = Query(None)
 ):
     from backend.services.export_utils import json_to_excel_streaming_response
-    data = get_work_days_data(region, area, year, month, limit=100000, offset=0)
+    data = get_work_days_data(region, area, years, month, limit=100000, offset=0)
     return json_to_excel_streaming_response(data["table"], "work_days.xlsx")

@@ -21,7 +21,7 @@ def instructor_overview(request: Request,
 ):
     dt = _extract_dt(dict(request.query_params))
     return category_overview_service.get_instructor_overview(
-        region=region, year=years, program=program,
+        region=region, years=years, program=program,
         limit=length, offset=start, dt_params=dt,
     )
 
@@ -35,7 +35,7 @@ def program_impact_overview(request: Request,
 ):
     dt = _extract_dt(dict(request.query_params))
     return category_overview_service.get_program_impact_overview(
-        region=region, year=years, program=program,
+        region=region, years=years, program=program,
         limit=length, offset=start, dt_params=dt,
     )
 
@@ -49,6 +49,6 @@ def operations_overview(request: Request,
 ):
     dt = _extract_dt(dict(request.query_params))
     return category_overview_service.get_operations_overview(
-        region=region, year=years, program=program,
+        region=region, years=years, program=program,
         limit=length, offset=start, dt_params=dt,
     )

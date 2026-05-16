@@ -12,7 +12,7 @@ def get_data(
     request: Request,
     region: list[str] | None = Query(default=None),
     program_type: list[str] | None = Query(default=None),
-    year: list[str] | None = Query(default=None),
+    years: list[str] | None = Query(default=None),
     month: list[str] | None = Query(default=None),
     limit: int = Query(default=15),
     offset: int = Query(default=0)
@@ -27,7 +27,7 @@ def get_data(
     return region_summary_service.get_region_summary_data(
         region=region,
         program_type=program_type,
-        year=year,
+        years=years,
         month=month,
         limit=limit,
         offset=offset,
@@ -38,9 +38,9 @@ def get_data(
 def export_data(
     region: list[str] | None = Query(None),
     program_type: list[str] | None = Query(None),
-    year: list[str] | None = Query(None),
+    years: list[str] | None = Query(None),
     month: list[str] | None = Query(None)
 ):
     from backend.services.export_utils import json_to_excel_streaming_response
-    data = region_summary_service.get_region_summary_data(region, program_type, year, month, limit=100000, offset=0)
+    data = region_summary_service.get_region_summary_data(region, program_type, years, month, limit=100000, offset=0)
     return json_to_excel_streaming_response(data["table"], "region_summary_report.xlsx")

@@ -13,7 +13,7 @@ def vehicle_data(
     request: Request,
     region: list[str] | None = Query(None),
     area: list[str] | None = Query(None),
-    year: list[str] | None = Query(None),
+    years: list[str] | None = Query(None),
     month: list[str] | None = Query(None),
     limit: int = Query(15),
     offset: int = Query(0)
@@ -25,7 +25,7 @@ def vehicle_data(
         limit = dt_params["length"]
         offset = dt_params["start"]
 
-    res = get_vehicle_report_data(region, area, year, month, limit, offset, dt_params)
+    res = get_vehicle_report_data(region, area, years, month, limit, offset, dt_params)
     if "error" in res:
         raise HTTPException(status_code=500, detail=res["error"])
     return res
@@ -34,9 +34,9 @@ def vehicle_data(
 def vehicle_export(
     region: list[str] | None = Query(None),
     area: list[str] | None = Query(None),
-    year: list[str] | None = Query(None),
+    years: list[str] | None = Query(None),
     month: list[str] | None = Query(None)
 ):
     from backend.services.export_utils import json_to_excel_streaming_response
-    data = get_vehicle_report_data(region, area, year, month, limit=100000, offset=0)
+    data = get_vehicle_report_data(region, area, years, month, limit=100000, offset=0)
     return json_to_excel_streaming_response(data["table"], "vehicle_report.xlsx")
