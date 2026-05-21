@@ -123,7 +123,7 @@ def get_drilldown(
     years: list[str] | None = Query(None),
     program: list[str] | None = Query(None),
 ):
-    return overview_service.get_drilldown_data(region=region, year=years, program=program)
+    return overview_service.get_drilldown_data(region=region, years=years, program=program)
 
 @router.get("/export")
 def export_data(
