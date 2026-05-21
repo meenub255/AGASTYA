@@ -94,10 +94,10 @@
                 </span>
                 <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
                 <span id="drilldownRegionLabel" style="font-size:13px; font-weight:600; color:#1e3a8a;"></span>
-                <button onclick="clearDrilldown()" class="btn btn-sm ml-auto"
-                    style="background: #f1f5f9; border:1px solid #e2e8f0; color:#64748b; font-size:11px; padding:3px 10px; border-radius:20px;">
-                    <i class="fas fa-times mr-1"></i>Clear Selection
-                </button>
+                <button onclick="clearDrilldown()" class="btn btn-md ml-auto clear-drilldown-btn"
+                style="background: #991b1b; border: 1px solid #991b1b; color: #ffffff; font-weight: 600; font-size: 15px; padding: 10px 24px; border-radius: 24px; transition: all 0.2s ease-in-out; box-shadow: 0 2px 4px rgba(153, 27, 27, 0.2);">
+                <i class="fas fa-times mr-1"></i>Clear Selection
+            </button>
             </div>
 
             <!-- Extra stat mini-cards (sessions, students, schools) -->
@@ -199,6 +199,13 @@
 </div>
 
 <style>
+    .clear-drilldown-btn:hover {
+        background: #7f1d1d !important;
+        border-color: #7f1d1d !important;
+        color: #ffffff !important;
+        transform: scale(1.03);
+        box-shadow: 0 4px 12px rgba(127, 29, 29, 0.3) !important;
+    }
     #drilldownPanel {
         animation: slideDown 0.3s ease;
     }
@@ -410,6 +417,7 @@
             if (miniCharts[canvasId]) miniCharts[canvasId].destroy();
             miniCharts[canvasId] = new Chart(ctx, {
                 type: 'line',
+                plugins: [ChartDataLabels],
                 data: {
                     labels: dataPoints.map((_, i) => i),
                     datasets: [{
@@ -424,10 +432,37 @@
                 },
                 options: {
                     maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            left: 15,
+                            right: 15,
+                            top: 10,
+                            bottom: 10
+                        }
+                    },
                     plugins: { 
                         legend: { display: false }, 
                         tooltip: { enabled: false },
-                        datalabels: { display: false }
+                        datalabels: {
+                            display: function(context) {
+                                return context.dataIndex === 0 || context.dataIndex === context.dataset.data.length - 1;
+                            },
+                            align: function(context) {
+                                return context.dataIndex === 0 ? 'right' : 'left';
+                            },
+                            anchor: function(context) {
+                                return context.dataIndex === 0 ? 'start' : 'end';
+                            },
+                            offset: 4,
+                            color: color,
+                            font: {
+                                size: 10,
+                                weight: 'bold'
+                            },
+                            formatter: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
                     },
                     scales: { x: { display: false }, y: { display: false } }
                 }
@@ -439,6 +474,29 @@
             animateNumber($('#kpiDrivers'),     kpis.total_drivers);
             animateNumber($('#kpiStates'),      kpis.total_states);
             animateNumber($('#kpiPrograms'),    kpis.total_programs);
+
+            // Render trend pills
+            function renderTrend(wrapperId, containerId, trend) {
+                const wrapper = $(wrapperId);
+                const container = $(containerId).empty();
+                if (!trend || trend.dir === 'neutral') {
+                    wrapper.attr('style', 'display: none !important;');
+                    return;
+                }
+                const icon = trend.dir === 'up' ? '↗' : '↘';
+                const cls = trend.dir === 'up' ? 'kpi-bitcoin-trend-up' : 'kpi-bitcoin-trend-down';
+                container.append(`<div class="kpi-bitcoin-trend-pill ${cls}">${Math.abs(trend.pct)}% ${icon}</div>`);
+                wrapper.attr('style', 'display: flex !important;');
+            }
+
+            if (kpis.trends) {
+                renderTrend('#trendWrapperInstructors', '#trendInstructors', kpis.trends.total_instructors);
+                renderTrend('#trendWrapperDrivers',     '#trendDrivers',     kpis.trends.total_drivers);
+                renderTrend('#trendWrapperStates',      '#trendStates',      kpis.trends.total_states);
+                renderTrend('#trendWrapperPrograms',    '#trendPrograms',    kpis.trends.total_programs);
+            } else {
+                $('#trendWrapperInstructors, #trendWrapperDrivers, #trendWrapperStates, #trendWrapperPrograms').attr('style', 'display: none !important;');
+            }
 
             if (trends && trends.length) {
                 renderMiniChart('miniChartInstructors', trends.map(t => t.instructors), '#f39c12');
