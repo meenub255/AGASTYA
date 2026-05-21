@@ -63,8 +63,8 @@
             </span>
             <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
             <span id="drilldownRegionLabel" style="font-size:13px; font-weight:600; color:#1e3a8a;"></span>
-            <button onclick="clearDrilldown()" class="btn btn-sm ml-auto"
-                style="background: #f1f5f9; border:1px solid #e2e8f0; color:#64748b; font-size:11px; padding:3px 10px; border-radius:20px;">
+            <button onclick="clearDrilldown()" class="btn btn-md ml-auto clear-drilldown-btn"
+                style="background: #991b1b; border: 1px solid #991b1b; color: #ffffff; font-weight: 600; font-size: 15px; padding: 10px 24px; border-radius: 24px; transition: all 0.2s ease-in-out; box-shadow: 0 2px 4px rgba(153, 27, 27, 0.2);">
                 <i class="fas fa-times mr-1"></i>Clear Selection
             </button>
         </div>
@@ -169,6 +169,13 @@
 </div>
 
 <style>
+    .clear-drilldown-btn:hover {
+        background: #7f1d1d !important;
+        border-color: #7f1d1d !important;
+        color: #ffffff !important;
+        transform: scale(1.03);
+        box-shadow: 0 4px 12px rgba(127, 29, 29, 0.3) !important;
+    }
     .content-header { display: none !important; }
     .select2-container--open { z-index: 9999 !important; }
 </style>
