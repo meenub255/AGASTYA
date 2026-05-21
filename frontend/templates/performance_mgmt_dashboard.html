@@ -526,6 +526,7 @@
             if (miniCharts[canvasId]) miniCharts[canvasId].destroy();
             miniCharts[canvasId] = new Chart(ctx, {
                 type: 'line',
+                plugins: [ChartDataLabels],
                 data: {
                     labels: dataPoints.map((_, i) => i),
                     datasets: [{
@@ -540,10 +541,37 @@
                 },
                 options: {
                     maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            left: 15,
+                            right: 15,
+                            top: 10,
+                            bottom: 10
+                        }
+                    },
                     plugins: { 
                         legend: { display: false }, 
                         tooltip: { enabled: false },
-                        datalabels: { display: false } // Explicitly disable labels within KPIs
+                        datalabels: {
+                            display: function(context) {
+                                return context.dataIndex === 0 || context.dataIndex === context.dataset.data.length - 1;
+                            },
+                            align: function(context) {
+                                return context.dataIndex === 0 ? 'right' : 'left';
+                            },
+                            anchor: function(context) {
+                                return context.dataIndex === 0 ? 'start' : 'end';
+                            },
+                            offset: 4,
+                            color: color,
+                            font: {
+                                size: 10,
+                                weight: 'bold'
+                            },
+                            formatter: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
                     },
                     scales: { x: { display: false }, y: { display: false } }
                 }
