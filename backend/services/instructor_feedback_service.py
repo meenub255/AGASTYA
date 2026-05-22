@@ -75,15 +75,6 @@ def get_instructor_feedback_data(instructor_name=None, years=None, limit=15, off
             search_sql = inner_search_sql
             search_params = inner_search_params
             if inner_sort_sql:
-                # Map frontend aliases to DB columns if needed
-                mapping = {
-                    "instructor_name": "u.user_name",
-                    "session_date": "d.full_date",
-                    "school_name": "sc.school_name",
-                    "activity_name": "a.activity_name"
-                }
-                for alias, db_col in mapping.items():
-                    inner_sort_sql = inner_sort_sql.replace(alias, db_col)
                 sort_sql = inner_sort_sql
 
         total_count = fetch_one(f"""
