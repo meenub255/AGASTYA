@@ -87,7 +87,7 @@ def get_attendance_data(region=None, area=None, years=None, month=None, limit=15
     if dt_params:
         # Define searchable and sortable columns (must match the SELECT aliases)
         searchable_cols = ["u.user_name", "g.region_name", "g.area_name"]
-        sortable_cols = ["u.user_name", "g.region_name", "g.area_name", "days_present", "total_sessions"]
+        sortable_cols = ["instructor_name", "region", "area", "days_present", "total_sessions"]
         
         # We need a subquery or HAVING to search/sort by aggregates if we want to be fancy,
         # but for now let's use a subquery for the full joined set.
