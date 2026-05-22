@@ -137,7 +137,7 @@ def get_nationwide_data(years=None, region=None, limit=15, offset=0, dt_params=N
         
         if dt_params:
             searchable_cols = ["COALESCE(g.region_name,'Unknown')"]
-            sortable_cols = ["region_name", "sessions", "schools_visited", "students_reached", "instructors", "programs", "drivers"]
+            sortable_cols = ["region_name", "sessions", "schools_visited", "students_reached", "instructors", "drivers", "programs"]
             
             inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
             search_sql = inner_search_sql

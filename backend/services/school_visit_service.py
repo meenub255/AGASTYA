@@ -138,11 +138,11 @@ def get_school_visit_data(region=None, area=None, program=None, years=None, mont
     # DataTable Logic
     search_sql = "TRUE"
     search_params = []
-    sort_sql = "ORDER BY school_name, program_name, class_name, section_name"
+    sort_sql = "ORDER BY region_name, area_name, program_name, school_name"
     
     if dt_params:
-        searchable_cols = ["s.school_name", "p.program_name", "e.class_name", "e.section_name"]
-        sortable_cols = ["school_name", "program_name", "class_name", "section_name", "sessions", "exposures"]
+        searchable_cols = ["s.school_name", "p.program_name", "g.region_name", "g.area_name"]
+        sortable_cols = ["region_name", "area_name", "program_name", "school_name", "students_reached"]
         
         inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
         search_sql = inner_search_sql
@@ -161,7 +161,7 @@ def get_school_visit_data(region=None, area=None, program=None, years=None, mont
             LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
             WHERE {where_sql} AND {search_sql}
-            GROUP BY s.school_name, p.program_name, e.class_name, e.section_name
+            GROUP BY g.region_name, g.area_name, p.program_name, s.school_name
         ) as sub
     """
     total_count = fetch_one(count_sql, params + search_params).get("count", 0)
@@ -169,12 +169,11 @@ def get_school_visit_data(region=None, area=None, program=None, years=None, mont
     # Get paginated data
     sql = f"""
         SELECT 
-            COALESCE(s.school_name, 'Unknown') as school_name,
+            COALESCE(g.region_name, 'Unknown') as region_name,
+            COALESCE(g.area_name, 'Unknown') as area_name,
             COALESCE(p.program_name, 'Unknown') as program_name,
-            COALESCE(e.class_name, 'N/A') as class_name,
-            COALESCE(e.section_name, 'N/A') as section_name,
-            COUNT(DISTINCT f.session_nk_id) as sessions,
-            SUM(COALESCE(e.total_exposure_count, 0)) as exposures
+            COALESCE(s.school_name, 'Unknown') as school_name,
+            SUM(COALESCE(e.total_exposure_count, 0)) as students_reached
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
@@ -182,7 +181,7 @@ def get_school_visit_data(region=None, area=None, program=None, years=None, mont
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
         WHERE {where_sql} AND {search_sql}
-        GROUP BY s.school_name, p.program_name, e.class_name, e.section_name
+        GROUP BY g.region_name, g.area_name, p.program_name, s.school_name
         {sort_sql}
         LIMIT %s OFFSET %s
     """

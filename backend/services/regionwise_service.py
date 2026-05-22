@@ -47,7 +47,7 @@ def get_regionwise_filters(region_name=None):
 
 
 def get_regionwise_data(region=None, area=None, years=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import get_list_filter_clause
+    from backend.services.query_utils import get_list_filter_clause, get_datatables_sql
     try:
         clauses = []
         params = []
@@ -112,6 +112,20 @@ def get_regionwise_data(region=None, area=None, years=None, month=None, limit=15
             {"label": "Avg Session (min)",      "value": float(kpi_row.get("avg_duration", 0) or 0),  "icon": "fas fa-clock",              "color": "bg-danger", "status": dur_status, "reason": dur_reason},
         ]
 
+        # DataTables search and sort
+        search_sql = "TRUE"
+        search_params = []
+        sort_sql = "ORDER BY sessions DESC"
+        
+        if dt_params:
+            searchable_cols = ["g.region_name", "g.area_name", "p.program_name"]
+            sortable_cols = ["region_name", "area_name", "program_name", "sessions", "schools", "exposure", "demo_sessions", "hands_on_sessions"]
+            inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+            search_sql = inner_search_sql
+            search_params = inner_search_params
+            if inner_sort_sql:
+                sort_sql = inner_sort_sql
+
         total_count = fetch_one(f"""
             SELECT COUNT(*) FROM (
                 SELECT g.region_name, g.area_name, p.program_name
@@ -119,10 +133,10 @@ def get_regionwise_data(region=None, area=None, years=None, month=None, limit=15
                 LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
                 LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
                 LEFT JOIN {DW}.dim_program p    ON f.sk_program_id = p.sk_program_id
-                WHERE {where_sql}
+                WHERE {where_sql} AND {search_sql}
                 GROUP BY g.region_name, g.area_name, p.program_name
             ) AS sub
-        """, params).get("count", 0)
+        """, params + search_params).get("count", 0)
 
         table = fetch_all(f"""
             SELECT
@@ -139,11 +153,11 @@ def get_regionwise_data(region=None, area=None, years=None, month=None, limit=15
             LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
             LEFT JOIN {DW}.dim_program p    ON f.sk_program_id = p.sk_program_id
             LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-            WHERE {where_sql}
+            WHERE {where_sql} AND {search_sql}
             GROUP BY g.region_name, g.area_name, p.program_name
-            ORDER BY sessions DESC
+            {sort_sql}
             LIMIT %s OFFSET %s
-        """, params + [limit, offset])
+        """, params + search_params + [limit, offset])
 
         # Chart 1: Sessions by Program (bar chart)
         sessions_by_program = fetch_all(f"""

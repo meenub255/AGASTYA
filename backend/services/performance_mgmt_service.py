@@ -197,33 +197,75 @@ def get_performance_mgmt_data(region=None, years=None, month=None, quarter=None,
         prev_sessions = int(prev_kpi_row.get("total_sessions", 0) or 0)
         prev_avg = round(prev_sessions / prev_instructors, 1) if prev_instructors else 0
         prev_students = int(prev_kpi_row.get("total_students", 0) or 0)
+
+        # Compute monthly averages for trend comparison
+        # Count distinct active months in both the current and previous periods
+        curr_month_count = fetch_one(f"""
+            SELECT COUNT(DISTINCT d.month_actual) AS active_months
+            FROM {DW}.fact_session f
+            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
+            WHERE {where_sql}
+        """, params).get("active_months", 1) or 1
+        curr_month_count = max(int(curr_month_count), 1)
+
+        prev_month_count = fetch_one(f"""
+            SELECT COUNT(DISTINCT d.month_actual) AS active_months
+            FROM {DW}.fact_session f
+            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
+            WHERE {prev_where_sql}
+        """, prev_params).get("active_months", 1) or 1
+        prev_month_count = max(int(prev_month_count), 1)
+
+        # Monthly averages
+        curr_inst_avg  = round(total_instructors / curr_month_count, 1)
+        prev_inst_avg  = round(prev_instructors / prev_month_count, 1)
+        curr_sess_avg  = round(total_sessions / curr_month_count, 1)
+        prev_sess_avg  = round(prev_sessions / prev_month_count, 1)
+        total_students_val = int(kpi_row.get("total_students", 0) or 0)
+        curr_stu_avg   = round(total_students_val / curr_month_count, 1)
+        prev_stu_avg   = round(prev_students / prev_month_count, 1)
         
         # Determine overall average trend for dynamic coloring
         overall_trend = calc_trend(avg_per_inst, prev_avg)
         
         # Base logic: If ANY filter (year, month, region, quarter) is applied, we switch from Orange.
-        is_filtered = True if (year and len(year) > 0) or (month and len(month) > 0) or (region and len(region) > 0) or (quarter and len(quarter) > 0) else False
+        is_filtered = True if (years and len(years) > 0) or (month and len(month) > 0) or (region and len(region) > 0) or (quarter and len(quarter) > 0) else False
 
         kpis = [
             {
-                "label": "Total Instructors", "value": total_instructors, "icon": "fas fa-users", "color": "bg-info",
-                "trend": calc_trend(total_instructors, prev_instructors),
-                "insights": {"top_performing": top_region, "status": inst_status, "reason": inst_reason}
+                "label": "Instructors", "subtitle": "Total Active",
+                "value": total_instructors, "icon": "fas fa-users", "color": "bg-info",
+                "trend": calc_trend(curr_inst_avg, prev_inst_avg),
+                "insights": {
+                    "top_performing": top_region, "status": inst_status, "reason": inst_reason,
+                    "curr_avg": curr_inst_avg, "prev_avg": prev_inst_avg
+                }
             },
             {
-                "label": "Avg Sessions/Instructor", "value": avg_per_inst, "icon": "fas fa-chart-line", "color": "bg-success",
+                "label": "Avg Sessions", "subtitle": "Per Instructor",
+                "value": avg_per_inst, "icon": "fas fa-chart-line", "color": "bg-success",
                 "trend": calc_trend(avg_per_inst, prev_avg),
                 "insights": {"top_performing": top_region, "status": avg_status, "reason": avg_reason}
             },
             {
-                "label": "Total Sessions", "value": total_sessions, "icon": "fas fa-chalkboard-teacher", "color": "bg-navy-blue",
-                "trend": calc_trend(total_sessions, prev_sessions),
-                "insights": {"top_performing": top_region, "status": sess_status, "reason": sess_reason}
+                "label": "Sessions", "subtitle": "Total Delivered",
+                "value": total_sessions, "icon": "fas fa-chalkboard-teacher", "color": "bg-navy-blue",
+                "trend": calc_trend(curr_sess_avg, prev_sess_avg),
+                "insights": {
+                    "top_performing": top_region, "status": sess_status, "reason": sess_reason,
+                    "curr_avg": curr_sess_avg, "prev_avg": prev_sess_avg
+                }
             },
             {
-                "label": "Total Students Impacted", "value": int(kpi_row.get("total_students", 0) or 0), "icon": "fas fa-user-graduate", "color": "bg-danger",
-                "trend": calc_trend(int(kpi_row.get("total_students", 0) or 0), prev_students),
-                "insights": {"top_performing": top_region, "status": stu_status, "reason": stu_reason}
+                "label": "Students", "subtitle": "Total Impacted",
+                "value": total_students_val, "icon": "fas fa-user-graduate", "color": "bg-danger",
+                "trend": calc_trend(curr_stu_avg, prev_stu_avg),
+                "insights": {
+                    "top_performing": top_region, "status": stu_status, "reason": stu_reason,
+                    "curr_avg": curr_stu_avg, "prev_avg": prev_stu_avg
+                }
             },
         ]
 
