@@ -49,20 +49,67 @@
         <!-- Data Visualization Area -->
         <div class="col-md-10">
             <!-- KPI Cards -->
-            <div id="kpi_container" class="row">
-                <!-- KPIs will be injected here -->
-                <div class="col-lg-3 col-6">
-                    <div class="small-box bg-info">
-                        <div class="inner">
-                            <h3 id="total_instructors">0</h3>
-                            <p>Total Instructors</p>
+            <div id="kpi_container" class="row mb-4">
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="kpi-card-bitcoin" id="kpiCardTotalInstructors">
+                        <div class="kpi-bitcoin-header">
+                            <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="kpi-bitcoin-title-box">
+                                <span class="kpi-bitcoin-label">Instructors</span>
+                                <span class="kpi-bitcoin-sublabel">Total Active</span>
+                            </div>
                         </div>
-                        <div class="icon">
-                            <i class="fas fa-users"></i>
-                        </div>
+                        <div class="kpi-bitcoin-value" id="total_instructors">0</div>
+                        <div class="kpi-mini-chart"><canvas id="miniChartInstructors"></canvas></div>
                     </div>
                 </div>
-                <!-- ... other KPI placeholders ... -->
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="kpi-card-bitcoin" id="kpiCardTotalDays">
+                        <div class="kpi-bitcoin-header">
+                            <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="kpi-bitcoin-title-box">
+                                <span class="kpi-bitcoin-label">Working Days</span>
+                                <span class="kpi-bitcoin-sublabel">Total Field Days</span>
+                            </div>
+                        </div>
+                        <div class="kpi-bitcoin-value" id="total_working_days">0</div>
+                        <div class="kpi-mini-chart"><canvas id="miniChartWorkDays"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="kpi-card-bitcoin" id="kpiCardAvgDays">
+                        <div class="kpi-bitcoin-header">
+                            <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <div class="kpi-bitcoin-title-box">
+                                <span class="kpi-bitcoin-label">Avg Days</span>
+                                <span class="kpi-bitcoin-sublabel">Per Instructor</span>
+                            </div>
+                        </div>
+                        <div class="kpi-bitcoin-value" id="avg_days_per_instructor">0</div>
+                        <div class="kpi-mini-chart"><canvas id="miniChartAvgDays"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="kpi-card-bitcoin" id="kpiCardTotalRegions">
+                        <div class="kpi-bitcoin-header">
+                            <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="kpi-bitcoin-title-box">
+                                <span class="kpi-bitcoin-label">Regions</span>
+                                <span class="kpi-bitcoin-sublabel">Active Coverage</span>
+                            </div>
+                        </div>
+                        <div class="kpi-bitcoin-value" id="total_regions">0</div>
+                        <div class="kpi-mini-chart"><canvas id="miniChartRegions"></canvas></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Granular Data Table -->

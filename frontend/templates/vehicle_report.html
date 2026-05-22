@@ -23,40 +23,64 @@
 
     <!-- KPI Cards -->
     <div class="row mb-4">
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-info kpi-card" id="kpiCardTotalKMs" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiTotalKMs">0</h3>
-                    <p>Total KMs</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardTotalKMs">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                        <i class="fas fa-road"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Total KMs</span>
+                        <span class="kpi-bitcoin-sublabel">Distance Travelled</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-road"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiTotalKMs">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartKMs"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-success kpi-card" id="kpiCardAvgKmDay" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiAvgKmDay">0</h3>
-                    <p>Avg KM/Day</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardAvgKmDay">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Avg KM/Day</span>
+                        <span class="kpi-bitcoin-sublabel">Daily Average</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-tachometer-alt"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiAvgKmDay">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartAvgKm"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-navy-blue kpi-card" id="kpiCardFuelQty" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiFuelQty">0</h3>
-                    <p>Fuel Qty (L)</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardFuelQty">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                        <i class="fas fa-gas-pump"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Fuel Qty</span>
+                        <span class="kpi-bitcoin-sublabel">Litres Consumed</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-gas-pump"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiFuelQty">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartFuelQty"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-danger kpi-card" id="kpiCardFuelCost" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiFuelCost">0</h3>
-                    <p>Fuel Cost (₹)</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardFuelCost">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                        <i class="fas fa-rupee-sign"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Fuel Cost</span>
+                        <span class="kpi-bitcoin-sublabel">Total (&#8377;)</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-rupee-sign"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiFuelCost">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartFuelCost"></canvas></div>
             </div>
         </div>
     </div>

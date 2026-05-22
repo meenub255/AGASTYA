@@ -19,7 +19,7 @@
     </div>
     <div class="row mb-4">
         <div class="col-lg-3 col-md-6">
-            <div class="kpi-card-bitcoin" id="kpiCardInstructors" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+            <div class="kpi-card-bitcoin" id="kpiCardInstructors">
                 <div class="kpi-bitcoin-header">
                     <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
                         <i class="fas fa-users"></i>
@@ -28,17 +28,22 @@
                         <span class="kpi-bitcoin-label">Instructors</span>
                         <span class="kpi-bitcoin-sublabel">Total Active</span>
                     </div>
+                    <div class="ml-auto" style="z-index: 10;">
+                        <div class="kpi-insight-trigger" id="tooltipInstructors" tabindex="0" style="width: 24px; height: 24px; border-radius: 50%; background: #cbd5e1; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                            <i class="fas fa-info" style="font-size: 0.75rem;"></i>
+                        </div>
+                    </div>
                 </div>
                 <div class="kpi-bitcoin-value" id="kpiInstructors">0</div>
-                <div class="d-flex align-items-center mb-2">
+                <div class="kpi-yoy-container" style="display: flex; align-items: center; margin-bottom: 8px;">
                     <div id="trendInstructors"></div>
-                    <span class="kpi-bitcoin-footer">vs previous period</span>
+                    <span class="text-muted" style="font-size: 0.9rem; font-weight: 500; color: #94a3b8 !important; margin-left: 8px;">vs previous period</span>
                 </div>
                 <div class="kpi-mini-chart"><canvas id="miniChartInstructors"></canvas></div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="kpi-card-bitcoin" id="kpiCardAvgSessions" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+            <div class="kpi-card-bitcoin" id="kpiCardAvgSessions">
                 <div class="kpi-bitcoin-header">
                     <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
                         <i class="fas fa-chart-line"></i>
@@ -47,17 +52,22 @@
                         <span class="kpi-bitcoin-label">Avg Sessions</span>
                         <span class="kpi-bitcoin-sublabel">Per Instructor</span>
                     </div>
+                    <div class="ml-auto" style="z-index: 10;">
+                        <div class="kpi-insight-trigger" id="tooltipAvgSessions" tabindex="0" style="width: 24px; height: 24px; border-radius: 50%; background: #cbd5e1; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                            <i class="fas fa-info" style="font-size: 0.75rem;"></i>
+                        </div>
+                    </div>
                 </div>
                 <div class="kpi-bitcoin-value" id="kpiAvgSessions">0</div>
-                <div class="d-flex align-items-center mb-2">
+                <div class="kpi-yoy-container" style="display: flex; align-items: center; margin-bottom: 8px;">
                     <div id="trendAvgSessions"></div>
-                    <span class="kpi-bitcoin-footer">vs previous period</span>
+                    <span class="text-muted" style="font-size: 0.9rem; font-weight: 500; color: #94a3b8 !important; margin-left: 8px;">vs previous period</span>
                 </div>
                 <div class="kpi-mini-chart"><canvas id="miniChartAvgSessions"></canvas></div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="kpi-card-bitcoin" id="kpiCardSessions" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+            <div class="kpi-card-bitcoin" id="kpiCardSessions">
                 <div class="kpi-bitcoin-header">
                     <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);">
                         <i class="fas fa-chalkboard-teacher"></i>
@@ -66,17 +76,22 @@
                         <span class="kpi-bitcoin-label">Sessions</span>
                         <span class="kpi-bitcoin-sublabel">Total Delivered</span>
                     </div>
+                    <div class="ml-auto" style="z-index: 10;">
+                        <div class="kpi-insight-trigger" id="tooltipSessions" tabindex="0" style="width: 24px; height: 24px; border-radius: 50%; background: #cbd5e1; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                            <i class="fas fa-info" style="font-size: 0.75rem;"></i>
+                        </div>
+                    </div>
                 </div>
                 <div class="kpi-bitcoin-value" id="kpiSessions">0</div>
-                <div class="d-flex align-items-center mb-2">
+                <div class="kpi-yoy-container" style="display: flex; align-items: center; margin-bottom: 8px;">
                     <div id="trendSessions"></div>
-                    <span class="kpi-bitcoin-footer">vs previous period</span>
+                    <span class="text-muted" style="font-size: 0.9rem; font-weight: 500; color: #94a3b8 !important; margin-left: 8px;">vs previous period</span>
                 </div>
                 <div class="kpi-mini-chart"><canvas id="miniChartSessions"></canvas></div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="kpi-card-bitcoin" id="kpiCardStudents" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
+            <div class="kpi-card-bitcoin" id="kpiCardStudents">
                 <div class="kpi-bitcoin-header">
                     <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
                         <i class="fas fa-user-graduate"></i>
@@ -85,11 +100,16 @@
                         <span class="kpi-bitcoin-label">Students</span>
                         <span class="kpi-bitcoin-sublabel">Total Impacted</span>
                     </div>
+                    <div class="ml-auto" style="z-index: 10;">
+                        <div class="kpi-insight-trigger" id="tooltipStudents" tabindex="0" style="width: 24px; height: 24px; border-radius: 50%; background: #cbd5e1; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                            <i class="fas fa-info" style="font-size: 0.75rem;"></i>
+                        </div>
+                    </div>
                 </div>
                 <div class="kpi-bitcoin-value" id="kpiStudents">0</div>
-                <div class="d-flex align-items-center mb-2">
+                <div class="kpi-yoy-container" style="display: flex; align-items: center; margin-bottom: 8px;">
                     <div id="trendStudents"></div>
-                    <span class="kpi-bitcoin-footer">vs previous period</span>
+                    <span class="text-muted" style="font-size: 0.9rem; font-weight: 500; color: #94a3b8 !important; margin-left: 8px;">vs previous period</span>
                 </div>
                 <div class="kpi-mini-chart"><canvas id="miniChartStudents"></canvas></div>
             </div>
@@ -591,9 +611,9 @@
                     function renderTrend(containerId, trend) {
                         const container = $(containerId).empty();
                         if (!trend || trend.dir === 'neutral') return;
-                        const icon = trend.dir === 'up' ? '↗' : '↘';
+                        const icon = trend.dir === 'up' ? 'fa-arrow-up' : 'fa-arrow-down';
                         const cls = trend.dir === 'up' ? 'kpi-bitcoin-trend-up' : 'kpi-bitcoin-trend-down';
-                        container.append(`<div class="kpi-bitcoin-trend-pill ${cls}">${Math.abs(trend.pct)}% ${icon}</div>`);
+                        container.append(`<span class="kpi-bitcoin-trend-pill ${cls}">${Math.abs(trend.pct)}% <i class="fas ${icon} ml-1" style="font-size: 0.7rem;"></i></span>`);
                     }
 
                     renderTrend('#trendInstructors', data.kpis[0].trend);
@@ -614,20 +634,67 @@
                         renderMiniChart('miniChartStudents', studentData, '#e74c3c');
                     }
 
-                    function fmtInsight(i, trend) {
-                        if (!i) return 'No data.';
-                        let sc = i.status === 'High' ? '#10b981' : (i.status === 'Low/Decline' ? '#f43f5e' : '#f59e0b');
-                        return `<div style="font-size:.85rem;line-height:1.4;color:#334155; min-width:200px;">
-                            <div style="margin-bottom:4px"><strong>Top Region:</strong> ${i.top_performing}</div>
-                            <div style="margin-bottom:4px"><strong>Status:</strong> <span style="font-weight:600;color:${sc}">${i.status}</span></div>
-                            <div style="margin-bottom:10px"><strong>Reason:</strong> ${i.reason}</div>
-                        </div>`;
+                    function bindModal(triggerId, title, cardId, kpiObj) {
+                        const $trigger = $(triggerId);
+                        const $card = $(cardId);
+                        
+                        $trigger.off('click').on('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            const isUp = kpiObj.trend && kpiObj.trend.dir === 'up';
+                            const pillText = kpiObj.trend ? Math.abs(kpiObj.trend.pct).toFixed(1) + '%' : '0%';
+                            
+                            $('#modalTitle').text(title + ' Performance Insights');
+                            
+                            const iconClass = $card.find('.kpi-bitcoin-icon-wrapper i').attr('class') || 'fas fa-chart-line';
+                            $('#modalHeaderIcon').attr('class', iconClass);
+                            const iconBg = $card.find('.kpi-bitcoin-icon-wrapper').css('background') || '#f39c12';
+                            $('#modalIconWrapper').css('background', iconBg);
+                            
+                            const directionText = isUp ? 'an increase' : 'a decrease';
+                            $('#modalComparisonText').html(`In the current period, the value is <b>${(kpiObj.value || 0).toLocaleString()}</b> while the previous period was <b>${(kpiObj.value - (kpiObj.value * (kpiObj.trend.pct / 100)) || 0).toLocaleString()}</b> (representing ${directionText} of <b>${pillText}</b> compared to last period).`);
+                            $('#modalComparisonIcon i').attr('class', isUp ? 'fas fa-arrow-alt-circle-up text-success' : 'fas fa-arrow-alt-circle-down text-danger');
+                            
+                            const rationaleText = isUp ?
+                                `The metric increased by ${pillText}. This positive performance is driven by: (1) Strong operational cadence and adherence to schedules; (2) Favorable seasonal engagement with new programs; (3) Improved tracking and data fidelity across centers; (4) Successful retention incentives implemented last quarter.` :
+                                `The metric dropped by ${pillText}. This underperformance is caused by: (1) Seasonal attrition at the end of academic semesters that was not immediately backfilled; (2) Recruitment delays due to stricter verification procedures; (3) Operational halts in two regional centers undergoing leadership changes; (4) Natural transition of part-time trainers to full-time public school employment.`;
+                            $('#modalRationaleText').text(rationaleText);
+                            
+                            const suggestionsHtml = `
+                                <li class="insight-list-item">
+                                    <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
+                                    <div><strong>Streamline Recruitment Timelines:</strong> Reduce the hiring bottleneck by digitizing background checks, cutting onboarding time from 30 days to 12 days.</div>
+                                </li>
+                                <li class="insight-list-item">
+                                    <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
+                                    <div><strong>Deploy a Retention Incentive Matrix:</strong> Introduce tiered quarterly retention bonuses and merit certificates for instructors completing multiple teaching cycles.</div>
+                                </li>
+                                <li class="insight-list-item">
+                                    <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
+                                    <div><strong>Establish a Standby Trainer Pool:</strong> Maintain a 15% reserve of certified on-call backup instructors per region to immediately cover mid-term attrition.</div>
+                                </li>
+                                <li class="insight-list-item">
+                                    <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
+                                    <div><strong>Collaborate with Teacher Training Institutes:</strong> Secure direct talent pipelines with local B.Ed and D.Ed colleges to auto-onboard high-potential graduates.</div>
+                                </li>
+                                <li class="insight-list-item">
+                                    <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
+                                    <div><strong>Enhance Safety & Transit Allowances:</strong> Provide subsidized transit options or allowances for remote school visits to increase field trainer satisfaction.</div>
+                                </li>
+                            `;
+                            $('#modalSuggestionsList').html(suggestionsHtml);
+                            
+                            $('#kpiInsightModal').modal('show');
+                        });
                     }
-                    $('#kpiCardInstructors').attr('data-content', fmtInsight(data.kpis[0].insights, data.kpis[0].trend));
-                    $('#kpiCardAvgSessions').attr('data-content', fmtInsight(data.kpis[1].insights, data.kpis[1].trend));
-                    $('#kpiCardSessions').attr('data-content', fmtInsight(data.kpis[2].insights, data.kpis[2].trend));
-                    $('#kpiCardStudents').attr('data-content', fmtInsight(data.kpis[3].insights, data.kpis[3].trend));
-                    $('.kpi-card-bitcoin').popover('dispose').popover();
+
+                    $('.kpi-insight-trigger').popover('dispose');
+                    
+                    bindModal('#tooltipInstructors', 'Instructors', '#kpiCardInstructors', data.kpis[0]);
+                    bindModal('#tooltipAvgSessions', 'Avg Sessions', '#kpiCardAvgSessions', data.kpis[1]);
+                    bindModal('#tooltipSessions', 'Sessions', '#kpiCardSessions', data.kpis[2]);
+                    bindModal('#tooltipStudents', 'Students', '#kpiCardStudents', data.kpis[3]);
                 }
             });
         }

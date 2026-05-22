@@ -23,43 +23,68 @@
 
     <!-- KPI Cards -->
     <div class="row mb-4">
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-info kpi-card" id="kpiCardPrograms" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiTotalPrograms">0</h3>
-                    <p>Total Programs</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardPrograms">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Programs</span>
+                        <span class="kpi-bitcoin-sublabel">Total Running</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-project-diagram"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiTotalPrograms">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartPrograms"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-success kpi-card" id="kpiCardSchools" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiTotalSchools">0</h3>
-                    <p>Total Schools</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardSchools">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                        <i class="fas fa-school"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Schools</span>
+                        <span class="kpi-bitcoin-sublabel">Total Visited</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-school"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiTotalSchools">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartSchools"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-navy-blue kpi-card" id="kpiCardSessions" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiTotalSessions">0</h3>
-                    <p>Total Sessions</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardSessions">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Sessions</span>
+                        <span class="kpi-bitcoin-sublabel">Total Conducted</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiTotalSessions">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartSessions"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-danger kpi-card" id="kpiCardStudents" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiTotalStudents">0</h3>
-                    <p>Total Impacted</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardStudents">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Total Impacted</span>
+                        <span class="kpi-bitcoin-sublabel">Student Exposure</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-user-graduate"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiTotalStudents">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartStudents"></canvas></div>
             </div>
         </div>
     </div>
+
 
     <!-- Drilldown Panel -->
     <div id="drilldownPanel" style="display:none;margin-top:-10px;margin-bottom:20px;">
@@ -67,7 +92,7 @@
             <span class="text-muted" style="font-size:13px;cursor:pointer;" onclick="clearDrilldown()"><i class="fas fa-layer-group mr-1"></i>All Regions</span>
             <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
             <span id="drilldownTitle" style="font-size:13px;font-weight:600;color:#1e3a8a;"></span>
-            <button onclick="clearDrilldown()" class="btn btn-sm ml-auto" style="background:#f1f5f9;border:1px solid #e2e8f0;color:#64748b;font-size:11px;padding:3px 10px;border-radius:20px;">
+            <button onclick="clearDrilldown()" class="btn btn-sm ml-auto" style="background:#991b1b;border:none;color:#fff;font-size:12px;padding:5px 14px;border-radius:20px;font-weight:600;">
                 <i class="fas fa-times mr-1"></i>Clear Drilldown
             </button>
         </div>

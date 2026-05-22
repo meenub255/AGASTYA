@@ -21,34 +21,65 @@
         </div>
     </div>
 
-    <!-- KPI Cards -->
     <div class="row mb-4">
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-teal" id="kpiCardInstructors" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <span class="kpi-v2-val" id="kpiInstructors">0</span>
-                <span class="kpi-v2-lbl">Total Instructors</span>
-                <div class="kpi-v2-icon"><i class="fas fa-users"></i></div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardInstructors">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Total Instructors</span>
+                        <span class="kpi-bitcoin-sublabel">Active</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiInstructors">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartInstructors"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-green" id="kpiCardDrivers" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <span class="kpi-v2-val" id="kpiDrivers">0</span>
-                <span class="kpi-v2-lbl">Total Drivers</span>
-                <div class="kpi-v2-icon"><i class="fas fa-truck"></i></div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardDrivers">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Total Drivers</span>
+                        <span class="kpi-bitcoin-sublabel">Active</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiDrivers">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartDrivers"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-navy" id="kpiCardStates" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <span class="kpi-v2-val" id="kpiStates">0</span>
-                <span class="kpi-v2-lbl">States Reached</span>
-                <div class="kpi-v2-icon"><i class="fas fa-map-marker-alt"></i></div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardStates">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">States Reached</span>
+                        <span class="kpi-bitcoin-sublabel">Total States</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiStates">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartStates"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-red" id="kpiCardPrograms" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <span class="kpi-v2-val" id="kpiPrograms">0</span>
-                <span class="kpi-v2-lbl">Total Programs</span>
-                <div class="kpi-v2-icon"><i class="fas fa-project-diagram"></i></div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardPrograms">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Total Programs</span>
+                        <span class="kpi-bitcoin-sublabel">Active</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiPrograms">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartPrograms"></canvas></div>
             </div>
         </div>
     </div>
@@ -59,7 +90,7 @@
             <span class="text-muted" style="font-size:13px;cursor:pointer;" onclick="clearDrilldown()"><i class="fas fa-globe-americas mr-1"></i>All Regions</span>
             <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
             <span id="drilldownTitle" style="font-size:13px;font-weight:600;color:#1e3a8a;"></span>
-            <button onclick="clearDrilldown()" class="btn btn-sm ml-auto" style="background:#f1f5f9;border:1px solid #e2e8f0;color:#64748b;font-size:11px;padding:3px 10px;border-radius:20px;">
+            <button onclick="clearDrilldown()" class="btn btn-sm ml-auto" style="background:#991b1b;border:none;color:#fff;font-size:12px;padding:5px 14px;border-radius:20px;font-weight:600;">
                 <i class="fas fa-times mr-1"></i>Clear Drilldown
             </button>
         </div>

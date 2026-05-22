@@ -153,6 +153,10 @@ $(function () {
                 $('#kpi_total_sessions').text(data.kpis.total_sessions.toLocaleString());
                 $('#kpi_avg_students_per_state_period').text(data.kpis.avg_students_per_state_period.toLocaleString());
 
+                if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
+                    window.PramanaInsights.enhanceAllKpiCards();
+                }
+
                 // State Chart
                 const ctxState = document.getElementById('regionStateChart').getContext('2d');
                 if (window.stateChart) window.stateChart.destroy();

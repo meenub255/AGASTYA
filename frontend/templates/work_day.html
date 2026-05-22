@@ -23,43 +23,68 @@
 
     <!-- KPI Cards -->
     <div class="row mb-4">
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-info kpi-card" id="kpiCardInstructors" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiTotalInstructors">0</h3>
-                    <p>Total Instructors</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardInstructors">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Instructors</span>
+                        <span class="kpi-bitcoin-sublabel">Total Active</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-users"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiTotalInstructors">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartInstructors"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-success kpi-card" id="kpiCardWorkingDays" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiTotalWorkingDays">0</h3>
-                    <p>Working Days</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardWorkingDays">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Working Days</span>
+                        <span class="kpi-bitcoin-sublabel">Total Field Days</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-calendar-check"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiTotalWorkingDays">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartWorkDays"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-navy-blue kpi-card" id="kpiCardAvgDays" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiAvgDays">0</h3>
-                    <p>Avg Days/User</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardAvgDays">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Avg Days/User</span>
+                        <span class="kpi-bitcoin-sublabel">Utilization Rate</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-chart-line"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiAvgDays">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartAvgDays"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-danger kpi-card" id="kpiCardActiveCenters" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiActiveCenters">0</h3>
-                    <p>Active Centers</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardActiveCenters">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Active Centers</span>
+                        <span class="kpi-bitcoin-sublabel">Operational Hubs</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-map-marker-alt"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiActiveCenters">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartCenters"></canvas></div>
             </div>
         </div>
     </div>
+
 
     <!-- Table -->
     <div class="card premium-card white-chart-card shadow-sm">

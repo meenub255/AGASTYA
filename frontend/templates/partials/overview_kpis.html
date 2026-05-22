@@ -1,6 +1,45 @@
+<style>
+    .kpi-card-bitcoin {
+        position: relative !important;
+    }
+    .kpi-info-btn {
+        position: absolute !important;
+        top: 15px !important;
+        right: 15px !important;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        color: #cbd5e1 !important;
+        font-size: 1.1rem !important;
+        cursor: pointer !important;
+        z-index: 50 !important;
+        padding: 6px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        line-height: 1 !important;
+        transition: color 0.2s ease, transform 0.2s ease, background-color 0.2s ease !important;
+        width: 28px;
+        height: 28px;
+    }
+    .kpi-info-btn:hover {
+        color: #64748b !important;
+        transform: scale(1.15) !important;
+        background-color: #f1f5f9 !important;
+    }
+    .kpi-info-btn:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+</style>
+
 <div class="row">
     <div class="col-lg-3 col-md-6 mb-4">
         <a href="/instructor-overview" class="kpi-card-bitcoin" id="kpiCardInstructors" style="text-decoration:none;">
+            <button type="button" class="kpi-info-btn" data-kpi="total_instructors" title="View Insights">
+                <i class="fas fa-info-circle"></i>
+            </button>
             <div class="kpi-bitcoin-header">
                 <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
                     <i class="fas fa-chalkboard-teacher"></i>
@@ -20,6 +59,9 @@
     </div>
     <div class="col-lg-3 col-md-6 mb-4">
         <a href="/operations-overview" class="kpi-card-bitcoin" id="kpiCardDrivers" style="text-decoration:none;">
+            <button type="button" class="kpi-info-btn" data-kpi="total_drivers" title="View Insights">
+                <i class="fas fa-info-circle"></i>
+            </button>
             <div class="kpi-bitcoin-header">
                 <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
                     <i class="fas fa-truck"></i>
@@ -39,6 +81,9 @@
     </div>
     <div class="col-lg-3 col-md-6 mb-4">
         <div class="kpi-card-bitcoin" id="kpiCardStates">
+            <button type="button" class="kpi-info-btn" data-kpi="total_states" title="View Insights">
+                <i class="fas fa-info-circle"></i>
+            </button>
             <div class="kpi-bitcoin-header">
                 <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);">
                     <i class="fas fa-map-marked-alt"></i>
@@ -58,6 +103,9 @@
     </div>
     <div class="col-lg-3 col-md-6 mb-4">
         <a href="/program-impact-overview" class="kpi-card-bitcoin" id="kpiCardPrograms" style="text-decoration:none;">
+            <button type="button" class="kpi-info-btn" data-kpi="total_programs" title="View Insights">
+                <i class="fas fa-info-circle"></i>
+            </button>
             <div class="kpi-bitcoin-header">
                 <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
                     <i class="fas fa-project-diagram"></i>

@@ -61,43 +61,68 @@
 
     <!-- KPI Cards -->
     <div class="row mb-4">
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-info kpi-card">
-                <div class="inner">
-                    <h3 id="kpiDaysWorked">0</h3>
-                    <p>Days Worked</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardDaysWorked">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Days Worked</span>
+                        <span class="kpi-bitcoin-sublabel">Total Field Days</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-calendar-alt"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiDaysWorked">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartDaysWorked"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-success kpi-card">
-                <div class="inner">
-                    <h3 id="kpiNoOfSessions">0</h3>
-                    <p>Total Sessions</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardSessions">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Total Sessions</span>
+                        <span class="kpi-bitcoin-sublabel">Conducted</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiNoOfSessions">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartSessions"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-indigo kpi-card" style="background: #6366f1 !important; color:white;">
-                <div class="inner">
-                    <h3 id="kpiSchoolExposures">0</h3>
-                    <p>School Exposures</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardSchoolExposures">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+                        <i class="fas fa-school"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">School Exposures</span>
+                        <span class="kpi-bitcoin-sublabel">Classroom Reach</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-school"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiSchoolExposures">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartSchoolExp"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-danger kpi-card">
-                <div class="inner">
-                    <h3 id="kpiCombinedExposures">0</h3>
-                    <p>Combined Exposures</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardCombinedExposures">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Combined Exposures</span>
+                        <span class="kpi-bitcoin-sublabel">Total Impact</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-users"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiCombinedExposures">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartCombExp"></canvas></div>
             </div>
         </div>
     </div>
+
 
     <!-- Main Table Card -->
     <div class="card premium-card white-chart-card shadow-sm">

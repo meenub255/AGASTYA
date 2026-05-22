@@ -23,43 +23,68 @@
 
     <!-- KPI Cards -->
     <div class="row mb-4">
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-info kpi-card" id="kpiCardSessions" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiTotalSessions">0</h3>
-                    <p>Total Sessions</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardSessions">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Total Sessions</span>
+                        <span class="kpi-bitcoin-sublabel">All Regions</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-clock"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiTotalSessions">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartSessions"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-success kpi-card" id="kpiCardExposure" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiSchoolsExposure">0</h3>
-                    <p>Schools Exposure</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardExposure">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Schools Exposure</span>
+                        <span class="kpi-bitcoin-sublabel">Classroom Reach</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-user-graduate"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiSchoolsExposure">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartExposure"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-navy-blue kpi-card" id="kpiCardSF" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiScienceFairs">0</h3>
-                    <p>Science Fairs</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardSF">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                        <i class="fas fa-flask"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Science Fairs</span>
+                        <span class="kpi-bitcoin-sublabel">Events Organized</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-flask"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiScienceFairs">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartSF"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-danger kpi-card" id="kpiCardTTP" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <div class="inner">
-                    <h3 id="kpiTeacherTraining">0</h3>
-                    <p>Teacher Training</p>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardTTP">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Teacher Training</span>
+                        <span class="kpi-bitcoin-sublabel">TTP Sessions</span>
+                    </div>
                 </div>
-                <div class="icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                <div class="kpi-bitcoin-value" id="kpiTeacherTraining">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartTTP"></canvas></div>
             </div>
         </div>
     </div>
+
 
     <!-- Table -->
     <div class="card premium-card white-chart-card shadow-sm">

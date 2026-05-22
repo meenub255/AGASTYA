@@ -183,6 +183,10 @@
                     $('#sessionActiveRegions').text(data.kpis.active_regions);
                     $('#sessionPrograms').text(data.kpis.total_programs);
 
+                    if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
+                        window.PramanaInsights.enhanceAllKpiCards();
+                    }
+
                     // Monthly Chart
                     const ctxMonthly = document.getElementById('sessionMonthlyChart').getContext('2d');
                     if (window.monthlyChart) window.monthlyChart.destroy();

@@ -21,34 +21,65 @@
         </div>
     </div>
 
-    <!-- KPI Cards -->
     <div class="row mb-4">
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-teal" id="kpiCardSchools" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <span class="kpi-v2-val" id="kpiTotalSchools">0</span>
-                <span class="kpi-v2-lbl">Total Schools</span>
-                <div class="kpi-v2-icon"><i class="fas fa-school"></i></div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardSchools">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                        <i class="fas fa-school"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Total Schools</span>
+                        <span class="kpi-bitcoin-sublabel">Active</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiTotalSchools">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartSchools"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-green" id="kpiCardStudents" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <span class="kpi-v2-val" id="kpiTotalStudents">0</span>
-                <span class="kpi-v2-lbl">Total Students</span>
-                <div class="kpi-v2-icon"><i class="fas fa-user-graduate"></i></div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardStudents">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Total Students</span>
+                        <span class="kpi-bitcoin-sublabel">Student Exposure</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiTotalStudents">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartStudents"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-navy" id="kpiCardSessions" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <span class="kpi-v2-val" id="kpiTotalSessions">0</span>
-                <span class="kpi-v2-lbl">Total Sessions</span>
-                <div class="kpi-v2-icon"><i class="fas fa-calendar-check"></i></div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardSessions">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Total Sessions</span>
+                        <span class="kpi-bitcoin-sublabel">Delivered</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiTotalSessions">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartSessions"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-red" id="kpiCardMonthly" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <span class="kpi-v2-val" id="kpiMonthlySessions">0</span>
-                <span class="kpi-v2-lbl">Monthly Sessions</span>
-                <div class="kpi-v2-icon"><i class="fas fa-calendar-alt"></i></div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardMonthly">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Monthly Sessions</span>
+                        <span class="kpi-bitcoin-sublabel">This Month</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiMonthlySessions">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartMonthly"></canvas></div>
             </div>
         </div>
     </div>
@@ -59,7 +90,7 @@
             <span class="text-muted" style="font-size:13px;cursor:pointer;" onclick="clearDrilldown()"><i class="fas fa-layer-group mr-1"></i>All Programs</span>
             <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
             <span id="drilldownTitle" style="font-size:13px;font-weight:600;color:#1e3a8a;"></span>
-            <button onclick="clearDrilldown()" class="btn btn-sm ml-auto" style="background:#f1f5f9;border:1px solid #e2e8f0;color:#64748b;font-size:11px;padding:3px 10px;border-radius:20px;">
+            <button onclick="clearDrilldown()" class="btn btn-sm ml-auto" style="background:#991b1b;border:none;color:#fff;font-size:12px;padding:5px 14px;border-radius:20px;font-weight:600;">
                 <i class="fas fa-times mr-1"></i>Clear Drilldown
             </button>
         </div>
@@ -459,16 +490,9 @@ $(function () {
                     $('#kpiTotalSessions').text(data.kpis[2].value.toLocaleString());
                     $('#kpiMonthlySessions').text(data.kpis[3].value.toLocaleString());
 
-                    // Update Popovers
-                    data.kpis.forEach((kpi, idx) => {
-                        const cardId = ['#kpiCardSchools','#kpiCardStudents','#kpiCardSessions','#kpiCardMonthly'][idx];
-                        $(cardId).attr('data-content', `
-                            <div class="kpi-insight">
-                                <div class="ki-status ${kpi.status.toLowerCase()}">${kpi.status}</div>
-                                <div class="ki-reason">${kpi.reason}</div>
-                            </div>
-                        `).popover('hide');
-                    });
+                    if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
+                        window.PramanaInsights.enhanceAllKpiCards();
+                    }
                 }
                 if (data.charts && !drilldownProgram) {
                     acronymMapping = {};

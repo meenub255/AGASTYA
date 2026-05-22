@@ -142,6 +142,73 @@
     {% include "partials/footer.html" %}
 </div>
 
+<!-- KPI Insights Modal -->
+<div class="modal fade" id="kpiInsightModal" tabindex="-1" role="dialog" aria-labelledby="kpiInsightModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg" style="border-radius: 16px; border: none; overflow: hidden;">
+            <div class="modal-header d-flex align-items-center insight-modal-header">
+                <div class="d-flex align-items-center">
+                    <div id="modalIconWrapper" class="mr-3 shadow-sm" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #fff;">
+                        <i id="modalHeaderIcon" class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title font-weight-bold text-white" id="modalTitle" style="font-size: 1.2rem; font-family: Inter, Arial, sans-serif;">Metric Insights</h5>
+                        <span class="text-white-50" style="font-size: 0.8rem;">Performance analysis and recommendations</span>
+                    </div>
+                </div>
+                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Close" style="opacity: 0.8; outline: none; background: none; border: none; padding: 0;">
+                    <span aria-hidden="true" style="font-size: 1.5rem;">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 2rem; background-color: #f8fafc;">
+                <!-- YoY Comparison -->
+                <div class="card insight-card">
+                    <div class="card-body d-flex align-items-start p-4">
+                        <div class="mr-3" id="modalComparisonIcon">
+                            <i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                        <div>
+                            <h6 class="font-weight-bold text-dark mb-1" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Year-over-Year Comparison</h6>
+                            <p class="text-muted mb-0" id="modalComparisonText" style="font-size: 0.95rem; line-height: 1.5;"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rationale -->
+                <div class="card insight-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="mr-2 text-warning" style="font-size: 1.15rem;">
+                                <i class="fas fa-lightbulb"></i>
+                            </div>
+                            <h6 class="font-weight-bold text-dark mb-0" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Performance Rationale</h6>
+                        </div>
+                        <p class="text-muted mb-0" id="modalRationaleText" style="line-height: 1.6; font-size: 0.95rem;"></p>
+                    </div>
+                </div>
+
+                <!-- Suggestions -->
+                <div class="card insight-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="mr-2 text-success" style="font-size: 1.15rem;">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <h6 class="font-weight-bold text-dark mb-0" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Strategic Suggestions to Improve</h6>
+                        </div>
+                        <ul class="list-unstyled mb-0" id="modalSuggestionsList">
+                            <!-- Dynamic items -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: none; background-color: #f8fafc; padding: 1rem 2rem 2rem 2rem;">
+                <button type="button" class="btn btn-secondary px-4" data-dismiss="modal" style="border-radius: 8px; font-weight: 600; font-size: 0.9rem; background-color: #64748b; border: none;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Global Custom DataTables Sort Menu -->
 <div id="dtSortMenu" class="dropdown-menu shadow-sm" style="position: absolute; display: none; z-index: 1050; min-width: 150px; font-size: 0.9rem;">
     <a class="dropdown-item py-2 dt-sort-action" href="#" data-sort="asc">

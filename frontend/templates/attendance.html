@@ -60,28 +60,84 @@
 
     <!-- KPI Cards -->
     <div id="kpiContainer" class="row mb-4">
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-info kpi-card">
-                <div class="inner"><h3 id="kpiTotalStaff">0</h3><p>Total Field Staff</p></div>
-                <div class="icon"><i class="fas fa-users-cog"></i></div>
+        <!-- Card 1: Total Field Staff -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardTotalStaff">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Field Staff</span>
+                        <span class="kpi-bitcoin-sublabel">Total Active</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiTotalStaff">0</div>
+                <div class="d-flex align-items-center mb-2" id="trendWrapperTotalStaff" style="display: none !important;">
+                    <div id="trendTotalStaff"></div>
+                    <span class="kpi-bitcoin-footer">vs previous period</span>
+                </div>
+                <div class="kpi-mini-chart"><canvas id="miniChartTotalStaff"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-success kpi-card">
-                <div class="inner"><h3 id="kpiTotalDays">0</h3><p>Cumulative Days Present</p></div>
-                <div class="icon"><i class="fas fa-calendar-check"></i></div>
+        <!-- Card 2: Cumulative Days Present -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardTotalDays">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Days Present</span>
+                        <span class="kpi-bitcoin-sublabel">Cumulative</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiTotalDays">0</div>
+                <div class="d-flex align-items-center mb-2" id="trendWrapperTotalDays" style="display: none !important;">
+                    <div id="trendTotalDays"></div>
+                    <span class="kpi-bitcoin-footer">vs previous period</span>
+                </div>
+                <div class="kpi-mini-chart"><canvas id="miniChartTotalDays"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-navy-blue kpi-card">
-                <div class="inner"><h3 id="kpiTotalSessions">0</h3><p>Total Sessions Conducted</p></div>
-                <div class="icon"><i class="fas fa-chalkboard-teacher"></i></div>
+        <!-- Card 3: Total Sessions -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardTotalSessions">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Sessions</span>
+                        <span class="kpi-bitcoin-sublabel">Total Conducted</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiTotalSessions">0</div>
+                <div class="d-flex align-items-center mb-2" id="trendWrapperTotalSessions" style="display: none !important;">
+                    <div id="trendTotalSessions"></div>
+                    <span class="kpi-bitcoin-footer">vs previous period</span>
+                </div>
+                <div class="kpi-mini-chart"><canvas id="miniChartTotalSessions"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-danger kpi-card">
-                <div class="inner"><h3 id="kpiAvgSessions">0</h3><p>Avg Sessions / Day</p></div>
-                <div class="icon"><i class="fas fa-chart-line"></i></div>
+        <!-- Card 4: Avg Sessions / Day -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardAvgSessions">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Avg / Day</span>
+                        <span class="kpi-bitcoin-sublabel">Sessions per Day</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiAvgSessions">0</div>
+                <div class="d-flex align-items-center mb-2" id="trendWrapperAvgSessions" style="display: none !important;">
+                    <div id="trendAvgSessions"></div>
+                    <span class="kpi-bitcoin-footer">vs previous period</span>
+                </div>
+                <div class="kpi-mini-chart"><canvas id="miniChartAvgSessions"></canvas></div>
             </div>
         </div>
     </div>
@@ -122,7 +178,7 @@
             <span class="text-muted" style="font-size:13px;cursor:pointer;" onclick="clearDrilldown()"><i class="fas fa-chart-bar mr-1"></i>All Data</span>
             <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
             <span id="drilldownTitle" style="font-size:13px;font-weight:600;color:#1e3a8a;"></span>
-            <button onclick="clearDrilldown()" class="btn btn-sm ml-auto" style="background:#f1f5f9;border:1px solid #e2e8f0;color:#64748b;font-size:11px;padding:3px 10px;border-radius:20px;">
+            <button onclick="clearDrilldown()" class="btn btn-sm ml-auto" style="background:#991b1b;border:none;color:#fff;font-size:12px;padding:5px 14px;border-radius:20px;font-weight:600;">
                 <i class="fas fa-times mr-1"></i>Clear Drilldown
             </button>
         </div>
