@@ -103,39 +103,49 @@
             <!-- Extra stat mini-cards (sessions, students, schools) -->
             <div class="row mb-3" id="drilldownStats">
                 <div class="col-md-4 mb-2">
-                    <div class="small-box bg-indigo shadow-sm" style="background-color: #6366f1 !important; color: white !important;">
-                        <div class="inner">
-                            <h3 id="ddSessions">0</h3>
-                            <p>Total Sessions</p>
+                    <div class="kpi-card-bitcoin" id="ddCardSessions">
+                        <div class="kpi-bitcoin-header">
+                            <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+                                <i class="fas fa-chalkboard"></i>
+                            </div>
+                            <div class="kpi-bitcoin-title-box">
+                                <span class="kpi-bitcoin-label">Sessions</span>
+                                <span class="kpi-bitcoin-sublabel">In Region</span>
+                            </div>
                         </div>
-                        <div class="icon">
-                            <i class="fas fa-chalkboard"></i>
-                        </div>
+                        <div class="kpi-bitcoin-value" id="ddSessions">0</div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-2">
-                    <div class="small-box bg-success shadow-sm" style="background-color: #10b981 !important; color: white !important;">
-                        <div class="inner">
-                            <h3 id="ddStudents">0</h3>
-                            <p>Students Reached</p>
+                    <div class="kpi-card-bitcoin" id="ddCardStudents">
+                        <div class="kpi-bitcoin-header">
+                            <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <i class="fas fa-user-graduate"></i>
+                            </div>
+                            <div class="kpi-bitcoin-title-box">
+                                <span class="kpi-bitcoin-label">Students</span>
+                                <span class="kpi-bitcoin-sublabel">Reached</span>
+                            </div>
                         </div>
-                        <div class="icon">
-                            <i class="fas fa-user-graduate"></i>
-                        </div>
+                        <div class="kpi-bitcoin-value" id="ddStudents">0</div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-2">
-                    <div class="small-box bg-warning shadow-sm" style="background-color: #f59e0b !important; color: white !important;">
-                        <div class="inner">
-                            <h3 id="ddSchools">0</h3>
-                            <p>Schools Visited</p>
+                    <div class="kpi-card-bitcoin" id="ddCardSchools">
+                        <div class="kpi-bitcoin-header">
+                            <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                                <i class="fas fa-school"></i>
+                            </div>
+                            <div class="kpi-bitcoin-title-box">
+                                <span class="kpi-bitcoin-label">Schools</span>
+                                <span class="kpi-bitcoin-sublabel">Visited</span>
+                            </div>
                         </div>
-                        <div class="icon">
-                            <i class="fas fa-school"></i>
-                        </div>
+                        <div class="kpi-bitcoin-value" id="ddSchools">0</div>
                     </div>
                 </div>
             </div>
+
 
             <!-- Program Breakdown Table -->
             <div class="card white-chart-card shadow-sm" style="border-radius: 15px; overflow: hidden;">
@@ -224,7 +234,105 @@
     .content-header {
         display: none !important;
     }
+
+    /* Modal Style overrides */
+    .insight-modal-header {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+        border-top-left-radius: 16px !important;
+        border-top-right-radius: 16px !important;
+        padding: 1.5rem 2rem !important;
+    }
+    .insight-card {
+        border-radius: 16px !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+        background: #ffffff !important;
+        margin-bottom: 1.5rem !important;
+        transition: transform 0.2s ease !important;
+    }
+    .insight-card:hover {
+        transform: translateY(-2px) !important;
+    }
+    .insight-list-item {
+        display: flex !important;
+        align-items: start !important;
+        margin-bottom: 1rem !important;
+        padding-bottom: 0.75rem !important;
+        border-bottom: 1px dashed #f1f5f9;
+    }
+    .insight-list-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
 </style>
+
+<!-- KPI Insights Modal -->
+<div class="modal fade" id="kpiInsightModal" tabindex="-1" role="dialog" aria-labelledby="kpiInsightModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg" style="border-radius: 16px; border: none; overflow: hidden;">
+            <div class="modal-header d-flex align-items-center insight-modal-header">
+                <div class="d-flex align-items-center">
+                    <div id="modalIconWrapper" class="mr-3 shadow-sm" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #fff;">
+                        <i id="modalHeaderIcon" class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title font-weight-bold text-white" id="modalTitle" style="font-size: 1.2rem; font-family: Inter, Arial, sans-serif;">Metric Insights</h5>
+                        <span class="text-white-50" style="font-size: 0.8rem;">Performance analysis and recommendations</span>
+                    </div>
+                </div>
+                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Close" style="opacity: 0.8; outline: none; background: none; border: none; padding: 0;">
+                    <span aria-hidden="true" style="font-size: 1.5rem;">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 2rem; background-color: #f8fafc;">
+                <!-- YoY Comparison -->
+                <div class="card insight-card">
+                    <div class="card-body d-flex align-items-start p-4">
+                        <div class="mr-3" id="modalComparisonIcon">
+                            <i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                        <div>
+                            <h6 class="font-weight-bold text-dark mb-1" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Year-over-Year Comparison</h6>
+                            <p class="text-muted mb-0" id="modalComparisonText" style="font-size: 0.95rem; line-height: 1.5;"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rationale -->
+                <div class="card insight-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="mr-2 text-warning" style="font-size: 1.15rem;">
+                                <i class="fas fa-lightbulb"></i>
+                            </div>
+                            <h6 class="font-weight-bold text-dark mb-0" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Performance Rationale</h6>
+                        </div>
+                        <p class="text-muted mb-0" id="modalRationaleText" style="line-height: 1.6; font-size: 0.95rem;"></p>
+                    </div>
+                </div>
+
+                <!-- Suggestions -->
+                <div class="card insight-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="mr-2 text-success" style="font-size: 1.15rem;">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <h6 class="font-weight-bold text-dark mb-0" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Strategic Suggestions to Improve</h6>
+                        </div>
+                        <ul class="list-unstyled mb-0" id="modalSuggestionsList">
+                            <!-- Dynamic items -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: none; background-color: #f8fafc; padding: 1rem 2rem 2rem 2rem;">
+                <button type="button" class="btn btn-secondary px-4" data-dismiss="modal" style="border-radius: 8px; font-weight: 600; font-size: 0.9rem; background-color: #64748b; border: none;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -800,6 +908,62 @@
                 loadData();
                 updateFilterSummary();
             });
+        });
+
+        // ── KPI Tooltip Click Handler ────────────────────────────────────
+        $(document).on('click', '.kpi-info-btn', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const kpiKey = $(this).attr('data-kpi');
+            if (!fullKpis || !fullKpis.insights || !fullKpis.insights[kpiKey]) {
+                console.error("Insights not loaded or not found for: " + kpiKey);
+                return;
+            }
+            
+            const insight = fullKpis.insights[kpiKey];
+            
+            // Set Modal Header details
+            $('#modalTitle').text(insight.title);
+            $('#modalHeaderIcon').attr('class', insight.icon);
+            $('#modalIconWrapper').css('background', insight.color);
+            
+            // Set YoY Comparison
+            $('#modalComparisonText').html(insight.comparison_text);
+            
+            // Highlight YoY card icon/color based on trend direction
+            const trend = (fullKpis.trends && fullKpis.trends[kpiKey]) ? fullKpis.trends[kpiKey] : { dir: 'neutral' };
+            const compIcon = $('#modalComparisonIcon').empty();
+            if (trend.dir === 'up') {
+                compIcon.append('<i class="fas fa-arrow-alt-circle-up text-success" style="font-size: 2rem;"></i>');
+            } else if (trend.dir === 'down') {
+                compIcon.append('<i class="fas fa-arrow-alt-circle-down text-danger" style="font-size: 2rem;"></i>');
+            } else {
+                compIcon.append('<i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>');
+            }
+            
+            // Set Rationale
+            $('#modalRationaleText').text(insight.rationale);
+            
+            // Set Suggestions
+            const suggestionsList = $('#modalSuggestionsList').empty();
+            if (insight.suggestions && insight.suggestions.length) {
+                insight.suggestions.forEach(s => {
+                    suggestionsList.append(`
+                        <li class="insight-list-item">
+                            <span class="mr-3 text-success" style="font-size: 1.15rem; line-height: 1.2;">
+                                <i class="fas fa-check-circle"></i>
+                            </span>
+                            <span class="text-secondary" style="font-size: 0.95rem; line-height: 1.5; font-family: Inter, Arial, sans-serif;">${s}</span>
+                        </li>
+                    `);
+                });
+            } else {
+                suggestionsList.append('<li class="text-muted">No suggestions available for this view.</li>');
+            }
+            
+            // Show modal
+            $('#kpiInsightModal').modal('show');
         });
 
         // Auto-load
