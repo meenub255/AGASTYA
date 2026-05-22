@@ -16,7 +16,104 @@
         </div>
     </div>
 
-    <div class="row mb-3" id="kpiRow"></div>
+    <!-- KPIs -->
+    <div class="row mb-3">
+        <!-- Card 1: Total Working Days -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardWorkingDays">
+                <button type="button" class="kpi-info-btn" data-kpi="working_days" title="View Insights">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Working Days</span>
+                        <span class="kpi-bitcoin-sublabel">Total Days</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiWorkingDays">0</div>
+                <div class="d-flex align-items-center mb-2" id="trendWrapperWorkingDays" style="display: none !important;">
+                    <div id="trendWorkingDays"></div>
+                    <span class="kpi-bitcoin-footer">vs previous period</span>
+                </div>
+                <div class="kpi-mini-chart"><canvas id="miniChartWorkingDays"></canvas></div>
+            </div>
+        </div>
+        
+        <!-- Card 2: Active Drivers -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardActiveDrivers">
+                <button type="button" class="kpi-info-btn" data-kpi="active_drivers" title="View Insights">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%);">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Active Drivers</span>
+                        <span class="kpi-bitcoin-sublabel">Total Drivers</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiActiveDrivers">0</div>
+                <div class="d-flex align-items-center mb-2" id="trendWrapperActiveDrivers" style="display: none !important;">
+                    <div id="trendActiveDrivers"></div>
+                    <span class="kpi-bitcoin-footer">vs previous period</span>
+                </div>
+                <div class="kpi-mini-chart"><canvas id="miniChartActiveDrivers"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Card 3: Total KMs Travelled -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardTotalKms">
+                <button type="button" class="kpi-info-btn" data-kpi="total_kms" title="View Insights">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                        <i class="fas fa-road"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">KMs Travelled</span>
+                        <span class="kpi-bitcoin-sublabel">Total Logistics</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiTotalKms">0</div>
+                <div class="d-flex align-items-center mb-2" id="trendWrapperTotalKms" style="display: none !important;">
+                    <div id="trendTotalKms"></div>
+                    <span class="kpi-bitcoin-footer">vs previous period</span>
+                </div>
+                <div class="kpi-mini-chart"><canvas id="miniChartTotalKms"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Card 4: Active Centers -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardActiveCenters">
+                <button type="button" class="kpi-info-btn" data-kpi="active_centers" title="View Insights">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Active Centers</span>
+                        <span class="kpi-bitcoin-sublabel">Total Hubs</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiActiveCenters">0</div>
+                <div class="d-flex align-items-center mb-2" id="trendWrapperActiveCenters" style="display: none !important;">
+                    <div id="trendActiveCenters"></div>
+                    <span class="kpi-bitcoin-footer">vs previous period</span>
+                </div>
+                <div class="kpi-mini-chart"><canvas id="miniChartActiveCenters"></canvas></div>
+            </div>
+        </div>
+    </div>
 
     <div class="row">
         <div class="col-md-7 mb-3">
@@ -151,6 +248,73 @@
     </div>
 </div>
 
+<!-- KPI Insights Modal -->
+<div class="modal fade" id="kpiInsightModal" tabindex="-1" role="dialog" aria-labelledby="kpiInsightModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg" style="border-radius: 16px; border: none; overflow: hidden;">
+            <div class="modal-header d-flex align-items-center insight-modal-header">
+                <div class="d-flex align-items-center">
+                    <div id="modalIconWrapper" class="mr-3 shadow-sm" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #fff;">
+                        <i id="modalHeaderIcon" class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title font-weight-bold text-white" id="modalTitle" style="font-size: 1.2rem; font-family: Inter, Arial, sans-serif;">Metric Insights</h5>
+                        <span class="text-white-50" style="font-size: 0.8rem;">Performance analysis and recommendations</span>
+                    </div>
+                </div>
+                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Close" style="opacity: 0.8; outline: none; background: none; border: none; padding: 0;">
+                    <span aria-hidden="true" style="font-size: 1.5rem;">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 2rem; background-color: #f8fafc;">
+                <!-- YoY Comparison -->
+                <div class="card insight-card">
+                    <div class="card-body d-flex align-items-start p-4">
+                        <div class="mr-3" id="modalComparisonIcon">
+                            <i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                        <div>
+                            <h6 class="font-weight-bold text-dark mb-1" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Year-over-Year Comparison</h6>
+                            <p class="text-muted mb-0" id="modalComparisonText" style="font-size: 0.95rem; line-height: 1.5;"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rationale -->
+                <div class="card insight-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="mr-2 text-warning" style="font-size: 1.15rem;">
+                                <i class="fas fa-lightbulb"></i>
+                            </div>
+                            <h6 class="font-weight-bold text-dark mb-0" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Performance Rationale</h6>
+                        </div>
+                        <p class="text-muted mb-0" id="modalRationaleText" style="line-height: 1.6; font-size: 0.95rem;"></p>
+                    </div>
+                </div>
+
+                <!-- Suggestions -->
+                <div class="card insight-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="mr-2 text-success" style="font-size: 1.15rem;">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <h6 class="font-weight-bold text-dark mb-0" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Strategic Suggestions to Improve</h6>
+                        </div>
+                        <ul class="list-unstyled mb-0" id="modalSuggestionsList">
+                            <!-- Dynamic items -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: none; background-color: #f8fafc; padding: 1rem 2rem 2rem 2rem;">
+                <button type="button" class="btn btn-secondary px-4" data-dismiss="modal" style="border-radius: 8px; font-weight: 600; font-size: 0.9rem; background-color: #64748b; border: none;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .clear-drilldown-btn:hover {
         background: #7f1d1d !important;
@@ -161,6 +325,72 @@
     }
     .content-header { display: none !important; }
     .select2-container--open { z-index: 9999 !important; }
+
+    /* Modal Style overrides */
+    .insight-modal-header {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+        border-top-left-radius: 16px !important;
+        border-top-right-radius: 16px !important;
+        padding: 1.5rem 2rem !important;
+    }
+    .insight-card {
+        border-radius: 16px !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+        background: #ffffff !important;
+        margin-bottom: 1.5rem !important;
+        transition: transform 0.2s ease !important;
+    }
+    .insight-card:hover {
+        transform: translateY(-2px) !important;
+    }
+    .insight-list-item {
+        display: flex !important;
+        align-items: start !important;
+        margin-bottom: 1rem !important;
+        padding-bottom: 0.75rem !important;
+        border-bottom: 1px dashed #f1f5f9;
+    }
+    .insight-list-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    /* Info button inside cards */
+    .kpi-card-bitcoin {
+        position: relative !important;
+    }
+    .kpi-info-btn {
+        position: absolute !important;
+        top: 15px !important;
+        right: 15px !important;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        color: #cbd5e1 !important;
+        font-size: 1.1rem !important;
+        cursor: pointer !important;
+        z-index: 50 !important;
+        padding: 6px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        line-height: 1 !important;
+        transition: color 0.2s ease, transform 0.2s ease, background-color 0.2s ease !important;
+        width: 28px;
+        height: 28px;
+    }
+    .kpi-info-btn:hover {
+        color: #64748b !important;
+        transform: scale(1.15) !important;
+        background-color: #f1f5f9 !important;
+    }
+    .kpi-info-btn:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
 </style>
 {% endblock %}
 
@@ -219,26 +449,118 @@ $(function(){
     $('.select2').on('change', updateSummary);
 
     function animateNum(el, target){
-        const $el=$(el); const start=parseInt(($el.text()||'0').replace(/,/g,''))||0;
+        const $el=$(el); const start=parseFloat(($el.text()||'0').replace(/,/g,''))||0;
         const steps=20, inc=(target-start)/steps; let step=0;
         const t=setInterval(()=>{ step++; $el.text(Math.round(start+inc*step).toLocaleString()); if(step>=steps){$el.text(target.toLocaleString()); clearInterval(t);} },25);
     }
 
     function getParams(){ return $.param(window.PramanaDashboard.collectFilters(), true); }
 
-    let dt=null; let fullKpis = null;
+    const miniCharts = {};
+    function renderMiniChart(canvasId, dataPoints, color) {
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+        const ctx = el.getContext('2d');
+        if (miniCharts[canvasId]) miniCharts[canvasId].destroy();
+        miniCharts[canvasId] = new Chart(ctx, {
+            type: 'line',
+            plugins: [ChartDataLabels],
+            data: {
+                labels: dataPoints.map((_, i) => i),
+                datasets: [{
+                    data: dataPoints,
+                    borderColor: color,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: true,
+                    backgroundColor: color + '15',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                layout: {
+                    padding: {
+                        left: 15,
+                        right: 15,
+                        top: 10,
+                        bottom: 10
+                    }
+                },
+                plugins: { 
+                    legend: { display: false }, 
+                    tooltip: { enabled: false },
+                    datalabels: {
+                        display: function(context) {
+                            return context.dataIndex === 0 || context.dataIndex === context.dataset.data.length - 1;
+                        },
+                        align: function(context) {
+                            return context.dataIndex === 0 ? 'right' : 'left';
+                        },
+                        anchor: function(context) {
+                            return context.dataIndex === 0 ? 'start' : 'end';
+                        },
+                        offset: 4,
+                        color: color,
+                        font: {
+                            size: 10,
+                            weight: 'bold'
+                        },
+                        formatter: function(value) {
+                            return value.toLocaleString();
+                        }
+                    }
+                },
+                scales: { x: { display: false }, y: { display: false } }
+            }
+        });
+    }
+
+    function updateKpis(kpis, trends = []) {
+        animateNum($('#kpiWorkingDays'), kpis.working_days);
+        animateNum($('#kpiActiveDrivers'), kpis.active_drivers);
+        animateNum($('#kpiTotalKms'), kpis.total_kms);
+        animateNum($('#kpiActiveCenters'), kpis.active_centers);
+
+        // Render trend pills
+        function renderTrend(wrapperId, containerId, trend) {
+            const wrapper = $(wrapperId);
+            const container = $(containerId).empty();
+            if (!trend || trend.dir === 'neutral') {
+                wrapper.attr('style', 'display: none !important;');
+                return;
+            }
+            const icon = trend.dir === 'up' ? '↗' : '↘';
+            const cls = trend.dir === 'up' ? 'kpi-bitcoin-trend-up' : 'kpi-bitcoin-trend-down';
+            container.append(`<div class="kpi-bitcoin-trend-pill ${cls}">${Math.abs(trend.pct)}% ${icon}</div>`);
+            wrapper.attr('style', 'display: flex !important;');
+        }
+
+        if (kpis.trends) {
+            renderTrend('#trendWrapperWorkingDays', '#trendWorkingDays', kpis.trends.working_days);
+            renderTrend('#trendWrapperActiveDrivers', '#trendActiveDrivers', kpis.trends.active_drivers);
+            renderTrend('#trendWrapperTotalKms', '#trendTotalKms', kpis.trends.total_kms);
+            renderTrend('#trendWrapperActiveCenters', '#trendActiveCenters', kpis.trends.active_centers);
+        } else {
+            $('#trendWrapperWorkingDays, #trendWrapperActiveDrivers, #trendWrapperTotalKms, #trendWrapperActiveCenters').attr('style', 'display: none !important;');
+        }
+
+        if (trends && trends.length) {
+            renderMiniChart('miniChartWorkingDays',  trends.map(t => t.working_days),  '#17a2b8');
+            renderMiniChart('miniChartActiveDrivers', trends.map(t => t.active_drivers), '#28a745');
+            renderMiniChart('miniChartTotalKms',     trends.map(t => t.total_kms),      '#001f3f');
+            renderMiniChart('miniChartActiveCenters', trends.map(t => t.active_centers), '#dc3545');
+        }
+    }
+
+    let dt=null; let fullKpis = null; let fullTrends = null;
     function loadData(){
         const q=getParams();
         fetch(`/category-overview/operations?${q}`).then(r=>r.json()).then(data=>{
             fullKpis = data.kpis;
-            const kr=$('#kpiRow').empty();
-            (data.kpis||[]).forEach(k=>{
-                kr.append(`<div class="col-lg-3 col-6 mb-2"><div class="kpi-card-v2" style="background:${k.color};">
-                    <span class="kpi-v2-val" data-target="${k.value}" id="${k.label.toLowerCase().includes('working day')?'kpiDays':''}">0</span>
-                    <span class="kpi-v2-lbl">${k.label}</span>
-                    <div class="kpi-v2-icon"><i class="${k.icon}"></i></div></div></div>`);
-            });
-            kr.find('.kpi-v2-val').each(function(){ animateNum(this, +$(this).data('target')); });
+            fullTrends = data.trends;
+            
+            updateKpis(data.kpis, data.trends);
 
             const ch=data.charts||{};
             renderHBar('chartKm', ch.km_by_region||[], 'KMs Travelled');
@@ -265,8 +587,9 @@ $(function(){
         
         // Update main KPIs for the region
         fetch(`/category-overview/operations?${q}`).then(r=>r.json()).then(data => {
-            const days = data.kpis.find(k => k.label.toLowerCase().includes('working day'))?.value || 0;
-            animateNum('#kpiDays', days);
+            if (data.kpis) {
+                updateKpis(data.kpis, data.trends);
+            }
         });
 
         // Fetch drilldown details
@@ -302,10 +625,65 @@ $(function(){
         if($.fn.DataTable.isDataTable('#drilldownTable')) $('#drilldownTable').DataTable().destroy();
         $('#drilldownTableBody').empty();
         if(fullKpis) {
-            const days = fullKpis.find(k => k.label.toLowerCase().includes('working day'))?.value || 0;
-            animateNum('#kpiDays', days);
+            updateKpis(fullKpis, fullTrends);
         }
     };
+
+    // ── KPI Tooltip Click Handler ────────────────────────────────────
+    $(document).on('click', '.kpi-info-btn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const kpiKey = $(this).attr('data-kpi');
+        if (!fullKpis || !fullKpis.insights || !fullKpis.insights[kpiKey]) {
+            console.error("Insights not loaded or not found for: " + kpiKey);
+            return;
+        }
+        
+        const insight = fullKpis.insights[kpiKey];
+        
+        // Set Modal Header details
+        $('#modalTitle').text(insight.title);
+        $('#modalHeaderIcon').attr('class', insight.icon);
+        $('#modalIconWrapper').css('background', insight.color);
+        
+        // Set YoY Comparison
+        $('#modalComparisonText').html(insight.comparison_text);
+        
+        // Highlight YoY card icon/color based on trend direction
+        const trend = (fullKpis.trends && fullKpis.trends[kpiKey]) ? fullKpis.trends[kpiKey] : { dir: 'neutral' };
+        const compIcon = $('#modalComparisonIcon').empty();
+        if (trend.dir === 'up') {
+            compIcon.append('<i class="fas fa-arrow-alt-circle-up text-success" style="font-size: 2rem;"></i>');
+        } else if (trend.dir === 'down') {
+            compIcon.append('<i class="fas fa-arrow-alt-circle-down text-danger" style="font-size: 2rem;"></i>');
+        } else {
+            compIcon.append('<i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>');
+        }
+        
+        // Set Rationale
+        $('#modalRationaleText').text(insight.rationale);
+        
+        // Set Suggestions
+        const suggestionsList = $('#modalSuggestionsList').empty();
+        if (insight.suggestions && insight.suggestions.length) {
+            insight.suggestions.forEach(s => {
+                suggestionsList.append(`
+                    <li class="insight-list-item">
+                        <span class="mr-3 text-success" style="font-size: 1.15rem; line-height: 1.2;">
+                            <i class="fas fa-check-circle"></i>
+                        </span>
+                        <span class="text-secondary" style="font-size: 0.95rem; line-height: 1.5; font-family: Inter, Arial, sans-serif;">${s}</span>
+                    </li>
+                `);
+            });
+        } else {
+            suggestionsList.append('<li class="text-muted">No suggestions available for this view.</li>');
+        }
+        
+        // Show modal
+        $('#kpiInsightModal').modal('show');
+    });
 
     let chartInstances={};
     function destroyChart(id){ if(chartInstances[id]){ chartInstances[id].destroy(); delete chartInstances[id]; } }
