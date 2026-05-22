@@ -1,4 +1,4 @@
-﻿:root {
+:root {
     --trend-up: #4ade80;
     --trend-down: #fca5a5;
     --trend-neutral: #e2e8f0;
@@ -3114,3 +3114,72 @@ table.dataTable thead th {
     height: 40px;
     width: 100%;
 }
+
+/* Insight Modal & Button overrides */
+.insight-modal-header {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+    border-top-left-radius: 16px !important;
+    border-top-right-radius: 16px !important;
+    padding: 1.5rem 2rem !important;
+}
+.insight-card {
+    border-radius: 16px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+    background: #ffffff !important;
+    margin-bottom: 1.5rem !important;
+    transition: transform 0.2s ease !important;
+}
+.insight-card:hover {
+    transform: translateY(-2px) !important;
+}
+.insight-list-item {
+    display: flex !important;
+    align-items: start !important;
+    margin-bottom: 1rem !important;
+    padding-bottom: 0.75rem !important;
+    border-bottom: 1px dashed #f1f5f9;
+}
+.insight-list-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+.kpi-info-btn {
+    position: absolute !important;
+    top: 15px !important;
+    right: 15px !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    color: #cbd5e1 !important;
+    font-size: 1.1rem !important;
+    cursor: pointer !important;
+    z-index: 50 !important;
+    padding: 6px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    line-height: 1 !important;
+    transition: color 0.2s ease, transform 0.2s ease, background-color 0.2s ease !important;
+    width: 28px;
+    height: 28px;
+}
+.kpi-info-btn:hover {
+    color: #64748b !important;
+    transform: scale(1.15) !important;
+    background-color: #f1f5f9 !important;
+}
+.kpi-info-btn:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+.clear-drilldown-btn:hover {
+    background: #7f1d1d !important;
+    border-color: #7f1d1d !important;
+    color: #ffffff !important;
+    transform: scale(1.03);
+    box-shadow: 0 4px 12px rgba(127, 29, 29, 0.3) !important;
+}
+

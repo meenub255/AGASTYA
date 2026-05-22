@@ -8,12 +8,12 @@ SET search_path TO dw;
 -- 1. AGG_INSTRUCTOR_MONTHLY_SUMMARY
 --------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS dw.agg_instructor_monthly_summary (
-    sk_user_id BIGINT REFERENCES dw.dim_user(sk_user_id),
+    sk_user_id INT REFERENCES dw.dim_user(sk_user_id),
     year_actual INTEGER,
     month_actual INTEGER,
     total_sessions INTEGER DEFAULT 0,
     total_exposures BIGINT DEFAULT 0,
-    total_distance_travelled BIGINT DEFAULT 0,
+    total_distance_travelled DOUBLE PRECISION DEFAULT 0,
     is_deleted BOOLEAN DEFAULT FALSE,
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
@@ -37,7 +37,7 @@ GROUP BY f.sk_user_id, d.year_actual, d.month_actual;
 -- 2. AGG_GEOGRAPHY_DAILY_METRICS
 --------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS dw.agg_geography_daily_metrics (
-    sk_geography_id BIGINT REFERENCES dw.dim_geography(sk_geography_id),
+    sk_geography_id INT REFERENCES dw.dim_geography(sk_geography_id),
     date_id INTEGER REFERENCES dw.dim_date(date_id),
     session_count INTEGER DEFAULT 0,
     exposure_count BIGINT DEFAULT 0,
@@ -63,7 +63,7 @@ GROUP BY f.sk_geography_id, f.date_id;
 -- 3. AGG_PROGRAM_PERFORMANCE
 --------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS dw.agg_program_performance (
-    sk_program_id BIGINT REFERENCES dw.dim_program(sk_program_id),
+    sk_program_id INT REFERENCES dw.dim_program(sk_program_id),
     total_sessions_completed INTEGER DEFAULT 0,
     total_exposures_achieved BIGINT DEFAULT 0,
     active_instructors INTEGER DEFAULT 0,
@@ -82,4 +82,3 @@ SELECT
 FROM dw.fact_session f
 LEFT JOIN dw.fact_attendance_exposure fa ON f.session_nk_id = fa.session_nk_id
 GROUP BY f.sk_program_id;
-
