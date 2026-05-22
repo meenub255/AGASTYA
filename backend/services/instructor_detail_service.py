@@ -77,23 +77,12 @@ def get_instructor_detail_data(instructor_name=None, years=None, month=None, lim
         
         if dt_params:
             searchable_cols = ["COALESCE(p.program_name, '')", "COALESCE(a.activity_name, '')", "COALESCE(s.school_name, '')", "COALESCE(e.class_name, '')"]
-            sortable_cols = ["program_name", "date", "activity_name", "school_name", "class_name", "boys", "girls", "teachers"]
+            sortable_cols = ["program_name", "date", "activity_name", "school_name", "class_name", "topic_name", "boys", "girls", "community", "teachers"]
             
             inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
             search_sql = inner_search_sql
             search_params = inner_search_params
             if inner_sort_sql:
-                mapping = {
-                    "date": "d.full_date",
-                    "activity_name": "a.activity_name",
-                    "school_name": "s.school_name",
-                    "class_name": "e.class_name",
-                    "boys": "e.boys_count",
-                    "girls": "e.girls_count",
-                    "teachers": "f.no_of_teachers_participated"
-                }
-                for alias, db_col in mapping.items():
-                    inner_sort_sql = inner_sort_sql.replace(alias, db_col)
                 sort_sql = inner_sort_sql
 
         # 3. Get total count of granular rows (Session + Class)
