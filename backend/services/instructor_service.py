@@ -90,27 +90,18 @@ def get_instructor_session_log(years=None, region=None, program=None, instructor
     
     if dt_params:
         searchable_cols = ["COALESCE(u.user_name, 'Unknown')", "u.role_name", "g.region_name"]
-        sortable_cols = ["name", "type", "region", "sessions", "students", "last_session"]
+        sortable_cols = ["name", "type", "region", "sessions", "activity_types", "students", "last_session"]
         inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
         search_sql = inner_search_sql
         search_params = inner_search_params
         if inner_sort_sql:
-            mapping = {
-                "name": "u.user_name",
-                "type": "u.role_name",
-                "region": "g.region_name",
-                "sessions": "COUNT(f.sk_fact_session_id)",
-                "last_session": "MAX(d.full_date)"
-            }
-            for alias, db_col in mapping.items():
-                inner_sort_sql = inner_sort_sql.replace(alias, db_col)
             sort_sql = inner_sort_sql
 
     rows = fetch_all(
         f"""
         SELECT
             COALESCE(u.user_name, 'Unknown') AS name,
-            COALESCE(u.role_name, 'Unknown') AS instructor_type,
+            COALESCE(u.role_name, 'Unknown') AS type,
             COALESCE(g.region_name, 'Unknown') AS region,
             COUNT(f.sk_fact_session_id) AS sessions,
             STRING_AGG(DISTINCT COALESCE(act.activity_name, 'NA'), ', ') AS activity_types,
@@ -151,7 +142,7 @@ def get_instructor_session_log(years=None, region=None, program=None, instructor
         "table": [
             {
                 "name": row["name"],
-                "type": row["instructor_type"],
+                "type": row["type"],
                 "region": row["region"],
                 "sessions": int(row["sessions"] or 0),
                 "activity_types": row["activity_types"],
