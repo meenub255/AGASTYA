@@ -116,14 +116,6 @@ def get_exposure_session_data(region=None, program=None, years=None, month=None,
             search_sql = inner_search_sql
             search_params = inner_search_params
             if inner_sort_sql:
-                mapping = {
-                    "session_date": "d.full_date",
-                    "boys": "SUM(e.boys_count)",
-                    "girls": "SUM(e.girls_count)",
-                    "total_exposure": "SUM(e.total_exposure_count)"
-                }
-                for alias, db_col in mapping.items():
-                    inner_sort_sql = inner_sort_sql.replace(alias, db_col)
                 sort_sql = inner_sort_sql
 
         # 3. Get total count (Filtered by sidebar AND table search)
