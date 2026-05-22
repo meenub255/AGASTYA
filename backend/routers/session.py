@@ -48,3 +48,13 @@ def sessions_by_region(
 @router.get("/filter-options", response_model=OptionsResponse)
 def session_filter_options():
     return {"years": session_service.get_available_years()}
+
+
+@router.get("/data")
+def session_data(
+    years: list[str] | None = Query(default=None),
+    region: list[str] | None = Query(default=None),
+    program: list[str] | None = Query(default=None),
+):
+    """Unified endpoint returning KPIs + ChartJS datasets for the session dashboard."""
+    return session_service.get_unified_session_data(years=years, region=region, program=program)
