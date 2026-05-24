@@ -8,11 +8,14 @@ DW = DATAMART_SCHEMA_NAME
 
 
 def _build_clauses(region=None, years=None, program=None):
+    from backend.services.query_utils import apply_ytd_filter
     clauses, params = [], []
     c, p = get_list_filter_clause("g.region_name", region); clauses.append(c); params.extend(p)
     c, p = get_list_filter_clause("d.year_actual", years, cast_type="int"); clauses.append(c); params.extend(p)
     c, p = get_list_filter_clause("p.program_name", program); clauses.append(c); params.extend(p)
-    return " AND ".join(clauses), params
+    where_sql = " AND ".join(clauses) if clauses else "TRUE"
+    where_sql, params = apply_ytd_filter(where_sql, params, years, date_alias="d")
+    return where_sql, params
 
 
 def calc_trend(curr, prev):
