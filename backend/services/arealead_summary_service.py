@@ -36,47 +36,41 @@ def get_arealead_summary_filters():
     }
 
 
-def get_arealead_summary_data(region=None, area=None, years=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
-    clauses = []
-    params = []
+def get_arealead_summary_data(region=None, area=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis
     
-    c, p = get_list_filter_clause("g.region_name", region)
-    clauses.append(c); params.extend(p)
+    kpi_defs = [
+        {"key": "total_leads", "label": "Area Leads", "sql": "COUNT(DISTINCT g.area_name)", "icon": "fas fa-user-tie", "color": "bg-info"},
+        {"key": "total_instructors", "label": "Instructors", "sql": "COUNT(DISTINCT u.sk_user_id)", "icon": "fas fa-chalkboard-teacher", "color": "bg-success"},
+        {"key": "total_sessions", "label": "Sessions", "sql": "COUNT(DISTINCT f.sk_fact_session_id)", "icon": "fas fa-layer-group", "color": "bg-navy-blue"},
+        {"key": "total_students", "label": "Students Impacted", "sql": "SUM(COALESCE(e.total_exposure_count, 0))", "icon": "fas fa-user-graduate", "color": "bg-danger"}
+    ]
     
-    c, p = get_list_filter_clause("g.area_name", area)
-    clauses.append(c); params.extend(p)
-    
-    c, p = get_list_filter_clause("d.year_actual", years, cast_type="int")
-    clauses.append(c); params.extend(p)
-    
-    c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
-    clauses.append(c); params.extend(p)
-    
-    where_sql = " AND ".join(clauses)
-    
-    # 1. KPI Query (sidebar filters only)
-    kpi_sql = f"""
-        SELECT 
-            COUNT(DISTINCT g.area_name) as total_leads,
-            COUNT(DISTINCT u.sk_user_id) as total_instructors,
-            COUNT(DISTINCT f.sk_fact_session_id) as total_sessions,
-            SUM(COALESCE(e.total_exposure_count, 0)) as total_students
-        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+    from_clause = f"""
+        {DATAMART_SCHEMA_NAME}.fact_session f
         JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-        WHERE {where_sql}
     """
-    kpis_raw = fetch_one(kpi_sql, params)
     
-    kpi_list = [
-        {"label": "Total Area Leads", "value": kpis_raw.get('total_leads', 0), "icon": "fas fa-user-tie", "color": "bg-info"},
-        {"label": "Total Instructors", "value": kpis_raw.get('total_instructors', 0), "icon": "fas fa-chalkboard-teacher", "color": "bg-success"},
-        {"label": "Total Sessions", "value": kpis_raw.get('total_sessions', 0), "icon": "fas fa-layer-group", "color": "bg-navy-blue"},
-        {"label": "Total Students Impacted", "value": kpis_raw.get('total_students', 0), "icon": "fas fa-user-graduate", "color": "bg-danger"}
-    ]
+    kpi_list, sparklines = calculate_ytd_kpis(
+        kpi_defs=kpi_defs,
+        from_clause=from_clause,
+        years=years,
+        region=region,
+        area=area,
+        month=month,
+        quarter=quarter
+    )
+    
+    where_sql, params, max_month = build_standard_filters(
+        years=years,
+        region=region,
+        area=area,
+        month=month,
+        quarter=quarter
+    )
 
     # 2. DataTable Logic
     search_sql = "TRUE"
