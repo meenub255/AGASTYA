@@ -1,88 +1,185 @@
-from backend.services.query_utils import build_dimension_filters, fetch_all, fetch_one
+from backend.services.query_utils import fetch_all, fetch_one
 from backend.config import DATAMART_SCHEMA_NAME
 
-def _build_filters(years=None, region=None, program=None, instructor=None):
-    return build_dimension_filters(
-        year=years,
+def _build_filters(years=None, region=None, program=None, instructor=None, month=None, quarter=None):
+    from backend.services.query_utils import build_standard_filters
+    where_sql, params, max_month = build_standard_filters(
+        years=years,
         region=region,
         program=program,
-        year_expression="d.year_actual",
-        location_expression="g.region_name",
-        program_expression="p.program_name",
-        instructor=instructor,
-        instructor_expression="u.role_name",
+        month=month,
+        quarter=quarter,
+        region_expr="g.region_name",
+        program_expr="p.program_name"
     )
+    if instructor:
+        from backend.services.query_utils import get_list_filter_clause
+        c, p = get_list_filter_clause("u.role_name", instructor)
+        if c != "TRUE":
+            if where_sql != "TRUE":
+                where_sql += f" AND {c}"
+            else:
+                where_sql = c
+            params.extend(p)
+    return where_sql, params
 
-def get_unified_instructor_data(years=None, region=None, program=None, instructor=None):
+def get_unified_instructor_data(years=None, region=None, program=None, instructor=None, month=None, quarter=None):
     """Unified data for Instructor Dashboard."""
-    kpis = get_instructor_kpis(years, region, program, instructor)
-    type_breakdown = get_sessions_by_instructor_type(years, region, program, instructor)
-    multi_program = get_multi_program_instructors(years, region, program, instructor)
-    productivity = get_instructor_productivity(years, region, program, instructor)
-    monthly = get_monthly_instructor_activity(years, region, program, instructor)
+    kpis = get_instructor_kpis(years, region, program, instructor, month, quarter)
+    type_breakdown = get_sessions_by_instructor_type(years, region, program, instructor, month, quarter)
+    multi_program = get_multi_program_instructors(years, region, program, instructor, month, quarter)
+    productivity = get_instructor_productivity(years, region, program, instructor, month, quarter)
+    monthly = get_monthly_instructor_activity(years, region, program, instructor, month, quarter)
     
     return {
-        "kpis": kpis,
+        "kpis": kpis["kpis"],
+        "sparklines": kpis["sparklines"],
+        "metrics": kpis["metrics"],
         "type_breakdown": type_breakdown,
         "multi_program": multi_program,
         "productivity": productivity,
         "monthly_activity": monthly
     }
 
-def get_instructor_kpis(years=None, region=None, program=None, instructor=None) -> dict:
-    where_clause, params = _build_filters(years, region, program, instructor)
-
-    row = fetch_one(
-        f"""
-        SELECT
-            COUNT(DISTINCT f.sk_user_id) AS total_instructors,
-            COUNT(f.sk_fact_session_id) AS sessions_conducted,
-            COALESCE(
-                COUNT(f.sk_fact_session_id)::numeric / NULLIF(COUNT(DISTINCT f.sk_user_id), 0),
-                0
-            ) AS avg_sessions_per_instructor,
-            COALESCE(
-                COUNT(CASE WHEN f.is_overdue THEN 1 END),
-                0
-            ) AS unprocessed_sessions
-        FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON p.sk_program_id = f.sk_program_id
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON u.sk_user_id = f.sk_user_id
-        {where_clause}
-        """,
-        params,
+def get_instructor_kpis(years=None, region=None, program=None, instructor=None, month=None, quarter=None) -> dict:
+    from backend.services.query_utils import build_standard_filters, get_kpi_insight, calc_trend
+    from backend.config import DEFAULT_YEAR
+    
+    where_sql, params, max_month = build_standard_filters(
+        years=years,
+        region=region,
+        program=program,
+        month=month,
+        quarter=quarter,
+        region_expr="g.region_name",
+        program_expr="p.program_name"
     )
-
-    top_region_row = fetch_one(
-        f"""
-        SELECT
-            COALESCE(g.region_name, 'Unknown') AS top_region,
-            COUNT(f.sk_fact_session_id) AS top_region_sessions
-        FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON u.sk_user_id = f.sk_user_id
-        {where_clause}
-        GROUP BY g.region_name
-        ORDER BY top_region_sessions DESC, top_region
-        LIMIT 1
-        """,
-        params,
+    
+    effective_years = years
+    if effective_years is None or (isinstance(effective_years, list) and len(effective_years) == 0):
+        effective_years = [DEFAULT_YEAR]
+        
+    resolved_years = []
+    for y in effective_years:
+        try:
+            resolved_years.append(int(y))
+        except (ValueError, TypeError):
+            pass
+    if not resolved_years:
+        resolved_years = [DEFAULT_YEAR]
+        
+    prev_year_vals = [y - 1 for y in resolved_years]
+    
+    prev_where_sql, prev_params, _ = build_standard_filters(
+        years=prev_year_vals,
+        region=region,
+        program=program,
+        month=month,
+        quarter=quarter,
+        region_expr="g.region_name",
+        program_expr="p.program_name"
     )
+    
+    if instructor:
+        from backend.services.query_utils import get_list_filter_clause
+        inst_clause, inst_params = get_list_filter_clause("u.role_name", instructor)
+        if inst_clause != "TRUE":
+            where_sql += f" AND {inst_clause}"
+            params.extend(inst_params)
+            prev_where_sql += f" AND {inst_clause}"
+            prev_params.extend(inst_params)
 
+    def query_kpis(w_clause, w_params):
+        sql = f"""
+            SELECT
+                COUNT(DISTINCT f.sk_user_id) AS total_instructors,
+                COUNT(f.sk_fact_session_id) AS sessions_conducted,
+                COALESCE(
+                    COUNT(f.sk_fact_session_id)::numeric / NULLIF(COUNT(DISTINCT f.sk_user_id), 0),
+                    0
+                ) AS avg_sessions_per_instructor,
+                COALESCE(
+                    COUNT(CASE WHEN f.is_overdue THEN 1 END),
+                    0
+                ) AS unprocessed_sessions
+            FROM {DATAMART_SCHEMA_NAME}.fact_session f
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON p.sk_program_id = p.sk_program_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON u.sk_user_id = f.sk_user_id
+            WHERE {w_clause}
+        """
+        row = fetch_one(sql, w_params)
+        
+        top_region_sql = f"""
+            SELECT
+                COALESCE(g.region_name, 'Unknown') AS top_region,
+                COUNT(f.sk_fact_session_id) AS top_region_sessions
+            FROM {DATAMART_SCHEMA_NAME}.fact_session f
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON u.sk_user_id = f.sk_user_id
+            WHERE {w_clause}
+            GROUP BY g.region_name
+            ORDER BY top_region_sessions DESC, top_region
+            LIMIT 1
+        """
+        tr_row = fetch_one(top_region_sql, w_params)
+        
+        return {
+            "total_instructors": int(row.get("total_instructors", 0) or 0),
+            "avg_sessions_per_instructor": round(float(row.get("avg_sessions_per_instructor", 0) or 0), 1),
+            "top_region": tr_row.get("top_region", "-") if tr_row else "-",
+            "top_region_sessions": int(tr_row.get("top_region_sessions", 0) or 0) if tr_row else 0,
+            "unprocessed_sessions": int(row.get("unprocessed_sessions", 0) or 0)
+        }
+
+    curr_res = query_kpis(where_sql, params)
+    prev_res = query_kpis(prev_where_sql, prev_params)
+    
+    single_year = resolved_years[0] if len(resolved_years) == 1 else None
+    prev_year = single_year - 1 if single_year is not None else None
+    
+    kpis_meta = [
+        {"key": "total_instructors", "label": "Active Instructors", "icon": "fas fa-chalkboard-teacher", "color": "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)"},
+        {"key": "avg_sessions_per_instructor", "label": "Avg Sessions/Mo", "icon": "fas fa-chart-line", "color": "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"},
+        {"key": "top_region_sessions", "label": "Top Region", "icon": "fas fa-map-marked-alt", "color": "linear-gradient(135deg, #001f3f 0%, #001226 100%)"},
+        {"key": "unprocessed_sessions", "label": "Unprocessed", "icon": "fas fa-exclamation-circle", "color": "linear-gradient(135deg, #dc3545 0%, #c82333 100%)"}
+    ]
+    
+    kpi_list = []
+    sparklines = {}
+    for m in kpis_meta:
+        k = m["key"]
+        curr_val = float(curr_res.get(k) or 0)
+        prev_val = float(prev_res.get(k) or 0)
+        if curr_val == int(curr_val): curr_val = int(curr_val)
+        if prev_val == int(prev_val): prev_val = int(prev_val)
+        
+        trend = calc_trend(curr_val, prev_val)
+        insights = get_kpi_insight(m["label"], curr_val, prev_val, single_year, prev_year, max_month, month, quarter)
+        
+        kpi_list.append({
+            "label": m["label"],
+            "value": curr_val,
+            "icon": m["icon"],
+            "color": m["color"],
+            "trend": trend,
+            "insights": insights,
+            "trends": [prev_val, curr_val]
+        })
+        
+        sparklines[k.replace("total_", "").replace("_sessions", "").replace("avg_sessions_per_", "avg")] = [prev_val, curr_val]
+        
     return {
-        "total_instructors": int(row.get("total_instructors", 0) or 0),
-        "avg_sessions_per_instructor": round(float(row.get("avg_sessions_per_instructor", 0) or 0), 1),
-        "top_region": top_region_row.get("top_region", "-") or "-",
-        "top_region_sessions": int(top_region_row.get("top_region_sessions", 0) or 0),
-        "unprocessed_sessions": int(row.get("unprocessed_sessions", 0) or 0),
+        "kpis": kpi_list,
+        "sparklines": sparklines,
+        "metrics": curr_res
     }
 
-def get_instructor_session_log(years=None, region=None, program=None, instructor=None, limit=10, offset=0, dt_params=None) -> dict:
+def get_instructor_session_log(years=None, region=None, program=None, instructor=None, month=None, quarter=None, limit=10, offset=0, dt_params=None) -> dict:
     from backend.services.query_utils import get_datatables_sql
-    where_clause, params = _build_filters(years, region, program, instructor)
+    where_clause, params = _build_filters(years, region, program, instructor, month, quarter)
 
     search_sql = "TRUE"
     search_params = []
@@ -103,18 +200,17 @@ def get_instructor_session_log(years=None, region=None, program=None, instructor
             COALESCE(u.user_name, 'Unknown') AS name,
             COALESCE(u.role_name, 'Unknown') AS type,
             COALESCE(g.region_name, 'Unknown') AS region,
-            COUNT(f.sk_fact_session_id) AS sessions,
+            COUNT(DISTINCT f.sk_fact_session_id) AS sessions,
             STRING_AGG(DISTINCT COALESCE(act.activity_name, 'NA'), ', ') AS activity_types,
-            (SELECT COALESCE(SUM(total_exposure_count), 0) FROM {DATAMART_SCHEMA_NAME}.fact_attendance_exposure fae 
-             JOIN {DATAMART_SCHEMA_NAME}.fact_session fs ON fae.session_nk_id = fs.session_nk_id 
-             WHERE fs.sk_user_id = u.sk_user_id) AS students,
+            COALESCE(SUM(fae.total_exposure_count), 0) AS students,
             TO_CHAR(MAX(d.full_date), 'Mon DD') AS last_session
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON u.sk_user_id = f.sk_user_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_activity_type act ON f.sk_activity_type_id = act.sk_activity_type_id
-        {where_clause} AND {search_sql}
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure fae ON fae.session_nk_id = f.session_nk_id
+        WHERE {where_clause} AND {search_sql}
         GROUP BY u.sk_user_id, u.user_name, u.role_name, g.region_name
         {sort_sql}
         LIMIT %s OFFSET %s
@@ -129,8 +225,8 @@ def get_instructor_session_log(years=None, region=None, program=None, instructor
             FROM {DATAMART_SCHEMA_NAME}.fact_session f
             LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON u.sk_user_id = f.sk_user_id
-            {where_clause} AND {search_sql}
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON u.sk_user_id = u.sk_user_id
+            WHERE {where_clause} AND {search_sql}
             GROUP BY u.sk_user_id
         ) as sub
         """,
@@ -154,8 +250,8 @@ def get_instructor_session_log(years=None, region=None, program=None, instructor
         "total_count": total_count
     }
 
-def get_multi_program_instructors(years=None, region=None, program=None, instructor=None, limit=5) -> list[dict]:
-    where_clause, params = _build_filters(years, region, program, instructor)
+def get_multi_program_instructors(years=None, region=None, program=None, instructor=None, month=None, quarter=None, limit=5) -> list[dict]:
+    where_clause, params = _build_filters(years, region, program, instructor, month, quarter)
 
     rows = fetch_all(
         f"""
@@ -169,7 +265,7 @@ def get_multi_program_instructors(years=None, region=None, program=None, instruc
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON u.sk_user_id = f.sk_user_id
-        {where_clause}
+        WHERE {where_clause}
         GROUP BY u.sk_user_id, u.user_name, u.role_name, g.region_name
         HAVING COUNT(DISTINCT f.sk_program_id) > 1
         ORDER BY programs DESC, sessions DESC, name
@@ -190,8 +286,8 @@ def get_multi_program_instructors(years=None, region=None, program=None, instruc
         for row in rows
     ]
 
-def get_sessions_by_instructor_type(years=None, region=None, program=None, instructor=None) -> list[dict]:
-    where_clause, params = _build_filters(years, region, program, instructor)
+def get_sessions_by_instructor_type(years=None, region=None, program=None, instructor=None, month=None, quarter=None) -> list[dict]:
+    where_clause, params = _build_filters(years, region, program, instructor, month, quarter)
     rows = fetch_all(
         f"""
         SELECT
@@ -201,7 +297,7 @@ def get_sessions_by_instructor_type(years=None, region=None, program=None, instr
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON u.sk_user_id = f.sk_user_id
-        {where_clause}
+        WHERE {where_clause}
         GROUP BY u.role_name
         ORDER BY value DESC
         """,
@@ -209,12 +305,12 @@ def get_sessions_by_instructor_type(years=None, region=None, program=None, instr
     )
     return [{"label": row["label"], "value": float(row["value"] or 0)} for row in rows]
 
-def get_instructor_productivity(years=None, region=None, program=None, instructor=None, limit=20) -> list[dict]:
-    data = get_instructor_session_log(years=years, region=region, program=program, instructor=instructor, limit=limit)
+def get_instructor_productivity(years=None, region=None, program=None, instructor=None, month=None, quarter=None, limit=20) -> list[dict]:
+    data = get_instructor_session_log(years=years, region=region, program=program, instructor=instructor, month=month, quarter=quarter, limit=limit)
     return [{"label": row["name"], "value": float(row["sessions"])} for row in data["table"]]
 
-def get_monthly_instructor_activity(years=None, region=None, program=None, instructor=None) -> list[dict]:
-    where_clause, params = _build_filters(years, region, program, instructor)
+def get_monthly_instructor_activity(years=None, region=None, program=None, instructor=None, month=None, quarter=None) -> list[dict]:
+    where_clause, params = _build_filters(years, region, program, instructor, month, quarter)
     rows = fetch_all(
         f"""
         SELECT
@@ -224,7 +320,7 @@ def get_monthly_instructor_activity(years=None, region=None, program=None, instr
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-        {where_clause}
+        WHERE {where_clause}
         GROUP BY TO_CHAR(d.full_date, 'Mon'), EXTRACT(MONTH FROM d.full_date)
         ORDER BY sort_key
         """,

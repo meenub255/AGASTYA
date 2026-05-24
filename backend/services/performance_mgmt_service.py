@@ -4,6 +4,52 @@ from backend.config import DATAMART_SCHEMA_NAME, DEFAULT_YEAR
 
 logger = logging.getLogger(__name__)
 DW = DATAMART_SCHEMA_NAME
+from datetime import datetime
+
+def currentYearYTD(year: int) -> int:
+    """
+    Returns the maximum month (1-12) to include in the YTD calculations for the given year.
+    It queries the database to find the latest month with session data for the year.
+    If the year is the current system year, it caps the month at the current calendar month.
+    """
+    query = f"""
+        SELECT MAX(d.month_actual) AS max_month
+        FROM {DW}.fact_session f
+        JOIN {DW}.dim_date d ON d.date_id = f.date_id
+        WHERE d.year_actual = %s
+    """
+    row = fetch_one(query, [year])
+    max_month = row.get("max_month")
+    
+    current_yr = datetime.now().year
+    current_mo = datetime.now().month
+    
+    if max_month is None:
+        if year == current_yr:
+            return current_mo
+        return 12
+        
+    if year == current_yr:
+        return min(int(max_month), current_mo)
+        
+    return int(max_month)
+
+def _apply_ytd_filter(clauses: list[str], params: list, years: list[int] | list[str] | None) -> int | None:
+    single_year = None
+    if years and len(years) == 1:
+        try:
+            single_year = int(years[0])
+        except (ValueError, TypeError):
+            pass
+    elif years is None or len(years) == 0:
+        single_year = DEFAULT_YEAR
+
+    if single_year is not None:
+        max_month = currentYearYTD(single_year)
+        clauses.append("d.month_actual <= %s")
+        params.append(max_month)
+        return max_month
+    return None
 
 
 def get_performance_mgmt_filters(region=None, years=None):
@@ -58,7 +104,7 @@ def get_performance_mgmt_data(region=None, years=None, month=None, quarter=None,
         clauses.append(c); params.extend(p)
         
         # Default to current year if no year provided
-        effective_year = years if years is not None and len(years) > 0 else [DEFAULT_YEAR]
+        effective_year = [int(y) for y in (years if years is not None and len(years) > 0 else [DEFAULT_YEAR])]
         c, p = get_list_filter_clause("d.year_actual", effective_year, cast_type="int")
         clauses.append(c); params.extend(p)
         
@@ -91,6 +137,11 @@ def get_performance_mgmt_data(region=None, years=None, month=None, quarter=None,
             clauses.append("d.year_actual = %s")
             params.append(int(period))
         
+        # Apply YTD month boundary filtering if month and quarter are not specified
+        max_month = None
+        if not month and not quarter:
+            max_month = _apply_ytd_filter(clauses, params, effective_year)
+
         where_sql = " AND ".join(clauses) if clauses else "TRUE"
 
         # KPI Query
@@ -109,6 +160,7 @@ def get_performance_mgmt_data(region=None, years=None, month=None, quarter=None,
         total_instructors = int(kpi_row.get("total_instructors", 0) or 0)
         total_sessions    = int(kpi_row.get("total_sessions", 0) or 0)
         avg_per_inst      = round(total_sessions / total_instructors, 1) if total_instructors else 0
+        total_students_val = int(kpi_row.get("total_students", 0) or 0)
 
         # Insight Logic (Top Region)
         top_region_row = fetch_one(f"""
@@ -145,35 +197,33 @@ def get_performance_mgmt_data(region=None, years=None, month=None, quarter=None,
                      "Instructor engagement has dropped, pulling down average delivery." if avg_status == "Low/Decline" else 
                      "Steady delivery rate per instructor.")
                      
-        stu_status = "High" if int(kpi_row.get("total_students", 0) or 0) > 10000 else "Average"
+        stu_status = "High" if total_students_val > 10000 else "Average"
         stu_reason = f"Strong attendance, majorly supported by {top_region} ({top_students} students)."
 
-        # Trend Calculation (Period-over-Period)
-        # We need to find the previous period based on the current filters
-        prev_where_sql = "TRUE"
+        # Previous Year same period
+        prev_clauses = []
         prev_params = []
         
-        # Simple implementation: If one year is selected, compare to previous year.
-        # If one month is selected, compare to previous month.
-        if years and len(years) == 1 and (not month or len(month) == 0):
-            prev_year = [str(int(years[0]) - 1)]
-            c, p = get_list_filter_clause("g.region_name", region); prev_params.extend(p)
-            c, p = get_list_filter_clause("d.year_actual", prev_year, cast_type="int"); prev_params.extend(p)
-            prev_where_sql = " AND ".join([get_list_filter_clause("g.region_name", region)[0], get_list_filter_clause("d.year_actual", prev_year, cast_type="int")[0]])
-        elif month and len(month) == 1 and years and len(years) == 1:
-            m_val = int(month[0])
-            y_val = int(years[0])
-            prev_m = m_val - 1
-            prev_y = y_val
-            if prev_m == 0:
-                prev_m = 12
-                prev_y = y_val - 1
-            
-            c, p = get_list_filter_clause("g.region_name", region); prev_params.extend(p)
-            prev_params.append(prev_y)
-            prev_params.append(prev_m)
-            prev_where_sql = get_list_filter_clause("g.region_name", region)[0] + " AND d.year_actual = %s AND d.month_actual = %s"
+        c, p = get_list_filter_clause("g.region_name", region)
+        prev_clauses.append(c); prev_params.extend(p)
         
+        # Subtract 1 from all selected years
+        prev_year_vals = [y - 1 for y in effective_year]
+        c, p = get_list_filter_clause("d.year_actual", prev_year_vals, cast_type="int")
+        prev_clauses.append(c); prev_params.extend(p)
+        
+        c, p = get_list_filter_clause(fiscal_q_expr, quarter, cast_type="int")
+        prev_clauses.append(c); prev_params.extend(p)
+        
+        c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
+        prev_clauses.append(c); prev_params.extend(p)
+        
+        # Apply the SAME YTD month boundary of the current year to the previous year
+        if not month and not quarter:
+            _apply_ytd_filter(prev_clauses, prev_params, effective_year)
+            
+        prev_where_sql = " AND ".join(prev_clauses) if prev_clauses else "TRUE"
+
         prev_kpi_row = fetch_one(f"""
             SELECT
                 COUNT(DISTINCT f.sk_user_id)                   AS total_instructors,
@@ -198,76 +248,187 @@ def get_performance_mgmt_data(region=None, years=None, month=None, quarter=None,
         prev_avg = round(prev_sessions / prev_instructors, 1) if prev_instructors else 0
         prev_students = int(prev_kpi_row.get("total_students", 0) or 0)
 
-        # Compute monthly averages for trend comparison
-        # Count distinct active months in both the current and previous periods
-        curr_month_count = fetch_one(f"""
-            SELECT COUNT(DISTINCT d.month_actual) AS active_months
-            FROM {DW}.fact_session f
-            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-            LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
-            WHERE {where_sql}
-        """, params).get("active_months", 1) or 1
-        curr_month_count = max(int(curr_month_count), 1)
-
-        prev_month_count = fetch_one(f"""
-            SELECT COUNT(DISTINCT d.month_actual) AS active_months
-            FROM {DW}.fact_session f
-            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-            LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
-            WHERE {prev_where_sql}
-        """, prev_params).get("active_months", 1) or 1
-        prev_month_count = max(int(prev_month_count), 1)
-
-        # Monthly averages
-        curr_inst_avg  = round(total_instructors / curr_month_count, 1)
-        prev_inst_avg  = round(prev_instructors / prev_month_count, 1)
-        curr_sess_avg  = round(total_sessions / curr_month_count, 1)
-        prev_sess_avg  = round(prev_sessions / prev_month_count, 1)
-        total_students_val = int(kpi_row.get("total_students", 0) or 0)
-        curr_stu_avg   = round(total_students_val / curr_month_count, 1)
-        prev_stu_avg   = round(prev_students / prev_month_count, 1)
+        # Trend percentages using cumulative YTD totals
+        trend_instructors = calc_trend(total_instructors, prev_instructors)
+        trend_avg_sessions = calc_trend(avg_per_inst, prev_avg)
+        trend_sessions = calc_trend(total_sessions, prev_sessions)
+        trend_students = calc_trend(total_students_val, prev_students)
         
-        # Determine overall average trend for dynamic coloring
-        overall_trend = calc_trend(avg_per_inst, prev_avg)
-        
-        # Base logic: If ANY filter (year, month, region, quarter) is applied, we switch from Orange.
+        overall_trend = trend_avg_sessions
+
+        # Determine if filters are applied
         is_filtered = True if (years and len(years) > 0) or (month and len(month) > 0) or (region and len(region) > 0) or (quarter and len(quarter) > 0) else False
+
+        # Build dynamic insights
+        single_year = effective_year[0] if len(effective_year) == 1 else None
+        prev_year = single_year - 1 if single_year is not None else None
+        
+        months_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        
+        if month and len(month) == 1:
+            month_range_str = months_names[int(month[0]) - 1]
+        elif quarter and len(quarter) == 1:
+            q = int(quarter[0])
+            if q == 1: month_range_str = "Apr-Jun"
+            elif q == 2: month_range_str = "Jul-Sep"
+            elif q == 3: month_range_str = "Oct-Dec"
+            else: month_range_str = "Jan-Mar"
+        elif max_month:
+            month_range_str = f"Jan-{months_names[max_month-1]}" if 1 <= max_month <= 12 else "YTD"
+        else:
+            month_range_str = "YTD"
+
+        suggestions_db = {
+            "Instructors": {
+                "up": [
+                    "<strong>Scale Peer Mentorship Program:</strong> Appoint senior instructors as regional mentors to maintain delivery quality across new cohorts.",
+                    "<strong>Implement Multi-Curriculum Cross-Training:</strong> Conduct workshops to certify existing instructors in secondary subjects, improving utility.",
+                    "<strong>Optimize Deployment Logistics:</strong> Use geo-clustering algorithms to assign instructors to nearby schools, reducing daily travel time."
+                ],
+                "down": [
+                    "<strong>Streamline Recruitment Timelines:</strong> Reduce the hiring bottleneck by digitizing background checks, cutting onboarding time.",
+                    "<strong>Deploy a Retention Incentive Matrix:</strong> Introduce tiered quarterly retention bonuses and merit certificates for instructors.",
+                    "<strong>Establish a Standby Trainer Pool:</strong> Maintain a 15% reserve of certified on-call backup instructors per region to cover attrition."
+                ],
+                "neutral": [
+                    "<strong>Initiate Regional Skills Audits:</strong> Map current instructor capabilities against upcoming specialized program requirements.",
+                    "<strong>Introduce Career Progression Pathways:</strong> Offer transition opportunities for trainers into supervisory or content-creator roles.",
+                    "<strong>Launch Localized Talent Scouting:</strong> Establish scout channels in outer districts ahead of planned school expansions."
+                ]
+            },
+            "Avg Sessions": {
+                "up": [
+                    "<strong>Optimize High-Cadence Delivery:</strong> Document delivery schedules of high-performing instructors to establish best practices.",
+                    "<strong>Introduce Peer Coaching:</strong> Pair instructors delivering fewer sessions with high-cadence instructors to share calendar strategies.",
+                    "<strong>Align Target Benchmarks:</strong> Gradually adjust soft targets upwards for matured regions to reflect high average session delivery."
+                ],
+                "down": [
+                    "<strong>Conduct Instructor Survey:</strong> Gather feedback to identify scheduling conflicts, travel issues, or administrative overhead.",
+                    "<strong>Optimize District Route Planning:</strong> Group school assignments geographically to minimize travel time between sessions.",
+                    "<strong>Provide Scheduling Software:</strong> Enable instructors to self-book sessions through an automated scheduling platform to prevent conflicts."
+                ],
+                "neutral": [
+                    "<strong>Monitor Session Density:</strong> Track weekly session delivery per instructor to identify early indicators of burnout or stagnation.",
+                    "<strong>Standardize Scheduling Calendars:</strong> Implement weekly schedule templates for field instructors to ensure steady cadence.",
+                    "<strong>Incentivize Mid-Week Sessions:</strong> Offer minor travel allowances for teaching on historically low-volume weekdays (e.g. Wednesday)."
+                ]
+            },
+            "Sessions": {
+                "up": [
+                    "<strong>Sustain School Partnerships:</strong> Send quarterly program impact reports to school headmasters to secure renewal commitments.",
+                    "<strong>Scale to Surrounding Clusters:</strong> Map schools adjacent to current partners to scale session volume with minimal logistics overhead.",
+                    "<strong>Conduct Refresher Onboarding:</strong> Accelerate onboarding for returning school cohorts to launch sessions earlier in the academic year."
+                ],
+                "down": [
+                    "<strong>Re-engage Inactive Partner Schools:</strong> Conduct direct coordinator outreach to resolve administrative blocks delaying session startups.",
+                    "<strong>Establish Regional Recovery Calendars:</strong> Set up makeup session slots on weekends/holidays to recover missed academic days.",
+                    "<strong>Coordinate Fleet Availability:</strong> Align dispatch schedules of delivery vehicles to ensure timely arrival of classroom training kits."
+                ],
+                "neutral": [
+                    "<strong>Balance Monthly Cadence:</strong> Audit calendar calendars to smooth out session spikes, avoiding end-of-quarter rush fatigue.",
+                    "<strong>Review School MOU Commitments:</strong> Benchmark delivered sessions against agreed MOU targets to ensure partner accountability.",
+                    "<strong>Diversify Training Formats:</strong> Supplement physical sessions with hybrid virtual classroom sessions to maintain delivery volume."
+                ]
+            },
+            "Students": {
+                "up": [
+                    "<strong>Deploy Large-Assembly Formats:</strong> Expand use of group teaching layouts in auditoriums to maximize per-session attendance.",
+                    "<strong>Strengthen Community Partnerships:</strong> Coordinate with parent-teacher groups to drive higher student turnout during off-peak seasons.",
+                    "<strong>Create Student Referral Badges:</strong> Reward students who invite friends from adjacent classrooms to attend exposure programs."
+                ],
+                "down": [
+                    "<strong>Optimize Session Timings:</strong> Reschedule program sessions to align with peak school attendance hours (avoiding late afternoons).",
+                    "<strong>Establish Attendance Incentives:</strong> Distribute branded learning kits (notebooks, pens) to students achieving 100% session attendance.",
+                    "<strong>Audit Classroom Capacity:</strong> Identify regional schools with low classroom density and shift focus to larger consolidated campuses."
+                ],
+                "neutral": [
+                    "<strong>Monitor Attendance Ratios:</strong> Track daily student attendance rates per school to flag early dropouts and trigger parent alerts.",
+                    "<strong>Host Regional Knowledge Carnivals:</strong> Organize weekend science/math fairs to re-engage student groups and boost program reach.",
+                    "<strong>Standardize Classroom Size Limits:</strong> Establish optimal student-to-trainer ratios to protect delivery quality while scaling headcount."
+                ]
+            }
+        }
+
+        # Format helper
+        def fmt(v):
+            return str(int(v)) if v == int(v) else f"{v:.1f}"
+
+        # Generate insights for each card
+        insights_data = {}
+        for key, label, curr_val, prev_val, trend in [
+            ("total_instructors", "Instructors", total_instructors, prev_instructors, trend_instructors),
+            ("avg_sessions", "Avg Sessions", avg_per_inst, prev_avg, trend_avg_sessions),
+            ("total_sessions", "Sessions", total_sessions, prev_sessions, trend_sessions),
+            ("total_students", "Students", total_students_val, prev_students, trend_students),
+        ]:
+            is_up = trend["dir"] == "up"
+            is_down = trend["dir"] == "down"
+            pct_str = f"{abs(trend['pct'])}%"
+            
+            if single_year is not None:
+                if is_up:
+                    change_desc = f"representing an increase of <strong>{pct_str}</strong> compared to last year"
+                elif is_down:
+                    change_desc = f"representing a decrease of <strong>{pct_str}</strong> compared to last year"
+                else:
+                    change_desc = "remaining unchanged compared to last year"
+                
+                comparison_text = (
+                    f"In the current year-to-date period ({month_range_str}) of <strong>{single_year}</strong>, the total {label.lower()} is <strong>{fmt(curr_val)}</strong> "
+                    f"while the previous year-to-date period ({month_range_str}) of <strong>{prev_year}</strong> was <strong>{fmt(prev_val)}</strong> ({change_desc})."
+                )
+            else:
+                comparison_text = f"Currently viewing aggregated data across multiple years. Total {label.lower()} is <strong>{fmt(curr_val)}</strong>."
+                
+            sugs = suggestions_db[label][trend["dir"]][:3]
+            
+            insights_data[key] = {
+                "title": f"{label} Performance Insights",
+                "icon": "fas fa-users" if label == "Instructors" else (
+                        "fas fa-chart-line" if label == "Avg Sessions" else (
+                        "fas fa-chalkboard-teacher" if label == "Sessions" else "fas fa-user-graduate")),
+                "color": "linear-gradient(135deg, #f39c12 0%, #e67e22 100%)" if label == "Instructors" else (
+                         "linear-gradient(135deg, #3498db 0%, #2980b9 100%)" if label == "Avg Sessions" else (
+                         "linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)" if label == "Sessions" else (
+                         "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)"))),
+                "name": label,
+                "comparison_text": comparison_text,
+                "suggestions": sugs
+            }
 
         kpis = [
             {
                 "label": "Instructors", "subtitle": "Total Active",
                 "value": total_instructors, "icon": "fas fa-users", "color": "bg-info",
-                "trend": calc_trend(curr_inst_avg, prev_inst_avg),
-                "insights": {
-                    "top_performing": top_region, "status": inst_status, "reason": inst_reason,
-                    "curr_avg": curr_inst_avg, "prev_avg": prev_inst_avg
-                }
+                "trend": trend_instructors,
+                "insights": insights_data["total_instructors"]
             },
             {
                 "label": "Avg Sessions", "subtitle": "Per Instructor",
                 "value": avg_per_inst, "icon": "fas fa-chart-line", "color": "bg-success",
-                "trend": calc_trend(avg_per_inst, prev_avg),
-                "insights": {"top_performing": top_region, "status": avg_status, "reason": avg_reason}
+                "trend": trend_avg_sessions,
+                "insights": insights_data["avg_sessions"]
             },
             {
                 "label": "Sessions", "subtitle": "Total Delivered",
                 "value": total_sessions, "icon": "fas fa-chalkboard-teacher", "color": "bg-navy-blue",
-                "trend": calc_trend(curr_sess_avg, prev_sess_avg),
-                "insights": {
-                    "top_performing": top_region, "status": sess_status, "reason": sess_reason,
-                    "curr_avg": curr_sess_avg, "prev_avg": prev_sess_avg
-                }
+                "trend": trend_sessions,
+                "insights": insights_data["total_sessions"]
             },
             {
                 "label": "Students", "subtitle": "Total Impacted",
                 "value": total_students_val, "icon": "fas fa-user-graduate", "color": "bg-danger",
-                "trend": calc_trend(curr_stu_avg, prev_stu_avg),
-                "insights": {
-                    "top_performing": top_region, "status": stu_status, "reason": stu_reason,
-                    "curr_avg": curr_stu_avg, "prev_avg": prev_stu_avg
-                }
+                "trend": trend_students,
+                "insights": insights_data["total_students"]
             },
         ]
+
+        sparklines = {
+            "instructors": [prev_instructors, total_instructors],
+            "avg_sessions": [prev_avg, avg_per_inst],
+            "sessions": [prev_sessions, total_sessions],
+            "students": [prev_students, total_students_val]
+        }
 
         # DataTable Logic
         search_sql = "TRUE"
@@ -326,7 +487,8 @@ def get_performance_mgmt_data(region=None, years=None, month=None, quarter=None,
             "recordsTotal": int(total_count),
             "recordsFiltered": int(total_count),
             "is_filtered": is_filtered,
-            "overall_trend": overall_trend
+            "overall_trend": overall_trend,
+            "sparklines": sparklines
         }
     except Exception as e:
         logger.error(f"performance mgmt data error: {e}", exc_info=True)
@@ -348,12 +510,17 @@ def get_performance_mgmt_chart_data(
         clauses, params = [], []
         c, p = get_list_filter_clause("g.region_name", region); clauses.append(c); params.extend(p)
         # Default to 2026 if no year provided
-        effective_year = years if years is not None and len(years) > 0 else [2026]
+        effective_year = [int(y) for y in (years if years is not None and len(years) > 0 else [2026])]
         c, p = get_list_filter_clause("d.year_actual", effective_year, cast_type="int"); clauses.append(c); params.extend(p)
         c, p = get_list_filter_clause("d.month_actual", month, cast_type="int"); clauses.append(c); params.extend(p)
         
         fiscal_q_expr = "CASE WHEN d.month_actual IN (4,5,6) THEN 1 WHEN d.month_actual IN (7,8,9) THEN 2 WHEN d.month_actual IN (10,11,12) THEN 3 ELSE 4 END"
         c, p = get_list_filter_clause(fiscal_q_expr, quarter, cast_type="int"); clauses.append(c); params.extend(p)
+        
+        # Apply YTD month boundary filtering if month and quarter are not specified
+        if not month and not quarter:
+            _apply_ytd_filter(clauses, params, effective_year)
+
         where = " AND ".join(clauses)
 
         # Choose grouping dimension
@@ -433,7 +600,7 @@ def get_performance_mgmt_region_chart(
         clauses, params = [], []
         c, p = get_list_filter_clause("g.region_name", region); clauses.append(c); params.extend(p)
         # Default to 2026 if no year provided
-        effective_year = years if years is not None and len(years) > 0 else [2026]
+        effective_year = [int(y) for y in (years if years is not None and len(years) > 0 else [2026])]
         c, p = get_list_filter_clause("d.year_actual", effective_year, cast_type="int"); clauses.append(c); params.extend(p)
         c, p = get_list_filter_clause("d.month_actual", month, cast_type="int"); clauses.append(c); params.extend(p)
         
@@ -460,6 +627,10 @@ def get_performance_mgmt_region_chart(
         elif group_by == "year" and period:
             clauses.append("d.year_actual = %s")
             params.append(int(period))
+        
+        # Apply YTD month boundary filtering if month, quarter, and period are not specified
+        if not month and not quarter and not period:
+            _apply_ytd_filter(clauses, params, effective_year)
 
         where_sql = " AND ".join(clauses) if clauses else "TRUE"
 
@@ -500,12 +671,17 @@ def get_performance_mgmt_drilldown(
             params.append([r.lower().replace("_", " ") for r in region_list])
         
         # Default to 2026 if no year provided
-        effective_year = years if years is not None and len(years) > 0 else [2026]
+        effective_year = [int(y) for y in (years if years is not None and len(years) > 0 else [2026])]
         c, p = get_list_filter_clause("d.year_actual", effective_year, cast_type="int"); clauses.append(c); params.extend(p)
         c, p = get_list_filter_clause("d.month_actual", month, cast_type="int"); clauses.append(c); params.extend(p)
         
         fiscal_q_expr = "CASE WHEN d.month_actual IN (4,5,6) THEN 1 WHEN d.month_actual IN (7,8,9) THEN 2 WHEN d.month_actual IN (10,11,12) THEN 3 ELSE 4 END"
         c, p = get_list_filter_clause(fiscal_q_expr, quarter, cast_type="int"); clauses.append(c); params.extend(p)
+
+        # Apply YTD month boundary filtering if month/quarter filters and sub-year period are not specified
+        is_sub_year_period = (group_by == "month" or group_by == "quarter" or group_by == "day") and period_label
+        if not month and not quarter and not is_sub_year_period:
+            _apply_ytd_filter(clauses, params, effective_year)
 
         # Parse period label for date filter
         months_short = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']

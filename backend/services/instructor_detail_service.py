@@ -33,42 +33,46 @@ def get_instructor_detail_filters():
     }
 
 
-def get_instructor_detail_data(instructor_name=None, years=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
+def get_instructor_detail_data(instructor_name=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
     try:
-        clauses = []
-        params = []
+        kpi_defs = [
+            {"key": "total_sessions", "label": "Total Sessions", "sql": "COUNT(DISTINCT f.session_nk_id)", "icon": "fas fa-clock", "color": "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)"},
+            {"key": "total_students", "label": "Total Students Reach", "sql": "SUM(COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0))", "icon": "fas fa-user-graduate", "color": "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"},
+            {"key": "unique_schools", "label": "Schools Covered", "sql": "COUNT(DISTINCT f.sk_school_id)", "icon": "fas fa-school", "color": "linear-gradient(135deg, #001f3f 0%, #001226 100%)"},
+            {"key": "teachers_trained", "label": "Teachers Trained", "sql": "SUM(CASE WHEN a.activity_name ILIKE ANY (ARRAY['%%Meeting%%', '%%Training%%']) THEN GREATEST(COALESCE(f.no_of_teachers_participated, 0), COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0), 1) ELSE COALESCE(f.no_of_teachers_participated, 0) END)", "icon": "fas fa-chalkboard-teacher", "color": "linear-gradient(135deg, #dc3545 0%, #c82333 100%)"}
+        ]
         
-        c, p = get_list_filter_clause("u.user_name", instructor_name)
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("d.year_actual", years, cast_type="int")
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
-        clauses.append(c); params.extend(p)
-        
-        where_sql = " AND ".join(clauses)
-        
-        # 1. Aggregated KPIs for top cards (sidebar filters only)
-        kpi_sql = f"""
-            SELECT 
-                COUNT(DISTINCT f.session_nk_id) as total_sessions,
-                SUM(COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0)) as total_students,
-                COUNT(DISTINCT f.sk_school_id) as unique_schools,
-                SUM(CASE 
-                    WHEN a.activity_name ILIKE ANY (ARRAY['%%Meeting%%', '%%Training%%']) 
-                    THEN GREATEST(COALESCE(f.no_of_teachers_participated, 0), COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0), 1)
-                    ELSE COALESCE(f.no_of_teachers_participated, 0)
-                END) as teachers_trained
-            FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        from_clause = f"""
+            {DATAMART_SCHEMA_NAME}.fact_session f
             JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
-            WHERE {where_sql}
         """
-        kpi_res = fetch_one(kpi_sql, params)
+        
+        kpi_list, sparklines = calculate_ytd_kpis(
+            kpi_defs=kpi_defs,
+            from_clause=from_clause,
+            years=years,
+            month=month,
+            quarter=quarter,
+            region=None # instructor detail filter doesn't have region on sidebar
+        )
+        
+        where_sql, params, max_month = build_standard_filters(
+            years=years,
+            month=month,
+            quarter=quarter
+        )
+        
+        # Add instructor filter manually
+        if instructor_name:
+            from backend.services.query_utils import get_list_filter_clause
+            c, p = get_list_filter_clause("u.user_name", instructor_name)
+            if c != "TRUE":
+                where_sql = f"{where_sql} AND {c}" if where_sql != "TRUE" else c
+                params.extend(p)
 
         # 2. DataTable Logic
         search_sql = "TRUE"
@@ -133,12 +137,8 @@ def get_instructor_detail_data(instructor_name=None, years=None, month=None, lim
         rows = fetch_all(sql, params + search_params + [limit, offset])
         
         return {
-            "kpis": [
-                {"label": "Total Sessions", "value": int(kpi_res.get("total_sessions", 0) or 0), "icon": "fas fa-clock", "color": "bg-info"},
-                {"label": "Total Students Reach", "value": int(kpi_res.get("total_students", 0) or 0), "icon": "fas fa-user-graduate", "color": "bg-success"},
-                {"label": "Schools Covered", "value": int(kpi_res.get("unique_schools", 0) or 0), "icon": "fas fa-school", "color": "bg-navy-blue"},
-                {"label": "Teachers Trained", "value": int(kpi_res.get("teachers_trained", 0) or 0), "icon": "fas fa-chalkboard-teacher", "color": "bg-danger"},
-            ],
+            "kpis": kpi_list,
+            "sparklines": sparklines,
             "table": [{**row, "date": row["date"].strftime("%Y-%m-%d") if row["date"] else None} for row in rows],
             "total_count": total_count
         }

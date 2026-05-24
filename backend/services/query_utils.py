@@ -1,10 +1,141 @@
 from collections.abc import Sequence
 import logging
+import datetime
 
 logger = logging.getLogger(__name__)
 
 from backend.config import DEFAULT_YEAR
 from backend.db import get_datamart_conn
+
+def get_ytd_max_month(year: int) -> int:
+    """
+    Returns the maximum month (1-12) to include in the YTD calculations for the given year.
+    If the year is 2026, it returns 5.
+    If it is the current calendar year, it caps at current calendar month.
+    """
+    if year == 2026:
+        return 5
+    current_yr = datetime.datetime.now().year
+    current_mo = datetime.datetime.now().month
+    if year == current_yr:
+        return current_mo
+    return 12
+
+def apply_ytd_filter(where_clause: str, params: list, years: list | None, date_alias: str = "d") -> tuple[str, list]:
+    single_year = None
+    if years and len(years) == 1:
+        try:
+            single_year = int(years[0])
+        except (ValueError, TypeError):
+            pass
+    elif years is None or len(years) == 0:
+        single_year = DEFAULT_YEAR
+
+    if single_year is not None:
+        max_month = get_ytd_max_month(single_year)
+        month_expr = f"{date_alias}.month_actual"
+        
+        where_clause_stripped = where_clause.strip() if where_clause else ""
+        starts_with_where = where_clause_stripped.upper().startswith("WHERE")
+        
+        if starts_with_where:
+            # It starts with WHERE (e.g. from build_dimension_filters)
+            if len(where_clause_stripped) > 5:
+                where_clause = where_clause + f" AND {month_expr} <= %s"
+            else:
+                where_clause = f"WHERE {month_expr} <= %s"
+        else:
+            # It does not start with WHERE (e.g. raw condition list)
+            if where_clause_stripped != "":
+                where_clause = where_clause + f" AND {month_expr} <= %s"
+            else:
+                where_clause = f"{month_expr} <= %s"
+                
+        params.append(max_month)
+        
+    return where_clause, params
+
+def build_standard_filters(
+    years=None,
+    region=None,
+    area=None,
+    program=None,
+    month=None,
+    quarter=None,
+    date_alias: str = "d",
+    region_expr: str = "g.region_name",
+    area_expr: str = "g.area_name",
+    program_expr: str = "p.program_name"
+) -> tuple[str, list, int | None]:
+    """
+    Builds the standard WHERE clause and params, including:
+    - Region, Area, Program, Years, Month, and Quarter filters.
+    - Automatic YTD capping if month and quarter are not specified.
+    Returns: where_sql, params, max_month
+    """
+    clauses = []
+    params = []
+    
+    # 1. Region
+    if region is not None:
+        c, p = get_list_filter_clause(region_expr, region)
+        if c != "TRUE":
+            clauses.append(c); params.extend(p)
+            
+    # 2. Area
+    if area is not None:
+        c, p = get_list_filter_clause(area_expr, area)
+        if c != "TRUE":
+            clauses.append(c); params.extend(p)
+            
+    # 3. Program
+    if program is not None:
+        c, p = get_list_filter_clause(program_expr, program)
+        if c != "TRUE":
+            clauses.append(c); params.extend(p)
+            
+    # 4. Years
+    effective_years = years
+    if effective_years is None or (isinstance(effective_years, list) and len(effective_years) == 0):
+        effective_years = [DEFAULT_YEAR]
+        
+    c, p = get_list_filter_clause(f"{date_alias}.year_actual", effective_years, cast_type="int")
+    if c != "TRUE":
+        clauses.append(c); params.extend(p)
+        
+    # 5. Quarter
+    if quarter is not None:
+        fiscal_q_expr = f"CASE WHEN {date_alias}.month_actual IN (4,5,6) THEN 1 WHEN {date_alias}.month_actual IN (7,8,9) THEN 2 WHEN {date_alias}.month_actual IN (10,11,12) THEN 3 ELSE 4 END"
+        c, p = get_list_filter_clause(fiscal_q_expr, quarter, cast_type="int")
+        if c != "TRUE":
+            clauses.append(c); params.extend(p)
+            
+    # 6. Month
+    if month is not None:
+        c, p = get_list_filter_clause(f"{date_alias}.month_actual", month, cast_type="int")
+        if c != "TRUE":
+            clauses.append(c); params.extend(p)
+            
+    # 7. Apply YTD capping if month and quarter are not specified
+    max_month = None
+    if not month and not quarter:
+        single_year = None
+        if effective_years and len(effective_years) == 1:
+            try:
+                single_year = int(effective_years[0])
+            except (ValueError, TypeError):
+                pass
+        elif effective_years is None or len(effective_years) == 0:
+            single_year = DEFAULT_YEAR
+            
+        if single_year is not None:
+            max_month = get_ytd_max_month(single_year)
+            clauses.append(f"{date_alias}.month_actual <= %s")
+            params.append(max_month)
+            
+    where_sql = " AND ".join(clauses) if clauses else "TRUE"
+    return where_sql, params, max_month
+
 
 def get_list_filter_clause(column: str, value: str | list[str] | None, cast_type: str | None = None, use_default_year: bool = True) -> tuple[str, list]:
     """
@@ -167,3 +298,251 @@ def get_datatables_sql(dt_params: dict, searchable_columns: list[str], sortable_
             sort_sql = f'ORDER BY "{col_name}" {direction}'
 
     return search_sql, search_params, sort_sql
+
+def calc_trend(curr, prev):
+    if not prev:
+        return {"pct": 0, "dir": "neutral"}
+    diff = curr - prev
+    pct = round((diff / prev) * 100, 1) if prev > 0 else 0
+    direction = "up" if diff > 0 else ("down" if diff < 0 else "neutral")
+    return {"pct": pct, "dir": direction}
+
+def get_kpi_insight(
+    label: str,
+    curr_val: float,
+    prev_val: float,
+    single_year: int | None,
+    prev_year: int | None,
+    max_month: int | None,
+    month_filter: list | None = None,
+    quarter_filter: list | None = None
+) -> dict:
+    """
+    Generates standard KPI insights structure including YoY comparison text,
+    trend direction, and exactly 3 strategic suggestions.
+    """
+    trend = calc_trend(curr_val, prev_val)
+    is_up = trend["dir"] == "up"
+    is_down = trend["dir"] == "down"
+    pct_str = f"{abs(trend['pct'])}%"
+    
+    def fmt(v):
+        return str(int(v)) if v == int(v) else f"{v:.1f}"
+        
+    months_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    
+    if month_filter and len(month_filter) == 1:
+        month_range_str = months_names[int(month_filter[0]) - 1]
+    elif quarter_filter and len(quarter_filter) == 1:
+        q = int(quarter_filter[0])
+        if q == 1: month_range_str = "Apr-Jun"
+        elif q == 2: month_range_str = "Jul-Sep"
+        elif q == 3: month_range_str = "Oct-Dec"
+        else: month_range_str = "Jan-Mar"
+    elif max_month:
+        month_range_str = f"Jan-{months_names[max_month-1]}" if 1 <= max_month <= 12 else "YTD"
+    else:
+        month_range_str = "YTD"
+        
+    if single_year is not None:
+        if is_up:
+            change_desc = f"representing an increase of <strong>{pct_str}</strong> compared to last year"
+        elif is_down:
+            change_desc = f"representing a decrease of <strong>{pct_str}</strong> compared to last year"
+        else:
+            change_desc = "remaining unchanged compared to last year"
+        
+        comparison_text = (
+            f"In the current year-to-date period ({month_range_str}) of <strong>{single_year}</strong>, the total {label.lower()} is <strong>{fmt(curr_val)}</strong> "
+            f"while the previous year-to-date period ({month_range_str}) of <strong>{prev_year}</strong> was <strong>{fmt(prev_val)}</strong> ({change_desc})."
+        )
+    else:
+        comparison_text = f"Currently viewing aggregated data across multiple years. Total {label.lower()} is <strong>{fmt(curr_val)}</strong>."
+        
+    suggestions_db = {
+        "instructors": {
+            "up": [
+                "<strong>Scale Peer Mentorship Program:</strong> Appoint senior instructors as regional mentors to maintain delivery quality across new cohorts.",
+                "<strong>Implement Multi-Curriculum Cross-Training:</strong> Conduct workshops to certify existing instructors in secondary subjects, improving utility.",
+                "<strong>Optimize Deployment Logistics:</strong> Use geo-clustering algorithms to assign instructors to schools, reducing travel time."
+            ],
+            "down": [
+                "<strong>Streamline Recruitment Timelines:</strong> Reduce the hiring bottleneck by digitizing background checks, cutting onboarding time.",
+                "<strong>Deploy a Retention Incentive Matrix:</strong> Introduce tiered quarterly retention bonuses and merit certificates for instructors.",
+                "<strong>Establish a Standby Trainer Pool:</strong> Maintain a 15% reserve of certified backup instructors to cover attrition."
+            ],
+            "neutral": [
+                "<strong>Initiate Regional Skills Audits:</strong> Map current instructor capabilities against upcoming specialized program requirements.",
+                "<strong>Introduce Career Progression Pathways:</strong> Offer transition opportunities for trainers into supervisory or content-creator roles.",
+                "<strong>Launch Localized Talent Scouting:</strong> Establish scout channels in outer districts ahead of planned school expansions."
+            ]
+        },
+        "sessions": {
+            "up": [
+                "<strong>Reward High-Session Hubs:</strong> Launch regional awards for hubs maintaining 100% scheduled session compliance.",
+                "<strong>Implement Standardized Curriculum Packages:</strong> Package teaching kits to ensure fast classroom setup and execution.",
+                "<strong>Establish Cross-Hub Resource Sharing:</strong> Share materials and reserve instructors during peak campaign months."
+            ],
+            "down": [
+                "<strong>Adopt Automated Scheduling Tools:</strong> Implement mobile calendars that send instant alerts to school principals and trainers.",
+                "<strong>Run Make-up Sessions:</strong> Dedicate specific weeks at the end of the term to catch up on cancelled classes.",
+                "<strong>Cross-Train Reserve Instructors:</strong> Certify administration staff in curricula to cover instructor sick days."
+            ],
+            "neutral": [
+                "<strong>Audit Calendar Gaps:</strong> Identify under-scheduled weekdays to maximize classroom utilization.",
+                "<strong>Introduce Dual-Session Formats:</strong> Run concurrent morning and afternoon sessions to increase capacity without expanding headcount.",
+                "<strong>Standardize Scheduling Templates:</strong> Provide simple templates for instructors to pre-book their entire semester."
+            ]
+        },
+        "students": {
+            "up": [
+                "<strong>Roll Out Level-2 Specializations:</strong> Launch follow-up modules to sustain engagement with successfully reached cohorts.",
+                "<strong>Leverage Peer-to-Peer Mentoring:</strong> Train high-performing students to act as assistant leaders inside classrooms.",
+                "<strong>Distribute Completion Certificates:</strong> Award official credentials to motivate students to attend the complete curriculum."
+            ],
+            "down": [
+                "<strong>Launch Student Attendance Competitions:</strong> Work with teachers to offer small awards for sections reaching 100% attendance.",
+                "<strong>Reschedule Session Windows:</strong> Time classes during high-attendance morning slots instead of late afternoon slots.",
+                "<strong>Incorporate Interactive Learning Kits:</strong> Integrate hands-on models and tablet activities to maximize classroom interest."
+            ],
+            "neutral": [
+                "<strong>Execute Classroom Audits:</strong> Audit session capacities to ensure instructors are assigned to appropriately-sized student groups.",
+                "<strong>Introduce Multi-Section Scheduling:</strong> Combine smaller sections or split over-crowded classrooms to ensure optimal teaching environments.",
+                "<strong>Run Double-Session Rotations:</strong> Run twin cohorts (morning/afternoon) to reach more students with current staff."
+            ]
+        }
+    }
+    
+    l_lower = label.lower()
+    cat = "sessions"
+    if "instructor" in l_lower or "staff" in l_lower or "lead" in l_lower or "driver" in l_lower or "user" in l_lower or "member" in l_lower or "people" in l_lower:
+        cat = "instructors"
+    elif "student" in l_lower or "exposure" in l_lower or "reached" in l_lower or "people" in l_lower or "pupil" in l_lower or "child" in l_lower:
+        cat = "students"
+        
+    s_dir = trend["dir"]
+    sugs = suggestions_db[cat][s_dir][:3]
+    
+    icon_map = {
+        "instructors": "fas fa-users",
+        "students": "fas fa-user-graduate",
+        "sessions": "fas fa-chalkboard-teacher"
+    }
+    
+    color_map = {
+        "instructors": "linear-gradient(135deg, #f39c12 0%, #e67e22 100%)",
+        "students": "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)",
+        "sessions": "linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)"
+    }
+    
+    return {
+        "title": f"{label} Performance Insights",
+        "icon": icon_map[cat],
+        "color": color_map[cat],
+        "name": label,
+        "comparison_text": comparison_text,
+        "suggestions": sugs
+    }
+
+def calculate_ytd_kpis(
+    *,
+    kpi_defs: list[dict],
+    from_clause: str,
+    years: list | None = None,
+    region: list | None = None,
+    area: list | None = None,
+    program: list | None = None,
+    month: list | None = None,
+    quarter: list | None = None,
+    date_alias: str = "d",
+    region_expr: str = "g.region_name",
+    area_expr: str = "g.area_name",
+    program_expr: str = "p.program_name"
+) -> tuple[list[dict], dict]:
+    """
+    Helper function to calculate YTD KPIs, YoY trends, sparklines, and insights.
+    """
+    # 1. Build current period filters
+    where_sql, params, max_month = build_standard_filters(
+        years=years,
+        region=region,
+        area=area,
+        program=program,
+        month=month,
+        quarter=quarter,
+        date_alias=date_alias,
+        region_expr=region_expr,
+        area_expr=area_expr,
+        program_expr=program_expr
+    )
+    
+    # 2. Query current period
+    select_clause = ", ".join([f"{d['sql']} AS {d['key']}" for d in kpi_defs])
+    curr_sql = f"SELECT {select_clause} FROM {from_clause} WHERE {where_sql}"
+    curr_row = fetch_one(curr_sql, params)
+    
+    # 3. Build previous period filters
+    effective_years = years
+    if effective_years is None or (isinstance(effective_years, list) and len(effective_years) == 0):
+        effective_years = [DEFAULT_YEAR]
+    prev_year_vals = [int(y) - 1 for y in effective_years]
+    
+    prev_where_sql, prev_params, _ = build_standard_filters(
+        years=prev_year_vals,
+        region=region,
+        area=area,
+        program=program,
+        month=month,
+        quarter=quarter,
+        date_alias=date_alias,
+        region_expr=region_expr,
+        area_expr=area_expr,
+        program_expr=program_expr
+    )
+    
+    # Query previous period
+    prev_sql = f"SELECT {select_clause} FROM {from_clause} WHERE {prev_where_sql}"
+    prev_row = fetch_one(prev_sql, prev_params)
+    
+    # 4. Resolve year context for insights
+    single_year = effective_years[0] if len(effective_years) == 1 else None
+    prev_year = single_year - 1 if single_year is not None else None
+    
+    kpis = []
+    sparklines = {}
+    
+    for d in kpi_defs:
+        key = d["key"]
+        label = d["label"]
+        icon = d["icon"]
+        color = d["color"]
+        
+        # Coerce to float to handle SUMs, averages etc.
+        curr_val = float(curr_row.get(key) or 0)
+        prev_val = float(prev_row.get(key) or 0)
+        
+        # Format integer values nicely
+        if curr_val == int(curr_val): curr_val = int(curr_val)
+        if prev_val == int(prev_val): prev_val = int(prev_val)
+        
+        trend = calc_trend(curr_val, prev_val)
+        insights = get_kpi_insight(label, curr_val, prev_val, single_year, prev_year, max_month, month, quarter)
+        
+        kpis.append({
+            "label": label,
+            "value": curr_val,
+            "icon": icon,
+            "color": color,
+            "trend": trend,
+            "insights": insights,
+            "trends": [prev_val, curr_val]
+        })
+        
+        # Sparklines mapping: exact 2-point YTD comparison data
+        sparkline_key = key.replace("total_", "").replace("active_", "")
+        sparklines[sparkline_key] = [prev_val, curr_val]
+        
+    return kpis, sparklines
+
+
+

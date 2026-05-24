@@ -22,44 +22,56 @@ def get_nationwide_filters():
             INNER JOIN {DW}.fact_session f ON d.date_id = f.date_id
             WHERE d.year_actual IS NOT NULL ORDER BY d.year_actual DESC
         """)]
-        return {"regions": regions, "years": years}
+        months = [{"id": r["month_actual"], "name": r["month_name"].strip()} for r in fetch_all(f"""
+            SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text,'MM'),'Month') AS month_name 
+            FROM {DW}.dim_date d
+            INNER JOIN {DW}.fact_session f ON d.date_id = f.date_id
+            ORDER BY d.month_actual
+        """)]
+        return {"regions": regions, "years": years, "months": months, "quarters": [1, 2, 3, 4]}
     except Exception as e:
         logger.error(f"nationwide filters error: {e}")
-        return {"regions": [], "years": []}
+        return {"regions": [], "years": [], "months": [], "quarters": []}
 
 
-def get_nationwide_data(years=None, region=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
+def get_nationwide_data(years=None, region=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import build_standard_filters, calc_trend, get_kpi_insight, get_datatables_sql, get_list_filter_clause
+    from backend.config import DEFAULT_YEAR
     try:
-        clauses = []
-        params = []
+        where_sql, params, max_month = build_standard_filters(
+            years=years,
+            region=region,
+            month=month,
+            quarter=quarter,
+            date_alias="d"
+        )
         
-        c, p = get_list_filter_clause("d.year_actual", years, cast_type="int")
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("g.region_name", region)
-        clauses.append(c); params.extend(p)
-        
-        where_sql = " AND ".join(clauses)
+        effective_years = years
+        if effective_years is None or (isinstance(effective_years, list) and len(effective_years) == 0):
+            effective_years = [DEFAULT_YEAR]
+            
+        single_year = None
+        if len(effective_years) == 1:
+            try:
+                single_year = int(effective_years[0])
+            except (ValueError, TypeError):
+                pass
+        prev_year = single_year - 1 if single_year is not None else None
 
-        # KPIs
-        kpi_row = fetch_one(f"""
+        # Current KPIs
+        curr_kpi = fetch_one(f"""
             SELECT
-                COUNT(DISTINCT f.sk_fact_session_id)  AS total_sessions,
-                COALESCE(SUM(e.total_exposure_count), 0) AS total_students,
-                COUNT(DISTINCT p.program_name)         AS total_programs,
                 COUNT(DISTINCT f.sk_user_id)           AS total_instructors,
-                COUNT(DISTINCT g.nk_region_id)         AS total_states
+                COUNT(DISTINCT g.nk_region_id)         AS total_states,
+                COUNT(DISTINCT f.sk_program_id)        AS total_programs
             FROM {DW}.fact_session f
             LEFT JOIN {DW}.dim_date d        ON f.date_id = d.date_id
             LEFT JOIN {DW}.dim_geography g   ON f.sk_geography_id = g.sk_geography_id
-            LEFT JOIN {DW}.dim_program p     ON f.sk_program_id = p.sk_program_id
-            LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-            WHERE {where_sql or 'TRUE'}
+            WHERE {where_sql}
         """, params)
 
         # Separate query for drivers
-        driver_row = fetch_one(f"""
+        curr_driver = fetch_one(f"""
             SELECT COUNT(DISTINCT v.sk_driver_id) AS total_drivers
             FROM {DW}.fact_vehicle_operations v
             LEFT JOIN {DW}.dim_date d       ON v.date_id = d.date_id
@@ -67,44 +79,62 @@ def get_nationwide_data(years=None, region=None, limit=15, offset=0, dt_params=N
             WHERE {where_sql}
         """, params)
 
-        # Insight Logic
-        top_region_row = fetch_one(f"""
-            SELECT COALESCE(g.region_name, 'Unknown') as region_name, 
-                   COUNT(DISTINCT f.sk_fact_session_id) as sessions,
-                   COALESCE(SUM(e.total_exposure_count), 0) as students,
-                   COUNT(DISTINCT f.sk_user_id) as instructors
-            FROM {DW}.fact_session f
-            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-            LEFT JOIN {DW}.dim_date d ON f.date_id = d.date_id
-            LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-            WHERE {where_sql or 'TRUE'}
-            GROUP BY g.region_name
-            ORDER BY sessions DESC
-            LIMIT 1
-        """, params)
-        
-        top_region = top_region_row.get("region_name", "N/A") if top_region_row else "N/A"
-        top_sessions = int(top_region_row.get("sessions", 0)) if top_region_row else 0
-        top_instructors = int(top_region_row.get("instructors", 0)) if top_region_row else 0
-        
-        inst_status = "Growth" if int(kpi_row.get("total_instructors", 0)) > 1000 else "Stable"
-        inst_reason = f"Active workforce expansion, led by {top_region} ({top_instructors} active)."
-        
-        driver_status = "Stable"
-        driver_reason = f"Logistics network maintained across {int(kpi_row.get('total_states', 0))} states."
-        
-        state_status = "Expansive"
-        state_reason = f"Broad geographic footprint including {top_region}."
-        
-        prog_status = "Diversified"
-        prog_reason = f"Wide range of educational programs being delivered nationwide."
+        # Previous Year KPIs (for YoY comparison)
+        prev_year_vals = [int(y) - 1 for y in effective_years]
+        prev_where_sql, prev_params, _ = build_standard_filters(
+            years=prev_year_vals,
+            region=region,
+            month=month,
+            quarter=quarter,
+            date_alias="d"
+        )
 
-        kpis = [
-            {"label": "Total Instructors",    "value": int(kpi_row.get("total_instructors", 0) or 0), "icon": "fas fa-users",              "color": "bg-info", "status": inst_status, "reason": inst_reason},
-            {"label": "Total Drivers",        "value": int(driver_row.get("total_drivers", 0) or 0),  "icon": "fas fa-truck",              "color": "bg-success", "status": driver_status, "reason": driver_reason},
-            {"label": "States Reached",        "value": int(kpi_row.get("total_states", 0) or 0),      "icon": "fas fa-map-marker-alt",    "color": "bg-navy-blue", "status": state_status, "reason": state_reason},
-            {"label": "Total Programs",       "value": int(kpi_row.get("total_programs", 0) or 0),    "icon": "fas fa-project-diagram",    "color": "bg-danger", "status": prog_status, "reason": prog_reason},
+        prev_kpi = fetch_one(f"""
+            SELECT
+                COUNT(DISTINCT f.sk_user_id)           AS total_instructors,
+                COUNT(DISTINCT g.nk_region_id)         AS total_states,
+                COUNT(DISTINCT f.sk_program_id)        AS total_programs
+            FROM {DW}.fact_session f
+            LEFT JOIN {DW}.dim_date d        ON f.date_id = d.date_id
+            LEFT JOIN {DW}.dim_geography g   ON f.sk_geography_id = g.sk_geography_id
+            WHERE {prev_where_sql}
+        """, prev_params)
+
+        prev_driver = fetch_one(f"""
+            SELECT COUNT(DISTINCT v.sk_driver_id) AS total_drivers
+            FROM {DW}.fact_vehicle_operations v
+            LEFT JOIN {DW}.dim_date d       ON v.date_id = d.date_id
+            LEFT JOIN {DW}.dim_geography g  ON v.sk_geography_id = g.sk_geography_id
+            WHERE {prev_where_sql}
+        """, prev_params)
+
+        kpis_data = [
+            {"key": "total_instructors", "label": "Total Instructors", "curr": curr_kpi.get("total_instructors") or 0, "prev": prev_kpi.get("total_instructors") or 0, "icon": "fas fa-users", "color": "bg-info"},
+            {"key": "total_drivers", "label": "Total Drivers", "curr": curr_driver.get("total_drivers") or 0, "prev": prev_driver.get("total_drivers") or 0, "icon": "fas fa-truck", "color": "bg-success"},
+            {"key": "total_states", "label": "States Reached", "curr": curr_kpi.get("total_states") or 0, "prev": prev_kpi.get("total_states") or 0, "icon": "fas fa-map-marker-alt", "color": "bg-navy-blue"},
+            {"key": "total_programs", "label": "Total Programs", "curr": curr_kpi.get("total_programs") or 0, "prev": prev_kpi.get("total_programs") or 0, "icon": "fas fa-project-diagram", "color": "bg-danger"},
         ]
+
+        kpis = []
+        sparklines = {}
+        for item in kpis_data:
+            curr_val = int(item["curr"])
+            prev_val = int(item["prev"])
+            trend = calc_trend(curr_val, prev_val)
+            insights = get_kpi_insight(item["label"], curr_val, prev_val, single_year, prev_year, max_month, month, quarter)
+            
+            kpis.append({
+                "label": item["label"],
+                "value": curr_val,
+                "icon": item["icon"],
+                "color": item["color"],
+                "trend": trend,
+                "insights": insights,
+                "trends": [prev_val, curr_val]
+            })
+            
+            sparkline_key = item["key"].replace("total_", "")
+            sparklines[sparkline_key] = [prev_val, curr_val]
 
         # Chart 1: Monthly sessions trend (for line chart with trend line)
         sessions_trend_monthly = fetch_all(f"""
@@ -188,6 +218,7 @@ def get_nationwide_data(years=None, region=None, limit=15, offset=0, dt_params=N
 
         return {
             "kpis": kpis,
+            "sparklines": sparklines,
             "charts": {
                 "sessions_trend_monthly": [{"label": r["label"], "value": float(r["value"])} for r in sessions_trend_monthly],
                 "students_by_region":     [{"label": r["label"], "value": float(r["value"])} for r in students_by_region],
@@ -197,4 +228,4 @@ def get_nationwide_data(years=None, region=None, limit=15, offset=0, dt_params=N
         }
     except Exception as e:
         logger.error(f"nationwide data error: {e}", exc_info=True)
-        return {"kpis": [], "charts": {}, "table": [], "total_count": 0}
+        return {"kpis": [], "sparklines": {}, "charts": {}, "table": [], "total_count": 0}

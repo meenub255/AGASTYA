@@ -34,50 +34,39 @@ def get_attendance_filters():
     }
 
 
-def get_attendance_data(region=None, area=None, years=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
+def get_attendance_data(region=None, area=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
     
-    clauses = []
-    params = []
+    kpi_defs = [
+        {"key": "total_staff", "label": "Total Field Staff", "sql": "COUNT(DISTINCT f.sk_user_id)", "icon": "fas fa-users-cog", "color": "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)"},
+        {"key": "total_days_present", "label": "Cumulative Days Present", "sql": "COUNT(DISTINCT CONCAT(f.sk_user_id, '_', f.date_id))", "icon": "fas fa-calendar-check", "color": "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"},
+        {"key": "total_sessions", "label": "Total Sessions Conducted", "sql": "COUNT(f.sk_fact_session_id)", "icon": "fas fa-chalkboard-teacher", "color": "linear-gradient(135deg, #001f3f 0%, #001226 100%)"},
+        {"key": "avg_sessions", "label": "Avg Sessions / Day", "sql": "COUNT(f.sk_fact_session_id)::float / NULLIF(COUNT(DISTINCT CONCAT(f.sk_user_id, '_', f.date_id)), 0)", "icon": "fas fa-chart-line", "color": "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)"}
+    ]
     
-    c, p = get_list_filter_clause("g.region_name", region)
-    clauses.append(c); params.extend(p)
-    
-    c, p = get_list_filter_clause("g.area_name", area)
-    clauses.append(c); params.extend(p)
-    
-    c, p = get_list_filter_clause("d.year_actual", years, cast_type="int")
-    clauses.append(c); params.extend(p)
-    
-    c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
-    clauses.append(c); params.extend(p)
-    
-    where_sql = " AND ".join(clauses)
-    
-    # 1. KPI Query (remains mostly same, limited by sidebar filters only)
-    kpi_sql = f"""
-        SELECT 
-            COUNT(DISTINCT f.sk_user_id) as total_staff,
-            COUNT(f.sk_fact_session_id) as total_sessions,
-            COUNT(DISTINCT CONCAT(f.sk_user_id, '_', f.date_id)) as total_days_present
-        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+    from_clause = f"""
+        {DATAMART_SCHEMA_NAME}.fact_session f
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-        WHERE {where_sql}
     """
-    kpis_raw = fetch_one(kpi_sql, params)
     
-    staff = kpis_raw.get('total_staff', 0)
-    sessions = kpis_raw.get('total_sessions', 0)
-    days_present = kpis_raw.get('total_days_present', 0)
-    avg_sessions = round(sessions / days_present, 2) if days_present > 0 else 0
-
-    kpi_list = [
-        {"label": "Total Field Staff", "value": staff, "icon": "fas fa-users-cog", "color": "bg-info"},
-        {"label": "Cumulative Days Present", "value": days_present, "icon": "fas fa-calendar-check", "color": "bg-success"},
-        {"label": "Total Sessions Conducted", "value": sessions, "icon": "fas fa-chalkboard-teacher", "color": "bg-navy-blue"},
-        {"label": "Avg Sessions / Day", "value": avg_sessions, "icon": "fas fa-chart-line", "color": "bg-danger"}
-    ]
+    kpi_list, sparklines = calculate_ytd_kpis(
+        kpi_defs=kpi_defs,
+        from_clause=from_clause,
+        years=years,
+        region=region,
+        area=area,
+        month=month,
+        quarter=quarter
+    )
+    
+    where_sql, params, max_month = build_standard_filters(
+        years=years,
+        region=region,
+        area=area,
+        month=month,
+        quarter=quarter
+    )
 
     # 2. DataTable Logic
     search_sql = "TRUE"
@@ -181,6 +170,7 @@ def get_attendance_data(region=None, area=None, years=None, month=None, limit=15
 
     return {
         "kpis": kpi_list,
+        "sparklines": sparklines,
         "table": rows, 
         "total_count": total_count,
         "charts": {

@@ -62,61 +62,50 @@ def get_instructor_summary_filters(years=None, region=None, area=None):
         return {"regions": [], "areas": [], "years": [], "months": []}
 
 
-def get_instructor_summary_data(region=None, area=None, years=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
- 
-    where_clauses = []
-    params = []
+def get_instructor_summary_data(region=None, area=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
     
-    r_clause, r_params = get_list_filter_clause("g.region_name", region)
-    where_clauses.append(r_clause)
-    params.extend(r_params)
-
-    a_clause, a_params = get_list_filter_clause("g.area_name", area)
-    where_clauses.append(a_clause)
-    params.extend(a_params)
-
-    y_clause, y_params = get_list_filter_clause("d.year_actual", years, cast_type="int")
-    where_clauses.append(y_clause)
-    params.extend(y_params)
-
-    m_clause, m_params = get_list_filter_clause("d.month_actual", month, cast_type="int")
-    where_clauses.append(m_clause)
-    params.extend(m_params)
+    kpi_defs = [
+        {"key": "days_worked", "label": "Days Present", "sql": "COUNT(DISTINCT f.date_id)", "icon": "fas fa-calendar-check", "color": "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)"},
+        {"key": "total_sessions", "label": "Sessions", "sql": "COUNT(f.sk_fact_session_id)", "icon": "fas fa-clock", "color": "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"},
+        {"key": "school_exposures", "label": "School Reach", "sql": "SUM(COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0)) - SUM(CASE WHEN a.activity_name ILIKE ANY (ARRAY['%%YIL%%', '%%Young Instructor Leader%%', '%%SF%%', '%%Science Fair%%', '%%CV%%', '%%Community Visit%%']) OR p.program_name ILIKE ANY (ARRAY['%%YIL%%', '%%SF%%', '%%CV%%', '%%Community%%']) OR st.topic_description ILIKE ANY (ARRAY['%%YIL%%', '%%Science Fair%%']) THEN COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0) ELSE 0 END)", "icon": "fas fa-school", "color": "linear-gradient(135deg, #001f3f 0%, #001226 100%)"},
+        {"key": "combined_exposures", "label": "Community Reach", "sql": "SUM(CASE WHEN a.activity_name ILIKE ANY (ARRAY['%%YIL%%', '%%Young Instructor Leader%%', '%%SF%%', '%%Science Fair%%', '%%CV%%', '%%Community Visit%%']) OR p.program_name ILIKE ANY (ARRAY['%%YIL%%', '%%SF%%', '%%CV%%', '%%Community%%']) OR st.topic_description ILIKE ANY (ARRAY['%%YIL%%', '%%Science Fair%%']) THEN COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0) ELSE 0 END)", "icon": "fas fa-users", "color": "linear-gradient(135deg, #dc3545 0%, #c82333 100%)"}
+    ]
     
-    where_sql = " AND ".join(where_clauses)
-    
-    # Get KPIs (limited by sidebar filters only)
-    kpi_sql = f"""
-        SELECT 
-            COUNT(DISTINCT d.full_date) as days_worked,
-            COUNT(f.sk_fact_session_id) as total_sessions,
-            SUM(COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0)) as total_exposures,
-            SUM(CASE WHEN 
-                a.activity_name ILIKE ANY (ARRAY['%%YIL%%', '%%Young Instructor Leader%%', '%%SF%%', '%%Science Fair%%', '%%CV%%', '%%Community Visit%%']) 
-                OR p.program_name ILIKE ANY (ARRAY['%%YIL%%', '%%SF%%', '%%CV%%', '%%Community%%'])
-                OR st.topic_description ILIKE ANY (ARRAY['%%YIL%%', '%%Science Fair%%'])
-                THEN COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0) ELSE 0 END) as combined_exposures
-        FROM {DATAMART_SCHEMA_NAME}.dim_user u
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON u.sk_user_id = f.sk_user_id
+    from_clause = f"""
+        {DATAMART_SCHEMA_NAME}.fact_session f
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_subject_topic st ON f.sk_subject_topic_id = st.sk_subject_topic_id
-        WHERE {where_sql or 'TRUE'}
     """
-    kpi_res = fetch_one(kpi_sql, params)
     
-    total_exp = int(kpi_res["total_exposures"] or 0)
-    comb_exp = int(kpi_res["combined_exposures"] or 0)
+    kpi_list, sparklines = calculate_ytd_kpis(
+        kpi_defs=kpi_defs,
+        from_clause=from_clause,
+        years=years,
+        region=region,
+        area=area,
+        month=month,
+        quarter=quarter
+    )
     
+    where_sql, params, max_month = build_standard_filters(
+        years=years,
+        region=region,
+        area=area,
+        month=month,
+        quarter=quarter
+    )
+    
+    # Extract calculated values for backwards compatibility in API response
     kpis = {
-        "days_worked": kpi_res["days_worked"] or 0,
-        "total_sessions": int(kpi_res["total_sessions"] or 0),
-        "school_exposures": total_exp - comb_exp,
-        "combined_exposures": comb_exp
+        "days_worked": int(kpi_list[0]["value"]),
+        "total_sessions": int(kpi_list[1]["value"]),
+        "school_exposures": int(kpi_list[2]["value"]),
+        "combined_exposures": int(kpi_list[3]["value"])
     }
 
     # DataTable Logic
@@ -181,36 +170,28 @@ def get_instructor_summary_data(region=None, area=None, years=None, month=None, 
     return {
         "table": table_data,
         "total_count": total_count,
-        "kpis": kpis
+        "kpis": kpi_list,
+        "sparklines": sparklines,
+        "metrics": kpis
     }
 
 
-def get_monthly_instructor_summary(region=None, area=None, years=None, month=None):
-    from backend.services.query_utils import get_list_filter_clause
+def get_monthly_instructor_summary(region=None, area=None, years=None, month=None, quarter=None):
+    from backend.services.query_utils import build_standard_filters
     
-    where_clauses = []
-    params = []
+    where_sql, params, max_month = build_standard_filters(
+        years=years,
+        region=region,
+        area=area,
+        month=month,
+        quarter=quarter
+    )
     
-    r_clause, r_params = get_list_filter_clause("g.region_name", region)
-    where_clauses.append(r_clause)
-    params.extend(r_params)
-
-    a_clause, a_params = get_list_filter_clause("g.area_name", area)
-    where_clauses.append(a_clause)
-    params.extend(a_params)
-
-    y_clause, y_params = get_list_filter_clause("d.year_actual", years, cast_type="int")
-    where_clauses.append(y_clause)
-    params.extend(y_params)
-
-    m_clause, m_params = get_list_filter_clause("d.month_actual", month, cast_type="int")
-    where_clauses.append(m_clause)
-    params.extend(m_params)
-    
-    where_sql = " AND ".join(where_clauses)
-    
-    # Check if we should group by year (comparison mode)
-    is_multi_year = isinstance(years, list) and len([v for v in years if v]) > 1
+    effective_years = years
+    if effective_years is None or (isinstance(effective_years, list) and len(effective_years) == 0):
+        from backend.config import DEFAULT_YEAR
+        effective_years = [DEFAULT_YEAR]
+    is_multi_year = len(effective_years) > 1
     
     group_col = "d.year_actual::text" if is_multi_year else "'All Years'"
     
@@ -223,7 +204,7 @@ def get_monthly_instructor_summary(region=None, area=None, years=None, month=Non
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-        WHERE {where_sql or 'TRUE'}
+        WHERE {where_sql}
         GROUP BY d.month_name, {group_col}, d.month_actual
         ORDER BY d.month_actual, {group_col}
     """

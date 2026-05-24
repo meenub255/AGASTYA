@@ -42,66 +42,41 @@ def get_exposure_session_filters():
         return {"regions": [], "programs": [], "years": [], "months": []}
 
 
-def get_exposure_session_data(region=None, program=None, years=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
+def get_exposure_session_data(region=None, program=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
     try:
-        clauses = []
-        params = []
+        kpi_defs = [
+            {"key": "total_students", "label": "Total Students Exposed", "sql": "COALESCE(SUM(e.boys_count + e.girls_count), 0)", "icon": "fas fa-user-graduate", "color": "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)"},
+            {"key": "total_boys", "label": "Total Boys", "sql": "COALESCE(SUM(e.boys_count), 0)", "icon": "fas fa-male", "color": "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"},
+            {"key": "total_girls", "label": "Total Girls", "sql": "COALESCE(SUM(e.girls_count), 0)", "icon": "fas fa-female", "color": "linear-gradient(135deg, #001f3f 0%, #001226 100%)"},
+            {"key": "total_sessions", "label": "Total Sessions", "sql": "COUNT(DISTINCT f.session_nk_id)", "icon": "fas fa-chalkboard", "color": "linear-gradient(135deg, #dc3545 0%, #c82333 100%)"}
+        ]
         
-        c, p = get_list_filter_clause("g.region_name", region)
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("p.program_name", program)
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("d.year_actual", years, cast_type="int")
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
-        clauses.append(c); params.extend(p)
-        
-        where_sql = " AND ".join(clauses)
-
-        # 1. KPIs (sidebar filters only)
-        kpi_row = fetch_one(f"""
-            SELECT
-                COALESCE(SUM(e.boys_count + e.girls_count), 0) AS total_students,
-                COALESCE(SUM(e.boys_count), 0)                 AS total_boys,
-                COALESCE(SUM(e.girls_count), 0)                AS total_girls,
-                COUNT(DISTINCT f.session_nk_id)                AS total_sessions
-            FROM {DW}.fact_session f
+        from_clause = f"""
+            {DW}.fact_session f
             LEFT JOIN {DW}.dim_geography g  ON f.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DW}.dim_program p    ON f.sk_program_id = p.sk_program_id
             LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
             LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-            WHERE {where_sql}
-        """, params)
-
-        # Insight Logic
-        top_region_row = fetch_one(f"""
-            SELECT COALESCE(g.region_name, 'Unknown') as region_name, 
-                   COALESCE(SUM(e.total_exposure_count), 0) as students
-            FROM {DW}.fact_session f
-            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-            LEFT JOIN {DW}.dim_date d ON f.date_id = d.date_id
-            LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-            WHERE {where_sql}
-            GROUP BY g.region_name
-            ORDER BY students DESC
-            LIMIT 1
-        """, params)
-        top_region = top_region_row.get("region_name", "N/A") if top_region_row else "N/A"
+        """
         
-        boys = int(kpi_row.get("total_boys", 0) or 0)
-        girls = int(kpi_row.get("total_girls", 0) or 0)
-        gender_status = "Balanced" if abs(boys - girls) < (boys + girls) * 0.1 else "Skewed"
+        kpis, sparklines = calculate_ytd_kpis(
+            kpi_defs=kpi_defs,
+            from_clause=from_clause,
+            years=years,
+            region=region,
+            program=program,
+            month=month,
+            quarter=quarter
+        )
         
-        kpis = [
-            {"label": "Total Students Exposed", "value": int(kpi_row.get("total_students", 0) or 0), "icon": "fas fa-user-graduate",  "color": "bg-info", "status": "Growth", "reason": f"Significant educational reach, primarily in {top_region}."},
-            {"label": "Total Boys",              "value": boys,    "icon": "fas fa-male",           "color": "bg-success", "status": gender_status, "reason": "Strong participation from male students across programs."},
-            {"label": "Total Girls",             "value": girls,   "icon": "fas fa-female",         "color": "bg-navy-blue", "status": gender_status, "reason": "Encouraging female student engagement in all active areas."},
-            {"label": "Total Sessions",          "value": int(kpi_row.get("total_sessions", 0) or 0),"icon": "fas fa-chalkboard",     "color": "bg-danger", "status": "Stable", "reason": f"Consistent session delivery supporting {top_region} students."},
-        ]
+        where_sql, params, max_month = build_standard_filters(
+            years=years,
+            region=region,
+            program=program,
+            month=month,
+            quarter=quarter
+        )
 
         # 2. DataTable Logic
         search_sql = "TRUE"
@@ -188,6 +163,7 @@ def get_exposure_session_data(region=None, program=None, years=None, month=None,
 
         return {
             "kpis": kpis,
+            "sparklines": sparklines,
             "table": formatted,
             "total_count": int(total_count),
             "charts": {

@@ -22,45 +22,57 @@ def get_instructor_feedback_filters():
             WHERE d.year_actual IS NOT NULL 
             ORDER BY d.year_actual DESC
         """)]
-        return {"instructors": instructors, "years": years}
+        months = [{"id": r["month_actual"], "name": r["month_name"].strip()} for r in fetch_all(f"""
+            SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text,'MM'),'Month') AS month_name 
+            FROM {DW}.dim_date d
+            INNER JOIN {DW}.fact_session f ON d.date_id = f.date_id
+            ORDER BY d.month_actual
+        """)]
+        quarters = [1, 2, 3, 4]
+        return {"instructors": instructors, "years": years, "months": months, "quarters": quarters}
     except Exception as e:
         logger.error(f"instructor feedback filters error: {e}")
-        return {"instructors": [], "years": []}
+        return {"instructors": [], "years": [], "months": [], "quarters": []}
 
 
-def get_instructor_feedback_data(instructor_name=None, years=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
+def get_instructor_feedback_data(instructor_name=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
     try:
-        clauses = []
-        params = []
-        
-        c, p = get_list_filter_clause("u.user_name", instructor_name)
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("d.year_actual", years, cast_type="int")
-        clauses.append(c); params.extend(p)
-        
-        where_sql = " AND ".join(clauses)
-
-        # KPIs (sidebar filters only)
-        kpi_row = fetch_one(f"""
-            SELECT
-                COUNT(DISTINCT f.sk_user_id)             AS total_instructors,
-                COUNT(DISTINCT f.sk_fact_session_id)     AS total_sessions,
-                SUM(COALESCE(f.demo_session_count, 0))   AS demo_sessions,
-                SUM(COALESCE(f.hands_on_session_count,0))AS hands_on_sessions
-            FROM {DW}.fact_session f
-            LEFT JOIN {DW}.dim_user u  ON f.sk_user_id = u.sk_user_id
-            LEFT JOIN {DW}.dim_date d  ON f.date_id = d.date_id
-            WHERE {where_sql}
-        """, params)
-
-        kpis = [
-            {"label": "Instructors Reviewed",  "value": int(kpi_row.get("total_instructors", 0) or 0),  "icon": "fas fa-users",              "color": "bg-info"},
-            {"label": "Total Sessions",        "value": int(kpi_row.get("total_sessions", 0) or 0),     "icon": "fas fa-chalkboard-teacher", "color": "bg-success"},
-            {"label": "Demo Sessions",         "value": int(kpi_row.get("demo_sessions", 0) or 0),      "icon": "fas fa-flask",              "color": "bg-navy-blue"},
-            {"label": "Hands-on Sessions",     "value": int(kpi_row.get("hands_on_sessions", 0) or 0),  "icon": "fas fa-hands",              "color": "bg-danger"},
+        kpi_defs = [
+            {"key": "total_instructors", "label": "Instructors Reviewed", "sql": "COUNT(DISTINCT f.sk_user_id)", "icon": "fas fa-users", "color": "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)"},
+            {"key": "total_sessions", "label": "Total Sessions", "sql": "COUNT(DISTINCT f.sk_fact_session_id)", "icon": "fas fa-chalkboard-teacher", "color": "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"},
+            {"key": "demo_sessions", "label": "Demo Sessions", "sql": "SUM(COALESCE(f.demo_session_count, 0))", "icon": "fas fa-flask", "color": "linear-gradient(135deg, #001f3f 0%, #001226 100%)"},
+            {"key": "hands_on_sessions", "label": "Hands-on Sessions", "sql": "SUM(COALESCE(f.hands_on_session_count, 0))", "icon": "fas fa-hands", "color": "linear-gradient(135deg, #dc3545 0%, #c82333 100%)"}
         ]
+        
+        from_clause = f"""
+            {DW}.fact_session f
+            LEFT JOIN {DW}.dim_user u ON f.sk_user_id = u.sk_user_id
+            LEFT JOIN {DW}.dim_date d ON f.date_id = d.date_id
+        """
+        
+        kpi_list, sparklines = calculate_ytd_kpis(
+            kpi_defs=kpi_defs,
+            from_clause=from_clause,
+            years=years,
+            month=month,
+            quarter=quarter,
+            region=None # instructor feedback filter doesn't have region on sidebar
+        )
+        
+        where_sql, params, max_month = build_standard_filters(
+            years=years,
+            month=month,
+            quarter=quarter
+        )
+        
+        # Add instructor filter manually
+        if instructor_name:
+            from backend.services.query_utils import get_list_filter_clause
+            c, p = get_list_filter_clause("u.user_name", instructor_name)
+            if c != "TRUE":
+                where_sql = f"{where_sql} AND {c}" if where_sql != "TRUE" else c
+                params.extend(p)
 
         # DataTable Logic
         search_sql = "TRUE"
@@ -118,7 +130,7 @@ def get_instructor_feedback_data(instructor_name=None, years=None, limit=15, off
                 row["session_date"] = row["session_date"].strftime("%Y-%m-%d")
             formatted.append(row)
 
-        return {"kpis": kpis, "table": formatted, "total_count": int(total_count)}
+        return {"kpis": kpi_list, "sparklines": sparklines, "table": formatted, "total_count": int(total_count)}
     except Exception as e:
         logger.error(f"instructor feedback data error: {e}", exc_info=True)
         return {"kpis": [], "table": [], "total_count": 0}

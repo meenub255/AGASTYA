@@ -1,3 +1,4 @@
+from datetime import datetime
 from backend.services.query_utils import build_dimension_filters, fetch_all, fetch_one
 
 
@@ -5,8 +6,62 @@ LOCATION_EXPRESSION = "g.region_name"
 PROGRAM_EXPRESSION = "p.program_name"
 
 
-
 from backend.config import DEFAULT_YEAR
+
+def currentYearYTD(year: int, region: list[str] | None = None, program: list[str] | None = None) -> int:
+    """
+    Returns the maximum month (1-12) to include in the YTD calculations for the given year.
+    It queries the database to find the latest month with session data for the year.
+    If the year is the current system year, it caps the month at the current calendar month.
+    """
+    query = """
+        SELECT MAX(d.month_actual) AS max_month
+        FROM dw.fact_session f
+        JOIN dw.dim_date d ON d.date_id = f.date_id
+        WHERE d.year_actual = %s
+    """
+    row = fetch_one(query, [year])
+    max_month = row.get("max_month")
+    
+    current_yr = datetime.now().year
+    current_mo = datetime.now().month
+    
+    if max_month is None:
+        if year == current_yr:
+            return current_mo
+        return 12
+        
+    if year == current_yr:
+        return min(int(max_month), current_mo)
+        
+    return int(max_month)
+
+def previousYearSamePeriod(year: int, region: list[str] | None = None, program: list[str] | None = None) -> int:
+    """
+    Returns the same month range limit as currentYearYTD.
+    """
+    return currentYearYTD(year, region, program)
+
+def _apply_ytd_filter(where_clause: str, params: list, years: list[int] | list[str] | None, region: list[str] | None = None, program: list[str] | None = None) -> tuple[str, list]:
+    single_year = None
+    if years and len(years) == 1:
+        try:
+            single_year = int(years[0])
+        except (ValueError, TypeError):
+            pass
+    elif years is None or len(years) == 0:
+        single_year = DEFAULT_YEAR
+
+    if single_year is not None:
+        max_month = currentYearYTD(single_year, region, program)
+        if where_clause:
+            where_clause += " AND d.month_actual <= %s"
+        else:
+            where_clause = "WHERE d.month_actual <= %s"
+        params.append(max_month)
+        
+    return where_clause, params
+
 
 def _build_filters(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
     return build_dimension_filters(
@@ -50,15 +105,20 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year)
         }
     }
     
+    # Format helper
+    def fmt(v):
+        return str(int(v)) if v == int(v) else f"{v:.1f}"
+
+    max_month = currentYearYTD(single_year) if single_year is not None else 12
+    months_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    month_range_str = f"Jan-{months_names[max_month-1]}" if 1 <= max_month <= 12 else "YTD"
+
     for key, info in meta.items():
         curr_val = curr_vals.get(key, 0)
         prev_val = prev_vals.get(key, 0) if prev_vals else 0
-        # Monthly averages (supplied separately; fall back to raw value if not available)
-        curr_avg = curr_vals.get(key + "_avg", curr_val)
-        prev_avg = prev_vals.get(key + "_avg", prev_val) if prev_vals else 0
         trend = trends.get(key, {"pct": 0, "dir": "neutral"}) if trends else {"pct": 0, "dir": "neutral"}
         
-        # Build comparison text (average-based)
+        # Build YTD-based comparison text
         if single_year is not None:
             pct_str = f"{abs(trend['pct'])}%"
             if trend['dir'] == 'up':
@@ -68,17 +128,13 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year)
             else:
                 change_desc = "remaining unchanged compared to last year"
 
-            # Format as integer if whole number, otherwise 1 decimal place
-            def fmt(v):
-                return str(int(v)) if v == int(v) else f"{v:.1f}"
-
             comparison_text = (
-                f"In the current year <strong>{single_year}</strong>, the monthly average {info['name'].lower()} is <strong>{fmt(curr_avg)}</strong> "
-                f"while the previous year <strong>{prev_year}</strong> monthly average was <strong>{fmt(prev_avg)}</strong> ({change_desc})."
+                f"In the current year-to-date period ({month_range_str}) of <strong>{single_year}</strong>, the total active {info['name'].lower()} is <strong>{fmt(curr_val)}</strong> "
+                f"while the previous year-to-date period ({month_range_str}) of <strong>{prev_year}</strong> was <strong>{fmt(prev_val)}</strong> ({change_desc})."
             )
         else:
             comparison_text = (
-                f"Currently viewing aggregated data across multiple years. Monthly average {info['name'].lower()} is <strong>{curr_vals.get(key + '_avg', curr_val):.1f}</strong>."
+                f"Currently viewing aggregated data across multiple years. Total active {info['name'].lower()} is <strong>{fmt(curr_val)}</strong>."
             )
             
         rationale = ""
@@ -87,7 +143,7 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year)
         if key == "total_instructors":
             if trend['dir'] == 'down':
                 rationale = (
-                    f"The monthly average active instructors dropped from {prev_avg:.1f} to {curr_avg:.1f} in {single_year} (a decline of {abs(trend['pct'])}%). "
+                    f"The year-to-date ({month_range_str}) active instructors dropped from {fmt(prev_val)} to {fmt(curr_val)} in {single_year} (a decline of {abs(trend['pct'])}%). "
                     "This underperformance is caused by: (1) Seasonal attrition at the end of academic semesters that was not immediately "
                     "backfilled; (2) Recruitment delays due to stricter verification procedures introduced in early 2026; "
                     "(3) Operational halts in two regional centers undergoing leadership changes; (4) Natural transition of part-time trainers "
@@ -102,7 +158,7 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year)
                 ]
             elif trend['dir'] == 'up':
                 rationale = (
-                    f"Monthly average active instructors grew from {prev_avg:.1f} to {curr_avg:.1f} in {single_year} (up {trend['pct']}%). "
+                    f"Year-to-date ({month_range_str}) active instructors grew from {fmt(prev_val)} to {fmt(curr_val)} in {single_year} (up {trend['pct']}%). "
                     "This growth is driven by: (1) Scaling up recruitment partnerships with regional teaching colleges; "
                     "(2) Successful integration of a peer-mentorship program that minimized voluntary attrition; "
                     "(3) Expansion into new district clusters requiring localized onboarding."
@@ -115,7 +171,7 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year)
                 ]
             else:
                 rationale = (
-                    f"Monthly average active instructors remained steady at {curr_avg:.1f} (no significant change from {prev_avg:.1f}). "
+                    f"Year-to-date ({month_range_str}) active instructors remained steady at {fmt(curr_val)} (no significant change from {fmt(prev_val)}). "
                     "While this indicates balanced turnover and recruitment, it suggests a lack of geographic or program-specific growth."
                 )
                 suggestions = [
@@ -127,7 +183,7 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year)
         elif key == "total_drivers":
             if trend['dir'] == 'down':
                 rationale = (
-                    f"The monthly average active logistics drivers dropped to {curr_avg:.1f} from {prev_avg:.1f} in {single_year} (down {abs(trend['pct'])}%). "
+                    f"The year-to-date ({month_range_str}) active logistics drivers dropped to {fmt(curr_val)} from {fmt(prev_val)} in {single_year} (down {abs(trend['pct'])}%). "
                     "The primary reasons are: (1) Route consolidation which improved dispatch efficiency but reduced overall headcount; "
                     "(2) Fleet maintenance delays in central hubs leading to temporary driver stand-downs; "
                     "(3) Localized driver turnover due to competitive commercial haulage rates during harvest seasons."
@@ -141,7 +197,7 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year)
                 ]
             elif trend['dir'] == 'up':
                 rationale = (
-                    f"Monthly average active drivers increased from {prev_avg:.1f} to {curr_avg:.1f} (up {trend['pct']}%). "
+                    f"Year-to-date ({month_range_str}) active drivers increased from {fmt(prev_val)} to {fmt(curr_val)} (up {trend['pct']}%). "
                     "This growth reflects the expansion of logistics supply lines to support newly onboarded school clusters in remote regions."
                 )
                 suggestions = [
@@ -151,7 +207,7 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year)
                 ]
             else:
                 rationale = (
-                    f"Monthly average logistics driver count remains stable at {curr_avg:.1f}. "
+                    f"Year-to-date ({month_range_str}) active logistics driver count remains stable at {fmt(curr_val)}. "
                     "The current route map is fully supported, but there is zero redundancy if dispatch volume increases."
                 )
                 suggestions = [
@@ -236,13 +292,15 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year)
             "name": info["name"],
             "comparison_text": comparison_text,
             "rationale": rationale,
-            "suggestions": suggestions
+            "suggestions": suggestions[:3]
         }
         
     return insights
 
 def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
     where_clause, params = _build_filters(years=years, region=region, program=program)
+    # Apply YTD month boundary filtering
+    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program)
 
     # 1. Main session-based KPIs
     kpis_row = fetch_one(
@@ -290,6 +348,8 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
         try:
             prev_year = single_year - 1
             prev_where_clause, prev_params = _build_filters(years=[prev_year], region=region, program=program)
+            # Use same YTD months filtering for the previous year same period
+            prev_where_clause, prev_params = _apply_ytd_filter(prev_where_clause, prev_params, [single_year], region, program)
             
             # Fetch previous year's values
             prev_kpis_row = fetch_one(
@@ -332,29 +392,11 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
             curr_prog = int(kpis_row.get("total_programs", 0) or 0)
             prev_prog = int(prev_kpis_row.get("total_programs", 0) or 0)
 
-            # Count active months in each year for monthly average calculation
-            curr_month_row = fetch_one(
-                f"""SELECT COUNT(DISTINCT d.month_actual) AS active_months
-                FROM dw.fact_session f
-                LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
-                LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-                LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-                {where_clause}""", params)
-            prev_month_row = fetch_one(
-                f"""SELECT COUNT(DISTINCT d.month_actual) AS active_months
-                FROM dw.fact_session f
-                LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
-                LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-                LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-                {prev_where_clause}""", prev_params)
-            curr_months = max(int(curr_month_row.get("active_months", 1) or 1), 1)
-            prev_months = max(int(prev_month_row.get("active_months", 1) or 1), 1)
-
-            curr_inst_avg = round(curr_inst / curr_months, 1)
-            prev_inst_avg = round(prev_inst / prev_months, 1)
-            curr_driver_avg = round(curr_driver / curr_months, 1)
-            prev_driver_avg = round(prev_driver / prev_months, 1)
-            # States and programs are distinct counts — use raw values as avg too
+            # For YTD totals comparison, averages are set directly to YTD totals
+            curr_inst_avg = curr_inst
+            prev_inst_avg = prev_inst
+            curr_driver_avg = curr_driver
+            prev_driver_avg = prev_driver
             curr_state_avg = curr_state
             prev_state_avg = prev_state
             curr_prog_avg = curr_prog
@@ -380,8 +422,8 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
                 return {"pct": pct, "dir": direction}
                 
             trends = {
-                "total_instructors": calc_trend(curr_inst_avg, prev_inst_avg),
-                "total_drivers": calc_trend(curr_driver_avg, prev_driver_avg),
+                "total_instructors": calc_trend(curr_inst, prev_inst),
+                "total_drivers": calc_trend(curr_driver, prev_driver),
                 "total_states": calc_trend(curr_state, prev_state),
                 "total_programs": calc_trend(curr_prog, prev_prog)
             }
@@ -400,9 +442,9 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
     # Generate dynamic insights
     curr_vals = {
         "total_instructors": response_data["total_instructors"],
-        "total_instructors_avg": (curr_inst_avg if 'curr_inst_avg' in dir() else response_data["total_instructors"]) if single_year is not None else response_data["total_instructors"],
+        "total_instructors_avg": curr_inst_avg if 'curr_inst_avg' in locals() else response_data["total_instructors"],
         "total_drivers": response_data["total_drivers"],
-        "total_drivers_avg": (curr_driver_avg if 'curr_driver_avg' in dir() else response_data["total_drivers"]) if single_year is not None else response_data["total_drivers"],
+        "total_drivers_avg": curr_driver_avg if 'curr_driver_avg' in locals() else response_data["total_drivers"],
         "total_states": response_data["total_states"],
         "total_states_avg": response_data["total_states"],
         "total_programs": response_data["total_programs"],
@@ -413,63 +455,127 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
     
     return response_data
 
+
 def get_overview_trends(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
-    """Returns monthly historical trend data for sparklines."""
+    """Returns YoY YTD trend comparisons for sparkline charts (previous YTD vs current YTD)."""
+    # 1. Calculate current YTD totals
     where_clause, params = _build_filters(years=years, region=region, program=program)
+    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program)
     
-    # We fetch monthly data for the last 12 periods based on filters
-    # If years are selected, we show data for those years
-    rows = fetch_all(f"""
-        SELECT 
-            d.year_actual,
-            d.month_actual,
-            MIN(d.full_date) as sort_key,
-            COUNT(DISTINCT f.sk_user_id) as instructors,
-            COUNT(DISTINCT g.nk_region_id) as states,
-            COUNT(DISTINCT p.program_name) as programs
+    curr_kpis_row = fetch_one(
+        f"""
+        SELECT
+            COUNT(DISTINCT f.sk_user_id) AS total_instructors,
+            COUNT(DISTINCT g.nk_region_id) AS total_states,
+            COUNT(DISTINCT p.program_name) AS total_programs
         FROM dw.fact_session f
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
         {where_clause}
-        GROUP BY d.year_actual, d.month_actual
-        ORDER BY sort_key
-        LIMIT 24
-    """, params)
-
-    driver_rows = fetch_all(f"""
-        SELECT 
-            d.year_actual,
-            d.month_actual,
-            MIN(d.full_date) as sort_key,
-            COUNT(DISTINCT f.sk_driver_id) as drivers
+        """,
+        params,
+    )
+    
+    curr_driver_row = fetch_one(
+        f"""
+        SELECT
+            COUNT(DISTINCT f.sk_driver_id) AS total_drivers
         FROM dw.fact_vehicle_operations f
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
         {where_clause}
-        GROUP BY d.year_actual, d.month_actual
-        ORDER BY sort_key
-        LIMIT 24
-    """, params)
+        """,
+        params,
+    )
+    
+    curr_inst = int(curr_kpis_row.get("total_instructors", 0) or 0)
+    curr_driver = int(curr_driver_row.get("total_drivers", 0) or 0)
+    curr_state = int(curr_kpis_row.get("total_states", 0) or 0)
+    curr_prog = int(curr_kpis_row.get("total_programs", 0) or 0)
 
-    # Merge driver data into rows mapping
-    driver_map = {(r["year_actual"], r["month_actual"]): r["drivers"] for r in driver_rows}
-    
-    trends = []
-    for r in rows:
-        key = (r["year_actual"], r["month_actual"])
-        trends.append({
-            "instructors": r["instructors"],
-            "states": r["states"],
-            "programs": r["programs"],
-            "drivers": driver_map.get(key, 0)
-        })
-    
-    return trends
+    # 2. Determine previous YTD totals
+    single_year = None
+    if years and len(years) == 1:
+        try:
+            single_year = int(years[0])
+        except (ValueError, TypeError):
+            pass
+    elif years is None or len(years) == 0:
+        single_year = DEFAULT_YEAR
+
+    prev_inst = 0
+    prev_driver = 0
+    prev_state = 0
+    prev_prog = 0
+
+    if single_year is not None:
+        try:
+            prev_year = single_year - 1
+            prev_where_clause, prev_params = _build_filters(years=[prev_year], region=region, program=program)
+            prev_where_clause, prev_params = _apply_ytd_filter(prev_where_clause, prev_params, [single_year], region, program)
+            
+            prev_kpis_row = fetch_one(
+                f"""
+                SELECT
+                    COUNT(DISTINCT f.sk_user_id) AS total_instructors,
+                    COUNT(DISTINCT g.nk_region_id) AS total_states,
+                    COUNT(DISTINCT p.program_name) AS total_programs
+                FROM dw.fact_session f
+                LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
+                LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+                LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+                {prev_where_clause}
+                """,
+                prev_params,
+            )
+            
+            prev_driver_row = fetch_one(
+                f"""
+                SELECT
+                    COUNT(DISTINCT f.sk_driver_id) AS total_drivers
+                FROM dw.fact_vehicle_operations f
+                LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
+                LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+                LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+                {prev_where_clause}
+                """,
+                prev_params,
+            )
+            
+            prev_inst = int(prev_kpis_row.get("total_instructors", 0) or 0)
+            prev_driver = int(prev_driver_row.get("total_drivers", 0) or 0)
+            prev_state = int(prev_kpis_row.get("total_states", 0) or 0)
+            prev_prog = int(prev_kpis_row.get("total_programs", 0) or 0)
+        except Exception:
+            pass
+    else:
+        # If viewing multiple years, display a flat line of current value
+        prev_inst = curr_inst
+        prev_driver = curr_driver
+        prev_state = curr_state
+        prev_prog = curr_prog
+
+    return [
+        {
+            "instructors": prev_inst,
+            "states": prev_state,
+            "programs": prev_prog,
+            "drivers": prev_driver
+        },
+        {
+            "instructors": curr_inst,
+            "states": curr_state,
+            "programs": curr_prog,
+            "drivers": curr_driver
+        }
+    ]
 
 def get_overview_charts(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
     where_clause, params = _build_filters(years=years, region=region, program=program)
+    # Apply YTD month boundary filtering
+    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program)
     
     # 1. Instructors per region
     instructors_rows = fetch_all(
@@ -537,6 +643,8 @@ def get_overview_charts(years: list[int] | list[str] | None = None, region: list
 
 def get_program_targets(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, limit: int = 10, offset: int = 0):
     where_clause, params = _build_filters(years=years, region=region, program=program)
+    # Apply YTD month boundary filtering
+    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program)
     
     total_count = fetch_one(
         f"""
@@ -598,6 +706,8 @@ def get_program_targets(years: list[int] | list[str] | None = None, region: list
 
 def get_sessions_by_activity(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
     where_clause, params = _build_filters(years=years, region=region, program=program)
+    # Apply YTD month boundary filtering
+    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program)
     rows = fetch_all(
         f"""
         SELECT
@@ -621,6 +731,8 @@ def get_sessions_by_activity(years: list[int] | list[str] | None = None, region:
 
 def get_sessions_by_donor(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
     where_clause, params = _build_filters(years=years, region=region, program=program)
+    # Apply YTD month boundary filtering
+    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program)
     rows = fetch_all(
         f"""
         SELECT
@@ -652,6 +764,8 @@ def get_drilldown_data(
     """
     # 1. Build base filters (default to 2026 if none provided)
     where_clause, params = _build_filters(years=years, program=program)
+    # Apply YTD month boundary filtering
+    where_clause, params = _apply_ytd_filter(where_clause, params, years, region=None, program=program)
     
     # 2. Add hardened region filter
     region_norm = region.lower().replace("_", " ")

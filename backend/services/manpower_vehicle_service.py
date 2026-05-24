@@ -32,48 +32,43 @@ def get_manpower_vehicle_filters():
             ORDER BY d.month_actual
         """)]
         
-        return {"regions": regions, "years": years, "months": months}
+        return {"regions": regions, "years": years, "months": months, "quarters": [1, 2, 3, 4]}
     except Exception as e:
         logger.error(f"manpower vehicle filters error: {e}")
-        return {"regions": [], "years": [], "months": []}
+        return {"regions": [], "years": [], "months": [], "quarters": []}
 
 
-def get_manpower_vehicle_data(region=None, years=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
+def get_manpower_vehicle_data(region=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
     try:
-        clauses = []
-        params = []
+        kpi_defs = [
+            {"key": "total_kms", "label": "Total KMs Travelled", "sql": "COALESCE(SUM(v.distance_travelled), 0)", "icon": "fas fa-road", "color": "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)"},
+            {"key": "total_fuel_cost", "label": "Total Fuel Cost (₹)", "sql": "COALESCE(SUM(v.fuel_cost), 0)", "icon": "fas fa-rupee-sign", "color": "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"},
+            {"key": "total_fuel_qty", "label": "Total Fuel (L)", "sql": "COALESCE(SUM(v.fuel_quantity), 0)", "icon": "fas fa-gas-pump", "color": "linear-gradient(135deg, #001f3f 0%, #001226 100%)"},
+            {"key": "active_drivers", "label": "Active Drivers", "sql": "COUNT(DISTINCT v.sk_driver_id)", "icon": "fas fa-truck", "color": "linear-gradient(135deg, #dc3545 0%, #c82333 100%)"}
+        ]
         
-        c, p = get_list_filter_clause("g.region_name", region)
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("d.year_actual", years, cast_type="int")
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
-        clauses.append(c); params.extend(p)
-        
-        where_sql = " AND ".join(clauses)
-
-        # KPI Query (sidebar filters only)
-        kpi_row = fetch_one(f"""
-            SELECT
-                COALESCE(SUM(v.distance_travelled), 0)   AS total_kms,
-                COALESCE(SUM(v.fuel_cost), 0)            AS total_fuel_cost,
-                COALESCE(SUM(v.fuel_quantity), 0)        AS total_fuel_qty,
-                COUNT(DISTINCT v.sk_driver_id)           AS active_drivers
-            FROM {DW}.fact_vehicle_operations v
+        from_clause = f"""
+            {DW}.fact_vehicle_operations v
             LEFT JOIN {DW}.dim_geography g ON v.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DW}.dim_date d       ON v.date_id = d.date_id
-            WHERE {where_sql}
-        """, params)
-
-        kpis = [
-            {"label": "Total KMs Travelled",   "value": int(kpi_row.get("total_kms", 0) or 0),        "icon": "fas fa-road",          "color": "bg-info"},
-            {"label": "Total Fuel Cost (₹)",   "value": round(float(kpi_row.get("total_fuel_cost", 0) or 0), 2), "icon": "fas fa-rupee-sign",    "color": "bg-success"},
-            {"label": "Total Fuel (L)",         "value": round(float(kpi_row.get("total_fuel_qty", 0) or 0), 1), "icon": "fas fa-gas-pump",      "color": "bg-navy-blue"},
-            {"label": "Active Drivers",         "value": int(kpi_row.get("active_drivers", 0) or 0),    "icon": "fas fa-truck",         "color": "bg-danger"},
-        ]
+        """
+        
+        kpi_list, sparklines = calculate_ytd_kpis(
+            kpi_defs=kpi_defs,
+            from_clause=from_clause,
+            years=years,
+            region=region,
+            month=month,
+            quarter=quarter
+        )
+        
+        where_sql, params, max_month = build_standard_filters(
+            years=years,
+            region=region,
+            month=month,
+            quarter=quarter
+        )
 
         # DataTable Logic
         search_sql = "TRUE"
@@ -124,9 +119,7 @@ def get_manpower_vehicle_data(region=None, years=None, month=None, limit=15, off
             LIMIT %s OFFSET %s
         """, params + search_params + [limit, offset])
 
-        return {"kpis": kpis, "table": table, "total_count": int(total_count)}
-
-        return {"kpis": kpis, "table": table, "total_count": int(total_count)}
+        return {"kpis": kpi_list, "sparklines": sparklines, "table": table, "total_count": int(total_count)}
     except Exception as e:
         logger.error(f"manpower vehicle data error: {e}", exc_info=True)
         return {"kpis": [], "table": [], "total_count": 0}
