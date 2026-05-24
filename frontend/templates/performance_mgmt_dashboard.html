@@ -262,7 +262,89 @@
             transform: translateY(0)
         }
     }
+
+    .insight-modal-header {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+        border-bottom: none !important;
+        padding: 1.5rem 2rem !important;
+    }
+    .insight-card {
+        border: none !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+        margin-bottom: 1.5rem !important;
+        transition: transform 0.2s ease !important;
+    }
+    .insight-card:hover {
+        transform: translateY(-2px) !important;
+    }
+    .insight-list-item {
+        display: flex !important;
+        align-items: start !important;
+        margin-bottom: 1rem !important;
+        padding-bottom: 0.75rem !important;
+        border-bottom: 1px dashed #f1f5f9;
+    }
+    .insight-list-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
 </style>
+
+<!-- KPI Insights Modal -->
+<div class="modal fade" id="kpiInsightModal" tabindex="-1" role="dialog" aria-labelledby="kpiInsightModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg" style="border-radius: 16px; border: none; overflow: hidden;">
+            <div class="modal-header d-flex align-items-center insight-modal-header">
+                <div class="d-flex align-items-center">
+                    <div id="modalIconWrapper" class="mr-3 shadow-sm" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #fff;">
+                        <i id="modalHeaderIcon" class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title font-weight-bold text-white" id="modalTitle" style="font-size: 1.2rem; font-family: Inter, Arial, sans-serif;">Metric Insights</h5>
+                        <span class="text-white-50" style="font-size: 0.8rem;">Performance analysis and recommendations</span>
+                    </div>
+                </div>
+                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Close" style="opacity: 0.8; outline: none; background: none; border: none; padding: 0;">
+                    <span aria-hidden="true" style="font-size: 1.5rem;">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 2rem; background-color: #f8fafc;">
+                <!-- YoY Comparison -->
+                <div class="card insight-card">
+                    <div class="card-body d-flex align-items-start p-4">
+                        <div class="mr-3" id="modalComparisonIcon">
+                            <i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                        <div>
+                            <h6 class="font-weight-bold text-dark mb-1" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Year-over-Year Comparison</h6>
+                            <p class="text-muted mb-0" id="modalComparisonText" style="font-size: 0.95rem; line-height: 1.5;"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Suggestions -->
+                <div class="card insight-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="mr-2 text-success" style="font-size: 1.15rem;">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <h6 class="font-weight-bold text-dark mb-0" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Strategic Suggestions to Improve</h6>
+                        </div>
+                        <ul class="list-unstyled mb-0" id="modalSuggestionsList">
+                            <!-- Dynamic items -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: none; background-color: #f8fafc; padding: 1rem 2rem 2rem 2rem;">
+                <button type="button" class="btn btn-secondary px-4" data-dismiss="modal" style="border-radius: 8px; font-weight: 600; font-size: 0.9rem; background-color: #64748b; border: none;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -621,17 +703,12 @@
                     renderTrend('#trendSessions', data.kpis[2].trend);
                     renderTrend('#trendStudents', data.kpis[3].trend);
 
-                    // Render mini sparklines with metric-specific historical data
-                    if (window._chartRawData && window._chartRawData.length) {
-                        const instrData = window._chartRawData.map(d => d.instructors);
-                        const avgSessData = window._chartRawData.map(d => d.avg_sessions);
-                        const totalSessData = window._chartRawData.map(d => d.actual);
-                        const studentData = window._chartRawData.map(d => d.students);
-
-                        renderMiniChart('miniChartInstructors', instrData, '#f39c12');
-                        renderMiniChart('miniChartAvgSessions', avgSessData, '#3498db');
-                        renderMiniChart('miniChartSessions', totalSessData, '#2ecc71');
-                        renderMiniChart('miniChartStudents', studentData, '#e74c3c');
+                    // Render mini sparklines with 2-point YTD comparison data from backend
+                    if (data.sparklines) {
+                        renderMiniChart('miniChartInstructors', data.sparklines.instructors, '#f39c12');
+                        renderMiniChart('miniChartAvgSessions', data.sparklines.avg_sessions, '#3498db');
+                        renderMiniChart('miniChartSessions', data.sparklines.sessions, '#2ecc71');
+                        renderMiniChart('miniChartStudents', data.sparklines.students, '#e74c3c');
                     }
 
                     function bindModal(triggerId, title, cardId, kpiObj) {
@@ -642,48 +719,46 @@
                             e.preventDefault();
                             e.stopPropagation();
                             
-                            const isUp = kpiObj.trend && kpiObj.trend.dir === 'up';
-                            const pillText = kpiObj.trend ? Math.abs(kpiObj.trend.pct).toFixed(1) + '%' : '0%';
+                            if (!kpiObj || !kpiObj.insights) return;
+                            const insight = kpiObj.insights;
                             
-                            $('#modalTitle').text(title + ' Performance Insights');
+                            // Set Modal Title and Colors
+                            $('#modalTitle').text(insight.title);
                             
                             const iconClass = $card.find('.kpi-bitcoin-icon-wrapper i').attr('class') || 'fas fa-chart-line';
                             $('#modalHeaderIcon').attr('class', iconClass);
                             const iconBg = $card.find('.kpi-bitcoin-icon-wrapper').css('background') || '#f39c12';
                             $('#modalIconWrapper').css('background', iconBg);
                             
-                            const directionText = isUp ? 'an increase' : 'a decrease';
-                            $('#modalComparisonText').html(`In the current period, the value is <b>${(kpiObj.value || 0).toLocaleString()}</b> while the previous period was <b>${(kpiObj.value - (kpiObj.value * (kpiObj.trend.pct / 100)) || 0).toLocaleString()}</b> (representing ${directionText} of <b>${pillText}</b> compared to last period).`);
-                            $('#modalComparisonIcon i').attr('class', isUp ? 'fas fa-arrow-alt-circle-up text-success' : 'fas fa-arrow-alt-circle-down text-danger');
+                            // Set YoY Comparison
+                            $('#modalComparisonText').html(insight.comparison_text);
                             
-                            const rationaleText = isUp ?
-                                `The metric increased by ${pillText}. This positive performance is driven by: (1) Strong operational cadence and adherence to schedules; (2) Favorable seasonal engagement with new programs; (3) Improved tracking and data fidelity across centers; (4) Successful retention incentives implemented last quarter.` :
-                                `The metric dropped by ${pillText}. This underperformance is caused by: (1) Seasonal attrition at the end of academic semesters that was not immediately backfilled; (2) Recruitment delays due to stricter verification procedures; (3) Operational halts in two regional centers undergoing leadership changes; (4) Natural transition of part-time trainers to full-time public school employment.`;
-                            $('#modalRationaleText').text(rationaleText);
+                            // Set dynamic icon on YoY comparison based on direction
+                            const isUp = kpiObj.trend && kpiObj.trend.dir === 'up';
+                            const isDown = kpiObj.trend && kpiObj.trend.dir === 'down';
+                            const compIcon = $('#modalComparisonIcon').empty();
+                            if (isUp) {
+                                compIcon.append('<i class="fas fa-arrow-alt-circle-up text-success" style="font-size: 2rem;"></i>');
+                            } else if (isDown) {
+                                compIcon.append('<i class="fas fa-arrow-alt-circle-down text-danger" style="font-size: 2rem;"></i>');
+                            } else {
+                                compIcon.append('<i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>');
+                            }
                             
-                            const suggestionsHtml = `
-                                <li class="insight-list-item">
-                                    <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
-                                    <div><strong>Streamline Recruitment Timelines:</strong> Reduce the hiring bottleneck by digitizing background checks, cutting onboarding time from 30 days to 12 days.</div>
-                                </li>
-                                <li class="insight-list-item">
-                                    <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
-                                    <div><strong>Deploy a Retention Incentive Matrix:</strong> Introduce tiered quarterly retention bonuses and merit certificates for instructors completing multiple teaching cycles.</div>
-                                </li>
-                                <li class="insight-list-item">
-                                    <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
-                                    <div><strong>Establish a Standby Trainer Pool:</strong> Maintain a 15% reserve of certified on-call backup instructors per region to immediately cover mid-term attrition.</div>
-                                </li>
-                                <li class="insight-list-item">
-                                    <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
-                                    <div><strong>Collaborate with Teacher Training Institutes:</strong> Secure direct talent pipelines with local B.Ed and D.Ed colleges to auto-onboard high-potential graduates.</div>
-                                </li>
-                                <li class="insight-list-item">
-                                    <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
-                                    <div><strong>Enhance Safety & Transit Allowances:</strong> Provide subsidized transit options or allowances for remote school visits to increase field trainer satisfaction.</div>
-                                </li>
-                            `;
-                            $('#modalSuggestionsList').html(suggestionsHtml);
+                            // Set suggestions list dynamically
+                            const suggestionsList = $('#modalSuggestionsList').empty();
+                            if (insight.suggestions && insight.suggestions.length) {
+                                insight.suggestions.forEach(s => {
+                                    suggestionsList.append(`
+                                        <li class="insight-list-item">
+                                            <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
+                                            <div class="text-secondary" style="font-size: 0.95rem; line-height: 1.5; font-family: Inter, Arial, sans-serif;">${s}</div>
+                                        </li>
+                                    `);
+                                });
+                            } else {
+                                suggestionsList.append('<li class="text-muted">No suggestions available for this view.</li>');
+                            }
                             
                             $('#kpiInsightModal').modal('show');
                         });

@@ -299,19 +299,6 @@
                     </div>
                 </div>
 
-                <!-- Rationale -->
-                <div class="card insight-card">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="mr-2 text-warning" style="font-size: 1.15rem;">
-                                <i class="fas fa-lightbulb"></i>
-                            </div>
-                            <h6 class="font-weight-bold text-dark mb-0" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Performance Rationale</h6>
-                        </div>
-                        <p class="text-muted mb-0" id="modalRationaleText" style="line-height: 1.6; font-size: 0.95rem;"></p>
-                    </div>
-                </div>
-
                 <!-- Suggestions -->
                 <div class="card insight-card">
                     <div class="card-body p-4">
@@ -941,9 +928,6 @@
             } else {
                 compIcon.append('<i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>');
             }
-            
-            // Set Rationale
-            $('#modalRationaleText').text(insight.rationale);
             
             // Set Suggestions
             const suggestionsList = $('#modalSuggestionsList').empty();
