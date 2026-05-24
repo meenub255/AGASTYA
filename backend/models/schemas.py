@@ -15,7 +15,7 @@ class CountResponse(BaseModel):
 
 
 class KPIBundle(BaseModel):
-    metrics: dict[str, int | float | str | None]
+    metrics: dict[str, Any]
 
 
 class ChartPoint(BaseModel):
