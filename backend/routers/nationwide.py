@@ -12,6 +12,8 @@ def get_data(
     request: Request,
     years:      list[str] | None = Query(None),
     region:     list[str] | None = Query(None),
+    month:      list[str] | None = Query(None),
+    quarter:    list[str] | None = Query(None),
     limit:      int        = Query(default=15),
     offset:     int        = Query(default=0),
 ):
@@ -22,13 +24,15 @@ def get_data(
         limit = dt_params["length"]
         offset = dt_params["start"]
 
-    return nationwide_service.get_nationwide_data(years, region, limit, offset, dt_params)
+    return nationwide_service.get_nationwide_data(years, region, month, quarter, limit, offset, dt_params)
 
 @router.get("/export")
 def export_data(
     years:      list[str] | None = Query(None),
     region:     list[str] | None = Query(None),
+    month:      list[str] | None = Query(None),
+    quarter:    list[str] | None = Query(None),
 ):
     from backend.services.export_utils import json_to_excel_streaming_response
-    data = nationwide_service.get_nationwide_data(years, region, limit=100000, offset=0)
+    data = nationwide_service.get_nationwide_data(years, region, month, quarter, limit=100000, offset=0)
     return json_to_excel_streaming_response(data["table"], "nationwide_dashboard.xlsx")

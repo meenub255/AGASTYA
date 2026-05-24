@@ -12,6 +12,8 @@ def get_data(
     request: Request,
     instructor_name: list[str] | None = Query(None),
     years: list[str] | None = Query(None),
+    month: list[str] | None = Query(None),
+    quarter: list[str] | None = Query(None),
     limit: int = Query(15),
     offset: int = Query(0)
 ):
@@ -22,13 +24,15 @@ def get_data(
         limit = dt_params["length"]
         offset = dt_params["start"]
 
-    return instructor_feedback_service.get_instructor_feedback_data(instructor_name, years, limit, offset, dt_params)
+    return instructor_feedback_service.get_instructor_feedback_data(instructor_name, years, month, quarter, limit, offset, dt_params)
 
 @router.get("/export")
 def export_data(
     instructor_name: list[str] | None = Query(None),
-    years: list[str] | None = Query(None)
+    years: list[str] | None = Query(None),
+    month: list[str] | None = Query(None),
+    quarter: list[str] | None = Query(None)
 ):
     from backend.services.export_utils import json_to_excel_streaming_response
-    data = instructor_feedback_service.get_instructor_feedback_data(instructor_name, years, limit=100000, offset=0)
+    data = instructor_feedback_service.get_instructor_feedback_data(instructor_name, years, month, quarter, limit=100000, offset=0)
     return json_to_excel_streaming_response(data["table"], "instructor_feedback_report.xlsx")

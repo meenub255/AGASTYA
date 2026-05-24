@@ -18,6 +18,7 @@ def get_data(
     area: list[str] | None = Query(None),
     years: list[str] | None = Query(None),
     month: list[str] | None = Query(None),
+    quarter: list[str] | None = Query(None),
     limit: int = Query(15),
     offset: int = Query(0)
 ):
@@ -33,6 +34,7 @@ def get_data(
         area=area,
         years=years,
         month=month,
+        quarter=quarter,
         limit=limit,
         offset=offset,
         dt_params=dt_params
@@ -43,10 +45,11 @@ def export_data(
     region: list[str] | None = Query(None),
     area: list[str] | None = Query(None),
     years: list[str] | None = Query(None),
-    month: list[str] | None = Query(None)
+    month: list[str] | None = Query(None),
+    quarter: list[str] | None = Query(None)
 ):
     from backend.services.export_utils import json_to_excel_streaming_response
-    data = instructor_summary_service.get_instructor_summary_data(region, area, years, month, limit=100000, offset=0)
+    data = instructor_summary_service.get_instructor_summary_data(region, area, years, month, quarter, limit=100000, offset=0)
     return json_to_excel_streaming_response(data["table"], "instructor_summary_report.xlsx")
 
 @router.get("/monthly")
@@ -54,9 +57,10 @@ def get_monthly_data(
     region: list[str] | None = Query(None),
     area: list[str] | None = Query(None),
     years: list[str] | None = Query(None),
-    month: list[str] | None = Query(None)
+    month: list[str] | None = Query(None),
+    quarter: list[str] | None = Query(None)
 ):
     return {
         "title": "Monthly Activity Comparison",
-        "data": instructor_summary_service.get_monthly_instructor_summary(region, area, years, month)
+        "data": instructor_summary_service.get_monthly_instructor_summary(region, area, years, month, quarter)
     }
