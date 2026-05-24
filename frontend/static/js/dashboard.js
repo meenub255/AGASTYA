@@ -1145,7 +1145,7 @@
                         if (sortType === 'remove') {
                             dt.order([]).draw(); // Remove sort
                         } else {
-                            dt.order([Math.floor(colIdx), sortType]).draw();
+                            dt.order([[Math.floor(colIdx), sortType]]).draw();
                         }
                     }
                     menu.hide();
@@ -1312,17 +1312,20 @@
                     window.PramanaInsights.renderMiniChart(canvasId, trends);
                 }
 
-                // 4. Calculate YoY Pill — compare average of first half vs last point
+                // 4. Calculate YoY Pill — compare average of first half vs last point or use backend trend
                 const midpoint = Math.floor(trends.length / 2);
                 const firstHalfAvg = trends.slice(0, midpoint).reduce((a, b) => a + b, 0) / (midpoint || 1);
                 const lastVal = trends[trends.length - 1];
                 const firstVal = trends[0];
-                // Use kpi insights averages if backend supplied them, else use first vs last trend point
+                
                 const kpiAvgs = (kpi && kpi.insights) ? kpi.insights : null;
                 const displayCurr = kpiAvgs && kpiAvgs.curr_avg != null ? kpiAvgs.curr_avg : lastVal;
                 const displayPrev = kpiAvgs && kpiAvgs.prev_avg != null ? kpiAvgs.prev_avg : firstVal;
-                const percentChange = displayPrev === 0 ? 0 : ((displayCurr - displayPrev) / displayPrev) * 100;
-                const isUp = percentChange >= 0;
+                
+                let percentChange = (kpi && kpi.trend && kpi.trend.pct != null) ? kpi.trend.pct : 
+                                    (displayPrev === 0 ? 0 : ((displayCurr - displayPrev) / displayPrev) * 100);
+                let isUp = (kpi && kpi.trend && kpi.trend.dir) ? (kpi.trend.dir === 'up') : (percentChange >= 0);
+                
                 const pillClass = isUp ? 'kpi-bitcoin-trend-up' : 'kpi-bitcoin-trend-down';
                 const pillIcon = isUp ? 'fa-arrow-up' : 'fa-arrow-down';
                 const pillText = Math.abs(percentChange).toFixed(1) + '%';
@@ -1352,11 +1355,14 @@
                     e.stopPropagation();
                     
                     // Populate Modal
-                    $('#modalTitle').text(title + ' Performance Insights');
+                    $('#modalTitle').text((kpi && kpi.insights && kpi.insights.title) ? kpi.insights.title : (title + ' Performance Insights'));
                     
-                    const iconClass = $card.find('.kpi-bitcoin-icon-wrapper i').attr('class') || 'fas fa-chart-line';
+                    const iconClass = (kpi && kpi.insights && kpi.insights.icon) ? kpi.insights.icon : 
+                                      ($card.find('.kpi-bitcoin-icon-wrapper i').attr('class') || 'fas fa-chart-line');
                     $('#modalHeaderIcon').attr('class', iconClass);
-                    const iconBg = $card.find('.kpi-bitcoin-icon-wrapper').css('background') || '#f39c12';
+                    
+                    const iconBg = (kpi && kpi.insights && kpi.insights.color) ? kpi.insights.color : 
+                                    ($card.find('.kpi-bitcoin-icon-wrapper').css('background') || '#f39c12');
                     $('#modalIconWrapper').css('background', iconBg);
                     
                     const directionText = isUp ? 'an increase' : 'a decrease';
@@ -1365,37 +1371,45 @@
                         const n = parseFloat(v);
                         return Number.isInteger(n) ? n.toLocaleString() : n.toFixed(1);
                     };
-                    $('#modalComparisonText').html(`In the current period, the monthly average is <b>${fmtNum(displayCurr)}</b> while the previous period monthly average was <b>${fmtNum(displayPrev)}</b> (representing ${directionText} of <b>${pillText}</b> compared to last period).`);
-                    $('#modalComparisonIcon i').attr('class', isUp ? 'fas fa-arrow-alt-circle-up text-success' : 'fas fa-arrow-alt-circle-down text-danger');
                     
-                    const rationaleText = isUp ?
-                        `The monthly average grew from ${fmtNum(displayPrev)} to ${fmtNum(displayCurr)} (growth of ${pillText}). This positive performance is driven by: (1) Strong operational cadence and adherence to schedules; (2) Favorable seasonal engagement with new programs; (3) Improved tracking and data fidelity across centers; (4) Successful retention incentives implemented last quarter.` :
-                        `The monthly average dropped from ${fmtNum(displayPrev)} to ${fmtNum(displayCurr)} (a decline of ${pillText}). This underperformance is caused by: (1) Seasonal attrition at the end of academic semesters that was not immediately backfilled; (2) Recruitment delays due to stricter verification procedures; (3) Operational halts in two regional centers undergoing leadership changes; (4) Natural transition of part-time trainers to full-time public school employment.`;
-                    $('#modalRationaleText').text(rationaleText);
+                    // Set comparison text
+                    if (kpi && kpi.insights && kpi.insights.comparison_text) {
+                        $('#modalComparisonText').html(kpi.insights.comparison_text);
+                    } else {
+                        $('#modalComparisonText').html(`In the current period, the monthly average is <b>${fmtNum(displayCurr)}</b> while the previous period monthly average was <b>${fmtNum(displayPrev)}</b> (representing ${directionText} of <b>${pillText}</b> compared to last period).`);
+                    }
                     
-                    const suggestionsHtml = `
-                        <li class="insight-list-item">
-                            <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
-                            <div><strong>Streamline Recruitment Timelines:</strong> Reduce the hiring bottleneck by digitizing background checks, cutting onboarding time from 30 days to 12 days.</div>
-                        </li>
-                        <li class="insight-list-item">
-                            <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
-                            <div><strong>Deploy a Retention Incentive Matrix:</strong> Introduce tiered quarterly retention bonuses and merit certificates for instructors completing multiple teaching cycles.</div>
-                        </li>
-                        <li class="insight-list-item">
-                            <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
-                            <div><strong>Establish a Standby Trainer Pool:</strong> Maintain a 15% reserve of certified on-call backup instructors per region to immediately cover mid-term attrition.</div>
-                        </li>
-                        <li class="insight-list-item">
-                            <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
-                            <div><strong>Collaborate with Teacher Training Institutes:</strong> Secure direct talent pipelines with local B.Ed and D.Ed colleges to auto-onboard high-potential graduates.</div>
-                        </li>
-                        <li class="insight-list-item">
-                            <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
-                            <div><strong>Enhance Safety & Transit Allowances:</strong> Provide subsidized transit options or allowances for remote school visits to increase field trainer satisfaction.</div>
-                        </li>
-                    `;
-                    $('#modalSuggestionsList').html(suggestionsHtml);
+                    // Set comparison icon based on direction
+                    const compIcon = $('#modalComparisonIcon').empty();
+                    if (isUp) {
+                        compIcon.append('<i class="fas fa-arrow-alt-circle-up text-success" style="font-size: 2rem;"></i>');
+                    } else {
+                        compIcon.append('<i class="fas fa-arrow-alt-circle-down text-danger" style="font-size: 2rem;"></i>');
+                    }
+                    
+                    // Set dynamic suggestions list
+                    const suggestionsList = $('#modalSuggestionsList').empty();
+                    let suggestionsSource = (kpi && kpi.insights && kpi.insights.suggestions) ? kpi.insights.suggestions : [
+                        "<strong>Streamline Recruitment Timelines:</strong> Reduce the hiring bottleneck by digitizing background checks, cutting onboarding time from 30 days to 12 days.",
+                        "<strong>Deploy a Retention Incentive Matrix:</strong> Introduce tiered quarterly retention bonuses and merit certificates for instructors completing multiple teaching cycles.",
+                        "<strong>Establish a Standby Trainer Pool:</strong> Maintain a 15% reserve of certified on-call backup instructors per region to immediately cover mid-term attrition."
+                    ];
+                    
+                    // Limit to max 3
+                    const suggestions = suggestionsSource.slice(0, 3);
+                    
+                    if (suggestions.length) {
+                        suggestions.forEach(s => {
+                            suggestionsList.append(`
+                                <li class="insight-list-item">
+                                    <div class="mr-3 text-success"><i class="fas fa-check-circle" style="font-size: 1.2rem;"></i></div>
+                                    <div class="text-secondary" style="font-size: 0.95rem; line-height: 1.5; font-family: Inter, Arial, sans-serif;">${s}</div>
+                                </li>
+                            `);
+                        });
+                    } else {
+                        suggestionsList.append('<li class="text-muted">No suggestions available for this view.</li>');
+                    }
                     
                     $('#kpiInsightModal').modal('show');
                 });
