@@ -24,6 +24,20 @@
                     <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program" data-placeholder="Select Program">
                     </select>
                 </div>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Month</label>
+                    <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month">
+                    </select>
+                </div>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Quarter</label>
+                    <select id="quarterFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="quarter" data-placeholder="Select Quarter">
+                        <option value="1">Q1 (Apr-Jun)</option>
+                        <option value="2">Q2 (Jul-Sep)</option>
+                        <option value="3">Q3 (Oct-Dec)</option>
+                        <option value="4">Q4 (Jan-Mar)</option>
+                    </select>
+                </div>
                 
                 <div class="mt-5">
                     <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-3">
@@ -40,40 +54,103 @@
     <!-- Right Column: Content -->
     <div class="col-md-10">
         <!-- KPI Grid -->
-        {% include "partials/kpi_cards.html" %}
+        <div class="row mb-4" id="kpiRow">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="kpi-card-bitcoin" id="kpiCardSessions">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Total Sessions</span>
+                            <span class="kpi-bitcoin-sublabel">Delivered</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="sessionTotalSessions">0</div>
+                    <div class="kpi-mini-chart"><canvas id="miniChartSessions"></canvas></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="kpi-card-bitcoin" id="kpiCardInstructors">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Active Instructors</span>
+                            <span class="kpi-bitcoin-sublabel">Total Active</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="sessionTotalInstructors">0</div>
+                    <div class="kpi-mini-chart"><canvas id="miniChartInstructors"></canvas></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="kpi-card-bitcoin" id="kpiCardRegions">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                            <i class="fas fa-map-marked-alt"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Active Regions</span>
+                            <span class="kpi-bitcoin-sublabel">Hubs Reached</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="sessionActiveRegions">0</div>
+                    <div class="kpi-mini-chart"><canvas id="miniChartRegions"></canvas></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="kpi-card-bitcoin" id="kpiCardPrograms">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Total Programs</span>
+                            <span class="kpi-bitcoin-sublabel">Active Programs</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="sessionPrograms">0</div>
+                    <div class="kpi-mini-chart"><canvas id="miniChartPrograms"></canvas></div>
+                </div>
+            </div>
+        </div>
 
-<div class="row mt-2">
-    <div class="col-lg-7 mb-3">
-        <section class="card h-100 white-chart-card">
-            <div class="card-header border-0">
-                <h3 class="card-title">Monthly sessions</h3>
+        <div class="row mt-2">
+            <div class="col-lg-7 mb-3">
+                <section class="card h-100 white-chart-card">
+                    <div class="card-header border-0">
+                        <h3 class="card-title">Monthly sessions</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:250px;">
+                            <canvas id="sessionMonthlyChart"></canvas>
+                        </div>
+                    </div>
+                </section>
             </div>
-            <div class="card-body">
-                <div style="height:250px;">
-                    <canvas id="sessionMonthlyChart"></canvas>
-                </div>
+            <div class="col-lg-5 mb-3">
+                <section class="card h-100 white-chart-card">
+                    <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                        <h3 class="card-title">Sessions by region</h3>
+                        <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
+                           style="cursor: pointer;"
+                           data-toggle="popover" 
+                           data-trigger="click" 
+                           data-html="true"
+                           tabindex="0"
+                           title="Region Code Legend" 
+                           data-content="Loading..."></i>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:250px;">
+                            <canvas id="sessionRegionChart"></canvas>
+                        </div>
+                    </div>
+                </section>
             </div>
-        </section>
-    </div>
-    <div class="col-lg-5 mb-3">
-        <section class="card h-100 white-chart-card">
-            <div class="card-header border-0 d-flex justify-content-between align-items-center">
-                <h3 class="card-title">Sessions by region</h3>
-                <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
-                   style="cursor: pointer;"
-                   data-toggle="popover" 
-                   data-trigger="click" 
-                   data-html="true"
-                   tabindex="0"
-                   title="Region Code Legend" 
-                   data-content="Loading..."></i>
-            </div>
-            <div class="card-body">
-                <div style="height:250px;">
-                    <canvas id="sessionRegionChart"></canvas>
-                </div>
-            </div>
-        </section>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -82,28 +159,11 @@
 <script>
     $(function () {
         let regionMapping = {};
-        // Premium Multi-filter initialization
         if ($.fn.select2) {
             window.PramanaDashboard.initMultiFilters();
         }
 
-        fetch('/dashboard/filters')
-            .then(res => res.json())
-            .then(data => {
-                const yf = $('#yearFilter');
-                data.years.forEach(y => {
-                    yf.append(new Option(y, y));
-                });
-                
-                // Set dynamic defaults
-                const currentYear = new Date().getFullYear().toString();
-                if (data.years.includes(parseInt(currentYear))) {
-                    yf.val([currentYear]);
-                }
-                $('.select2').trigger('change.select2', { internal: true });
-            });
-
-        // Initialize popovers
+        // Initialize Popovers
         $('.region-legend-trigger').popover({
             html: true,
             sanitize: false,
@@ -144,14 +204,29 @@
 
         const rf = $('#regionFilter');
         const pf = $('#programFilter');
+        const mf = $('#monthFilter');
 
         // Initially disable programs
         pf.prop('disabled', true);
 
-        fetch('/dashboard/filters')
+        fetch('/session/filters')
             .then(res => res.json())
             .then(data => {
+                const yf = $('#yearFilter');
+                data.years.forEach(y => {
+                    yf.append(new Option(y, y));
+                });
+                
                 data.regions.forEach(r => rf.append(new Option(r, r)));
+                data.months.forEach(m => mf.append(new Option(m.name, m.id)));
+
+                // Set dynamic defaults
+                const currentYear = new Date().getFullYear().toString();
+                if (data.years.includes(parseInt(currentYear))) {
+                    yf.val([currentYear]);
+                }
+                $('.select2').trigger('change.select2', { internal: true });
+                loadData();
             });
 
         rf.on('change', function () {
@@ -160,7 +235,7 @@
             
             if (regions && regions.length > 0) {
                 const query = $.param({ region_name: regions }, true);
-                fetch(`/dashboard/filters?${query}`)
+                fetch(`/session/filters?${query}`)
                     .then(res => res.json())
                     .then(data => {
                         data.programs.forEach(p => pf.append(new Option(p, p)));
@@ -171,20 +246,21 @@
             }
         });
 
-
         function loadData() {
             const filters = window.PramanaDashboard.collectFilters();
             const query = $.param(filters, true);
             fetch(`/session/data?${query}`)
                 .then(res => res.json())
                 .then(data => {
-                    $('#sessionTotalSessions').text(data.kpis.total_sessions.toLocaleString());
-                    $('#sessionTotalInstructors').text(data.kpis.total_instructors);
-                    $('#sessionActiveRegions').text(data.kpis.active_regions);
-                    $('#sessionPrograms').text(data.kpis.total_programs);
+                    if (data.kpis && data.kpis.length >= 4) {
+                        $('#sessionTotalSessions').text(data.kpis[0].value.toLocaleString());
+                        $('#sessionTotalInstructors').text(data.kpis[1].value.toLocaleString());
+                        $('#sessionActiveRegions').text(data.kpis[2].value.toLocaleString());
+                        $('#sessionPrograms').text(data.kpis[3].value.toLocaleString());
 
-                    if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
-                        window.PramanaInsights.enhanceAllKpiCards();
+                        if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
+                            window.PramanaInsights.enhanceAllKpiCards(data.kpis);
+                        }
                     }
 
                     // Monthly Chart
@@ -202,8 +278,6 @@
                                     align: 'start',
                                     labels: { color: '#000000' }
                                 }
-
-
                             },
                             scales: {
                                 x: {
@@ -284,9 +358,6 @@
             const query = $.param(filters, true);
             window.exportToXLSX(`/session/export?${query}`, 'session_report.xlsx');
         });
-
-        // Auto-load
-        setTimeout(loadData, 300);
     });
 </script>
 {% endblock %}

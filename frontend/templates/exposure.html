@@ -24,6 +24,20 @@
                     <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program" data-placeholder="Select Program">
                     </select>
                 </div>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Month</label>
+                    <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month">
+                    </select>
+                </div>
+                <div class="form-group mb-4">
+                    <label class="filter-label">Quarter</label>
+                    <select id="quarterFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="quarter" data-placeholder="Select Quarter">
+                        <option value="1">Q1 (Apr-Jun)</option>
+                        <option value="2">Q2 (Jul-Sep)</option>
+                        <option value="3">Q3 (Oct-Dec)</option>
+                        <option value="4">Q4 (Jan-Mar)</option>
+                    </select>
+                </div>
                 
                 <div class="mt-5">
                     <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-3">
@@ -40,7 +54,7 @@
     <!-- Right Column: Content -->
     <div class="col-md-10">
         <!-- KPI Grid -->
-        <div class="row mb-4">
+        <div class="row mb-4" id="kpiRow">
             <div class="col-lg-3 col-md-6 mb-4">
                 <div class="kpi-card-bitcoin" id="kpiCardTotalStudents">
                     <div class="kpi-bitcoin-header">
@@ -103,54 +117,55 @@
             </div>
         </div>
 
+        <div class="row mt-2">
+            <div class="col-lg-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header border-0"><h3 class="card-title">Gender split - students</h3></div>
+                    <div class="card-body">
+                        <div class="progress mb-2" style="height: 25px;">
+                            <div class="progress-bar bg-primary" id="studentGirlsBar" style="width: 0%">0% Girls</div>
+                            <div class="progress-bar bg-info" id="studentBoysBar" style="width: 0%">0% Boys</div>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span>Girls: <strong id="studentGirlsCount">0</strong></span>
+                            <span>Boys: <strong id="studentBoysCount">0</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header border-0"><h3 class="card-title">Community gender split</h3></div>
+                    <div class="card-body">
+                        <div class="progress mb-2" style="height: 25px;">
+                            <div class="progress-bar bg-success" id="communityWomenBar" style="width: 0%">0% Women</div>
+                            <div class="progress-bar bg-navy-blue" id="communityMenBar" style="width: 0%">0% Men</div>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span>Women: <strong id="communityWomenCount">0</strong></span>
+                            <span>Men: <strong id="communityMenCount">0</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-<div class="row mt-2">
-    <div class="col-lg-6 mb-3">
-        <div class="card h-100">
-            <div class="card-header border-0"><h3 class="card-title">Gender split - students</h3></div>
-            <div class="card-body">
-                <div class="progress mb-2" style="height: 25px;">
-                    <div class="progress-bar bg-primary" id="studentGirlsBar" style="width: 0%">0% Girls</div>
-                    <div class="progress-bar bg-info" id="studentBoysBar" style="width: 0%">0% Boys</div>
-                </div>
-                <div class="d-flex justify-content-between small">
-                    <span>Girls: <strong id="studentGirlsCount">0</strong></span>
-                    <span>Boys: <strong id="studentBoysCount">0</strong></span>
+        <div class="row">
+            <div class="col-lg-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header border-0"><h3 class="card-title">Top schools by students reached</h3></div>
+                    <div class="card-body p-0" id="topSchoolsList">
+                        <div class="text-center py-4">Select filters...</div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
-    <div class="col-lg-6 mb-3">
-        <div class="card h-100">
-            <div class="card-header border-0"><h3 class="card-title">Community gender split</h3></div>
-            <div class="card-body">
-                <div class="progress mb-2" style="height: 25px;">
-                    <div class="progress-bar bg-success" id="communityWomenBar" style="width: 0%">0% Women</div>
-                    <div class="progress-bar bg-navy-blue" id="communityMenBar" style="width: 0%">0% Men</div>
+            <div class="col-lg-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header border-0"><h3 class="card-title">Exposure by cohort type</h3></div>
+                    <div class="card-body p-0" id="cohortBreakdownList">
+                        <div class="text-center py-4">Select filters...</div>
+                    </div>
                 </div>
-                <div class="d-flex justify-content-between small">
-                    <span>Women: <strong id="communityWomenCount">0</strong></span>
-                    <span>Men: <strong id="communityMenCount">0</strong></span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-lg-6 mb-3">
-        <div class="card h-100">
-            <div class="card-header border-0"><h3 class="card-title">Top schools by students reached</h3></div>
-            <div class="card-body p-0" id="topSchoolsList">
-                <div class="text-center py-4">Select filters...</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-6 mb-3">
-        <div class="card h-100">
-            <div class="card-header border-0"><h3 class="card-title">Exposure by cohort type</h3></div>
-            <div class="card-body p-0" id="cohortBreakdownList">
-                <div class="text-center py-4">Select filters...</div>
             </div>
         </div>
     </div>
@@ -160,22 +175,22 @@
 {% block scripts %}
 <script>
 $(function () {
-    // Premium Multi-filter initialization
     const rf = $('#regionFilter');
     const pf = $('#programFilter');
+    const mf = $('#monthFilter');
     pf.prop('disabled', true);
 
     if ($.fn.select2) {
         window.PramanaDashboard.initMultiFilters();
     }
 
-    fetch('/dashboard/filters')
+    fetch('/exposure/filters')
         .then(res => res.json())
         .then(data => {
             const yf = $('#yearFilter');
             data.years.forEach(y => yf.append(new Option(y, y)));
-            
             data.regions.forEach(r => rf.append(new Option(r, r)));
+            data.months.forEach(m => mf.append(new Option(m.name, m.id)));
             
             // Set dynamic defaults
             const currentYear = new Date().getFullYear().toString();
@@ -183,6 +198,7 @@ $(function () {
                 yf.val([currentYear]);
             }
             $('.select2').trigger('change.select2', { internal: true });
+            loadData();
         });
 
     rf.on('change', function () {
@@ -191,7 +207,7 @@ $(function () {
         
         if (regions && regions.length > 0) {
             const query = $.param({ region_name: regions }, true);
-            fetch(`/dashboard/filters?${query}`)
+            fetch(`/exposure/filters?${query}`)
                 .then(res => res.json())
                 .then(data => {
                     data.programs.forEach(p => pf.append(new Option(p, p)));
@@ -202,36 +218,39 @@ $(function () {
         }
     });
 
-
     function loadData() {
         const filters = window.PramanaDashboard.collectFilters();
         const query = $.param(filters, true);
         fetch(`/exposure/data?${query}`)
             .then(res => res.json())
             .then(data => {
-                // KPIs
-                $('#programTotalStudents').text(data.kpis.total_students.toLocaleString());
-                $('#programCommunityMembers').text(data.kpis.total_community.toLocaleString());
-                $('#programTeachersReached').text(data.kpis.total_teachers.toLocaleString());
-                $('#programAverageStudents').text(data.kpis.average_exposure.toFixed(1));
+                // KPIs using raw_kpis
+                $('#programTotalStudents').text(data.raw_kpis.total_students.toLocaleString());
+                $('#programCommunityMembers').text(data.raw_kpis.total_community.toLocaleString());
+                $('#programTeachersReached').text(data.raw_kpis.total_teachers.toLocaleString());
+                $('#programAverageStudents').text(data.raw_kpis.average_exposure.toFixed(1));
+
+                if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
+                    window.PramanaInsights.enhanceAllKpiCards(data.kpis);
+                }
 
                 // Student Split
-                const sTotal = data.kpis.total_students || 1;
-                const gPct = (data.kpis.girls / sTotal * 100).toFixed(1);
+                const sTotal = data.raw_kpis.total_students || 1;
+                const gPct = (data.raw_kpis.girls / sTotal * 100).toFixed(1);
                 const bPct = (100 - gPct).toFixed(1);
                 $('#studentGirlsBar').css('width', gPct + '%').text(gPct + '% Girls');
                 $('#studentBoysBar').css('width', bPct + '%').text(bPct + '% Boys');
-                $('#studentGirlsCount').text(data.kpis.girls.toLocaleString());
-                $('#studentBoysCount').text(data.kpis.boys.toLocaleString());
+                $('#studentGirlsCount').text(data.raw_kpis.girls.toLocaleString());
+                $('#studentBoysCount').text(data.raw_kpis.boys.toLocaleString());
 
                 // Community Split
-                const cTotal = data.kpis.total_community || 1;
-                const wPct = (data.kpis.women / cTotal * 100).toFixed(1);
+                const cTotal = data.raw_kpis.total_community || 1;
+                const wPct = (data.raw_kpis.women / cTotal * 100).toFixed(1);
                 const mPct = (100 - wPct).toFixed(1);
                 $('#communityWomenBar').css('width', wPct + '%').text(wPct + '% Women');
                 $('#communityMenBar').css('width', mPct + '%').text(mPct + '% Men');
-                $('#communityWomenCount').text(data.kpis.women.toLocaleString());
-                $('#communityMenCount').text(data.kpis.men.toLocaleString());
+                $('#communityWomenCount').text(data.raw_kpis.women.toLocaleString());
+                $('#communityMenCount').text(data.raw_kpis.men.toLocaleString());
 
                 // Top Schools
                 const schoolList = $('#topSchoolsList');

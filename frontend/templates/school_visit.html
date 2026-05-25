@@ -491,7 +491,7 @@ $(function () {
                     $('#kpiMonthlySessions').text(data.kpis[3].value.toLocaleString());
 
                     if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
-                        window.PramanaInsights.enhanceAllKpiCards();
+                        window.PramanaInsights.enhanceAllKpiCards(data.kpis);
                     }
                 }
                 if (data.charts && !drilldownProgram) {

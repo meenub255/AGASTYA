@@ -23,32 +23,64 @@
 
     <!-- KPI Cards -->
     <div class="row mb-4">
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-teal" id="kpiCardSessions" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <span class="kpi-v2-val" id="kpiSessions">0</span>
-                <span class="kpi-v2-lbl">Total Sessions</span>
-                <div class="kpi-v2-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardSessions">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Sessions</span>
+                        <span class="kpi-bitcoin-sublabel">Total Sessions</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiSessions">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartSessions"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-green" id="kpiCardSchools" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <span class="kpi-v2-val" id="kpiSchools">0</span>
-                <span class="kpi-v2-lbl">Total Schools</span>
-                <div class="kpi-v2-icon"><i class="fas fa-school"></i></div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardSchools">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                        <i class="fas fa-school"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Schools</span>
+                        <span class="kpi-bitcoin-sublabel">Total Schools</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiSchools">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartSchools"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-navy" id="kpiCardExposure" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <span class="kpi-v2-val" id="kpiExposure">0</span>
-                <span class="kpi-v2-lbl">Total Exposure</span>
-                <div class="kpi-v2-icon"><i class="fas fa-user-graduate"></i></div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardExposure">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Exposure</span>
+                        <span class="kpi-bitcoin-sublabel">Total Exposure</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiExposure">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartExposure"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-6">
-            <div class="kpi-card-v2 kpi-v2-red" id="kpiCardAvgDuration" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-html="true" style="cursor:pointer;" title="Insights">
-                <span class="kpi-v2-val" id="kpiAvgDuration">0</span>
-                <span class="kpi-v2-lbl">Avg Session (min)</span>
-                <div class="kpi-v2-icon"><i class="fas fa-clock"></i></div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardAvgDuration">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Avg Session</span>
+                        <span class="kpi-bitcoin-sublabel">Duration (min)</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiAvgDuration">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartAvgDuration"></canvas></div>
             </div>
         </div>
     </div>
@@ -150,6 +182,15 @@
             <select id="monthFilter" class="form-control select2 filter-multi" data-filter="month" multiple data-placeholder="Select Month"></select>
         </div>
         <div class="fd-section">
+            <label class="fd-label">Quarter</label>
+            <select id="quarterFilter" class="form-control select2 filter-multi" data-filter="quarter" multiple data-placeholder="Select Quarter">
+                <option value="1">Q1 (Apr-Jun)</option>
+                <option value="2">Q2 (Jul-Sep)</option>
+                <option value="3">Q3 (Oct-Dec)</option>
+                <option value="4">Q4 (Jan-Mar)</option>
+            </select>
+        </div>
+        <div class="fd-section">
             <div class="custom-control custom-switch mt-2">
                 <input type="checkbox" class="custom-control-input" id="toggleDataLabels" checked>
                 <label class="custom-control-label" for="toggleDataLabels" style="font-size:13px;color:#64748b;">Show Data Labels</label>
@@ -227,8 +268,8 @@ $(function () {
     }
 
     function updateFilterSummary() {
-        const r = $('#regionFilter').val() || [], a = $('#areaFilter').val() || [], y = $('#yearFilter').val() || [], m = $('#monthFilter').val() || [];
-        const total = r.length + a.length + y.length + m.length;
+        const r = $('#regionFilter').val() || [], a = $('#areaFilter').val() || [], y = $('#yearFilter').val() || [], m = $('#monthFilter').val() || [], q = $('#quarterFilter').val() || [];
+        const total = r.length + a.length + y.length + m.length + q.length;
         $('#activeFilterCount').text(total ? total + ' Filter' + (total>1?'s':'') + ' Applied' : 'All Data');
     }
 
@@ -465,16 +506,9 @@ $(function () {
                     $('#kpiExposure').text(data.kpis[2].value.toLocaleString());
                     $('#kpiAvgDuration').text(data.kpis[3].value.toLocaleString());
 
-                    // Update Popovers
-                    data.kpis.forEach((kpi, idx) => {
-                        const cardId = ['#kpiCardSessions','#kpiCardSchools','#kpiCardExposure','#kpiCardAvgDuration'][idx];
-                        $(cardId).attr('data-content', `
-                            <div class="kpi-insight">
-                                <div class="ki-status ${kpi.status.toLowerCase()}">${kpi.status}</div>
-                                <div class="ki-reason">${kpi.reason}</div>
-                            </div>
-                        `).popover('hide');
-                    });
+                    if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
+                        window.PramanaInsights.enhanceAllKpiCards(data.kpis);
+                    }
                 }
                 if (data.charts && !drilldownProgram) {
                     acronymMapping = {};

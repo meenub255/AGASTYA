@@ -181,6 +181,15 @@
             <label class="fd-label">Month</label>
             <select id="monthFilter" class="form-control select2 filter-multi" data-filter="month" multiple data-placeholder="Select Month"></select>
         </div>
+        <div class="fd-section">
+            <label class="fd-label">Quarter</label>
+            <select id="quarterFilter" class="form-control select2 filter-multi" data-filter="quarter" multiple data-placeholder="Select Quarter">
+                <option value="1">Q1 (Apr-Jun)</option>
+                <option value="2">Q2 (Jul-Sep)</option>
+                <option value="3">Q3 (Oct-Dec)</option>
+                <option value="4">Q4 (Jan-Mar)</option>
+            </select>
+        </div>
     </div>
     <div class="fd-footer">
         <button class="btn btn-outline-secondary btn-block shadow-sm" id="resetFilters" style="border-radius: 10px;">
@@ -268,7 +277,8 @@ $(function() {
         const r = $('#regionFilter').val() || [];
         const a = $('#areaFilter').val() || [];
         const m = $('#monthFilter').val() || [];
-        const total = y.length + r.length + a.length + m.length;
+        const q = $('#quarterFilter').val() || [];
+        const total = y.length + r.length + a.length + m.length + q.length;
         $('#activeFilterCount').text(total ? total + ' Filter' + (total>1?'s':'') + ' Applied' : 'All Data');
     }
 
@@ -282,11 +292,14 @@ $(function() {
             ajaxUrl: '/instructor-summary/data',
             getFilters: collectFilters,
             onDataLoad: (data) => {
-                if (data.kpis) {
-                    $('#kpiDaysWorked').text(data.kpis.days_worked.toLocaleString());
-                    $('#kpiNoOfSessions').text(data.kpis.total_sessions.toLocaleString());
-                    $('#kpiSchoolExposures').text(data.kpis.school_exposures.toLocaleString());
-                    $('#kpiCombinedExposures').text(data.kpis.combined_exposures.toLocaleString());
+                if (data.metrics) {
+                    $('#kpiDaysWorked').text(data.metrics.days_worked.toLocaleString());
+                    $('#kpiNoOfSessions').text(data.metrics.total_sessions.toLocaleString());
+                    $('#kpiSchoolExposures').text(data.metrics.school_exposures.toLocaleString());
+                    $('#kpiCombinedExposures').text(data.metrics.combined_exposures.toLocaleString());
+                }
+                if (data.kpis && window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
+                    window.PramanaInsights.enhanceAllKpiCards(data.kpis);
                 }
             },
             columns: [

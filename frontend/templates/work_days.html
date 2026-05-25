@@ -33,6 +33,15 @@
                         <select id="month_filter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month">
                         </select>
                     </div>
+                    <div class="form-group mb-4">
+                        <label class="filter-label">Quarter</label>
+                        <select id="quarter_filter" class="form-control select2 filter-multi" multiple="multiple" data-filter="quarter" data-placeholder="Select Quarter">
+                            <option value="1">Q1 (Apr-Jun)</option>
+                            <option value="2">Q2 (Jul-Sep)</option>
+                            <option value="3">Q3 (Oct-Dec)</option>
+                            <option value="4">Q4 (Jan-Mar)</option>
+                        </select>
+                    </div>
                     
                     <div class="mt-5">
                         <button id="apply_filters" class="btn btn-primary btn-block btn-premium mb-3">
@@ -171,7 +180,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     populateDropdown('#month_filter', data.months);
                 }
-                populateDropdown('#area_filter', data.areas);
+                const areaSelect = $('#area_filter');
+                const selectedArea = areaSelect.val();
+                areaSelect.empty();
+                data.areas.forEach(item => {
+                    areaSelect.append(`<option value="${item.id}">${item.name}</option>`);
+                });
+                areaSelect.val(selectedArea).trigger('change.select2');
             });
     }
 
@@ -183,62 +198,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Load Data
-    function loadData(page = 1) {
-        const filters = window.PramanaDashboard.collectFilters();
-        const queryParams = $.param(filters, true);
-        
-        fetch(`/work-days/data?${queryParams}`)
-            .then(res => res.json())
-            .then(data => {
-                renderKPIs(data.kpis);
-                renderTable(data.table_data);
-            })
-            .catch(err => console.error("Error fetching data:", err));
-    }
-
-    function renderKPIs(kpis) {
-        const container = $('#kpi_container');
-        container.empty();
-        kpis.forEach(kpi => {
-            container.append(`
-                <div class="col-lg-3 col-6">
-                    <div class="small-box ${kpi.color}">
-                        <div class="inner">
-                            <h3>${kpi.value}</h3>
-                            <p>${kpi.label}</p>
-                        </div>
-                        <div class="icon">
-                            <i class="${kpi.icon}"></i>
-                        </div>
-                    </div>
-                </div>
-            `);
+    function loadData() {
+        window.PramanaDashboard.initDataTable('#work_days_table', {
+            ajaxUrl: '/work-days/data',
+            getFilters: function() {
+                return window.PramanaDashboard.collectFilters();
+            },
+            onDataLoad: function(data) {
+                if (data.kpis && data.kpis.length >= 4) {
+                    $('#total_instructors').text(data.kpis[0].value.toLocaleString());
+                    $('#total_working_days').text(data.kpis[1].value.toLocaleString());
+                    $('#avg_days_per_instructor').text(data.kpis[2].value);
+                    $('#total_regions').text(data.kpis[3].value.toLocaleString());
+                    
+                    if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
+                        window.PramanaInsights.enhanceAllKpiCards(data.kpis);
+                    }
+                }
+            },
+            columns: [
+                { data: 'instructor_name', render: d => `<div class="d-flex align-items-center"><i class="fas fa-user-circle text-navy-blue mr-2"></i> ${d}</div>` },
+                { data: 'region_area', render: d => `<small class="text-muted"><i class="fas fa-map-marker-alt mr-1"></i> ${d}</small>` },
+                { data: 'total_days', className: 'text-center', render: d => `<span class="badge bg-olive py-2 px-3 font-weight-bold" style="font-size: 1rem;">${d}</span>` },
+                { data: 'dates_active', render: d => `<div class="text-primary font-weight-bold" style="word-break: break-all;">${d || ''}</div>` }
+            ]
         });
     }
-
-    function renderTable(data) {
-        const body = $('#table_body');
-        body.empty();
-        if (data.length === 0) {
-            body.append('<tr><td colspan="4" class="text-center py-4 text-muted">No records found for selected period</td></tr>');
-            return;
-        }
-        data.forEach(row => {
-            body.append(`
-                <tr>
-                    <td><div class="d-flex align-items-center"><i class="fas fa-user-circle text-navy-blue mr-2"></i> ${row.instructor_name}</div></td>
-                    <td><small class="text-muted"><i class="fas fa-map-marker-alt mr-1"></i> ${row.region_area}</small></td>
-                    <td class="text-center"><span class="badge bg-olive py-2 px-3 font-weight-bold" style="font-size: 1rem;">${row.total_days}</span></td>
-                    <td><div class="text-primary font-weight-bold" style="word-break: break-all;">${row.dates_active}</div></td>
-                </tr>
-            `);
-        });
-
-        // Initialize DataTable
-        window.PramanaDashboard.initDataTable('#work_days_table');
-    }
-
-    // Pagination removed in favor of DataTables
 
     // Events
     $('.select2').select2({ theme: 'bootstrap4', width: '100%' });
@@ -247,12 +232,10 @@ document.addEventListener('DOMContentLoaded', function() {
         loadFilters($(this).val());
     });
 
-    $('#apply_filters').on('click', () => { loadData(1); });
+    $('#apply_filters').on('click', () => { loadData(); });
     $('#reset_filters').on('click', () => {
         window.PramanaDashboard.resetTable('#work_days_table', loadData);
     });
-
-    $('#pagination_links').on('click', 'a', function(e) { e.preventDefault(); });
 
     // Initial Load
     loadFilters();

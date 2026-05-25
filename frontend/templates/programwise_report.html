@@ -188,6 +188,15 @@
             <select id="monthFilter" class="form-control select2 filter-multi" multiple data-filter="month" data-placeholder="Select Month"></select>
         </div>
         <div class="fd-section">
+            <label class="fd-label">Quarter</label>
+            <select id="quarterFilter" class="form-control select2 filter-multi" multiple data-filter="quarter" data-placeholder="Select Quarter">
+                <option value="1">Q1 (Apr-Jun)</option>
+                <option value="2">Q2 (Jul-Sep)</option>
+                <option value="3">Q3 (Oct-Dec)</option>
+                <option value="4">Q4 (Jan-Mar)</option>
+            </select>
+        </div>
+        <div class="fd-section">
             <div class="custom-control custom-switch mt-2">
                 <input type="checkbox" class="custom-control-input" id="toggleDataLabels" checked>
                 <label class="custom-control-label" for="toggleDataLabels" style="font-size:13px;color:#64748b;">Show Data Labels</label>
@@ -269,8 +278,8 @@ $(function () {
     }
 
     function updateFilterSummary() {
-        const c = $('#categoryFilter').val() || [], y = $('#yearFilter').val() || [], m = $('#monthFilter').val() || [];
-        const total = c.length + y.length + m.length;
+        const c = $('#categoryFilter').val() || [], y = $('#yearFilter').val() || [], m = $('#monthFilter').val() || [], q = $('#quarterFilter').val() || [];
+        const total = c.length + y.length + m.length + q.length;
         $('#activeFilterCount').text(total ? total + ' Filter' + (total>1?'s':'') + ' Applied' : 'All Data');
     }
 
@@ -283,7 +292,8 @@ $(function () {
         let filters = {
             category: $('#categoryFilter').val() || [],
             years: $('#yearFilter').val() || [],
-            month: $('#monthFilter').val() || []
+            month: $('#monthFilter').val() || [],
+            quarter: $('#quarterFilter').val() || []
         };
         if (drilldownRegion) {
             filters.region = [drilldownRegion];
@@ -337,16 +347,9 @@ $(function () {
                     $('#kpiTotalSessions').text(data.kpis[2].value.toLocaleString());
                     $('#kpiTotalStudents').text(data.kpis[3].value.toLocaleString());
 
-                    // Update Popovers
-                    data.kpis.forEach((kpi, idx) => {
-                        const cardId = ['#kpiCardPrograms','#kpiCardSchools','#kpiCardSessions','#kpiCardStudents'][idx];
-                        $(cardId).attr('data-content', `
-                            <div class="kpi-insight">
-                                <div class="ki-status ${kpi.status.toLowerCase()}">${kpi.status}</div>
-                                <div class="ki-reason">${kpi.reason}</div>
-                            </div>
-                        `).popover('hide');
-                    });
+                    if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
+                        window.PramanaInsights.enhanceAllKpiCards(data.kpis);
+                    }
                 }
                 if (data.charts && !drilldownRegion) {
                     regionMapping = {};
