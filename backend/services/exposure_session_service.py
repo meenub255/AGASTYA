@@ -142,9 +142,17 @@ def get_exposure_session_data(region=None, program=None, years=None, month=None,
             formatted.append(row)
 
         # Chart 1: Gender Split (doughnut chart)
+        boys_val = 0
+        girls_val = 0
+        for k in kpis:
+            if k["label"] == "Total Boys":
+                boys_val = k["value"]
+            elif k["label"] == "Total Girls":
+                girls_val = k["value"]
+
         gender_split = [
-            {"label": "Boys",  "value": int(kpi_row.get("total_boys", 0) or 0)},
-            {"label": "Girls", "value": int(kpi_row.get("total_girls", 0) or 0)},
+            {"label": "Boys",  "value": int(boys_val)},
+            {"label": "Girls", "value": int(girls_val)},
         ]
 
         # Chart 2: Exposure by Month (line chart with trend)

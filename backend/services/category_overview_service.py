@@ -429,11 +429,18 @@ def get_instructor_overview(region=None, years=None, program=None, limit=15, off
                                     "avg": round(sess_c / inst_c, 1) if inst_c else 0,
                                     "students": int(r["students"] or 0)})
 
+        sparklines = {
+            "instructors": [prev_vals.get("total_instructors", ti) if prev_vals else ti, ti],
+            "sessions": [prev_vals.get("total_sessions", ts) if prev_vals else ts, ts],
+            "avg": [prev_vals.get("avg_per_instructor", avg) if prev_vals else avg, avg],
+            "students": [prev_vals.get("total_students", stu) if prev_vals else stu, stu]
+        }
+
         return {"kpis": kpis_response, "charts": charts, "table": table,
-                "total_count": int(count), "trends": monthly_trends}
+                "total_count": int(count), "trends": monthly_trends, "sparklines": sparklines}
     except Exception as ex:
         logger.error(f"instructor overview error: {ex}", exc_info=True)
-        return {"kpis": {}, "charts": {}, "table": [], "total_count": 0, "trends": []}
+        return {"kpis": {}, "charts": {}, "table": [], "total_count": 0, "trends": [], "sparklines": {}}
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -795,11 +802,18 @@ def get_program_impact_overview(region=None, years=None, program=None, limit=15,
                            "students": int(r["students"] or 0), "sessions": int(r["sessions"] or 0)}
                           for r in sparkline_rows]
 
+        sparklines = {
+            "programs": [prev_vals.get("total_programs", tp) if prev_vals else tp, tp],
+            "schools": [prev_vals.get("total_schools", t_sch) if prev_vals else t_sch, t_sch],
+            "students": [prev_vals.get("total_students", t_stu) if prev_vals else t_stu, t_stu],
+            "sessions": [prev_vals.get("total_sessions", t_sess) if prev_vals else t_sess, t_sess]
+        }
+
         return {"kpis": kpis_response, "charts": charts, "table": table,
-                "total_count": int(count), "trends": monthly_trends}
+                "total_count": int(count), "trends": monthly_trends, "sparklines": sparklines}
     except Exception as ex:
         logger.error(f"program impact overview error: {ex}", exc_info=True)
-        return {"kpis": {}, "charts": {}, "table": [], "total_count": 0, "trends": []}
+        return {"kpis": {}, "charts": {}, "table": [], "total_count": 0, "trends": [], "sparklines": {}}
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -1202,8 +1216,15 @@ def get_operations_overview(region=None, years=None, program=None, limit=15, off
                 "active_centers": int(r["active_centers"] or 0),
             })
 
+        sparklines = {
+            "working_days": [prev_vals.get("working_days", wd) if prev_vals else wd, wd],
+            "active_drivers": [prev_vals.get("active_drivers", ad) if prev_vals else ad, ad],
+            "total_kms": [prev_vals.get("total_kms", tk) if prev_vals else tk, tk],
+            "active_centers": [prev_vals.get("active_centers", ac) if prev_vals else ac, ac]
+        }
+
         return {"kpis": kpis_response, "charts": charts, "table": table,
-                "total_count": int(count), "trends": monthly_trends}
+                "total_count": int(count), "trends": monthly_trends, "sparklines": sparklines}
     except Exception as ex:
         logger.error(f"operations overview error: {ex}", exc_info=True)
-        return {"kpis": {}, "charts": {}, "table": [], "total_count": 0, "trends": []}
+        return {"kpis": {}, "charts": {}, "table": [], "total_count": 0, "trends": [], "sparklines": {}}
