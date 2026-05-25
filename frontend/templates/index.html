@@ -328,6 +328,8 @@
         let regionMapping    = {};
         let programChartInst = null;
         let fullKpis         = null;   // cached full KPIs for restore
+        let fullTrends       = null;
+        let fullSparklines   = null;
         let selectedRegion   = null;   // currently drilled-in region
         let programChartData = null;   // raw labels/colors for reset
 
@@ -564,7 +566,7 @@
             });
         }
 
-        function updateKpis(kpis, trends = []) {
+        function updateKpis(kpis, trends = [], sparklines = null) {
             animateNumber($('#kpiInstructors'), kpis.total_instructors);
             animateNumber($('#kpiDrivers'),     kpis.total_drivers);
             animateNumber($('#kpiStates'),      kpis.total_states);
@@ -593,7 +595,12 @@
                 $('#trendWrapperInstructors, #trendWrapperDrivers, #trendWrapperStates, #trendWrapperPrograms').attr('style', 'display: none !important;');
             }
 
-            if (trends && trends.length) {
+            if (sparklines) {
+                renderMiniChart('miniChartInstructors', sparklines.instructors, '#f39c12');
+                renderMiniChart('miniChartDrivers',     sparklines.drivers,     '#3498db');
+                renderMiniChart('miniChartStates',      sparklines.states,      '#2ecc71');
+                renderMiniChart('miniChartPrograms',    sparklines.programs,    '#e74c3c');
+            } else if (trends && trends.length) {
                 renderMiniChart('miniChartInstructors', trends.map(t => t.instructors), '#f39c12');
                 renderMiniChart('miniChartDrivers',     trends.map(t => t.drivers),     '#3498db');
                 renderMiniChart('miniChartStates',      trends.map(t => t.states),      '#2ecc71');
@@ -793,7 +800,8 @@
                 .then(data => {
                     fullKpis = data.kpis;
                     fullTrends = data.trends;
-                    updateKpis(data.kpis, data.trends);
+                    fullSparklines = data.sparklines;
+                    updateKpis(data.kpis, data.trends, data.sparklines);
                     regionMapping = {};
                     renderPolarAreaChart(data.charts.instructors_by_region);
                     renderBarChart(data.charts.programs_by_region);
@@ -810,7 +818,7 @@
             // Update KPIs to region-filtered view with cache-busting
             fetch(`/dashboard/data?${query}`, { cache: 'no-store' })
                 .then(r => r.json())
-                .then(data => updateKpis(data.kpis, data.trends));
+                .then(data => updateKpis(data.kpis, data.trends, data.sparklines));
 
             // Fetch drill-down detail with cache-busting
             fetch(`/dashboard/drill-down?${query}`, { cache: 'no-store' })
@@ -883,7 +891,7 @@
             }
 
             // Restore full KPIs
-            if (restoreKpis && fullKpis) updateKpis(fullKpis, fullTrends);
+            if (restoreKpis && fullKpis) updateKpis(fullKpis, fullTrends, fullSparklines);
         };
 
         // ── Button handlers ──────────────────────────────────────────────

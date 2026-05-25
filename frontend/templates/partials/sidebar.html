@@ -37,7 +37,8 @@
         <div class="ps-section-label">Insights &amp; Tracking</div>
 
         <!-- Instructor Performance Group -->
-        {% set instructor_active = page_id in ['instructor-overview', 'performance-management-dashboard', 'instructor-summary',
+        {% set instructor_active = page_id in ['instructor-overview', 'performance-management-dashboard',
+        'instructor-summary',
         'instructor-detail', 'instructor-feedback', 'attendance'] %}
         <div class="ps-group {% if instructor_active %}ps-group-open{% endif %}">
             <button class="ps-group-trigger {% if instructor_active %}ps-active{% endif %}" data-group="instructor"
@@ -80,7 +81,8 @@
         </div>
 
         <!-- Program Impact Group -->
-        {% set reach_active = page_id in ['program-impact-overview', 'nationwide-dashboard', 'regionwise-dashboard', 'program-visits',
+        {% set reach_active = page_id in ['program-impact-overview', 'nationwide-dashboard', 'regionwise-dashboard',
+        'program-visits',
         'programwise-report', 'exposure-session-dashboard'] %}
         <div class="ps-group {% if reach_active %}ps-group-open{% endif %}">
             <button class="ps-group-trigger {% if reach_active %}ps-active{% endif %}" data-group="program"
@@ -123,13 +125,14 @@
         </div>
 
         <!-- Operations Group -->
-        {% set ops_active = page_id in ['operations-overview', 'manpower-vehicle-dashboard', 'vehicle-report', 'work-days-report',
+        {% set ops_active = page_id in ['operations-overview', 'manpower-vehicle-dashboard', 'vehicle-report',
+        'work-days-report',
         'arealead-summary', 'region-summary'] %}
         <div class="ps-group {% if ops_active %}ps-group-open{% endif %}">
             <button class="ps-group-trigger {% if ops_active %}ps-active{% endif %}" data-group="ops"
                 data-tip="Operations">
                 <span class="ps-icon"><i class="fas fa-sliders-h"></i></span>
-                <span class="ps-label">Operations</span>
+                <span class="ps-label">Operational Efficiency</span>
                 <span class="ps-chevron"><i class="fas fa-chevron-right"></i></span>
             </button>
             <div class="ps-group-items" id="grp-ops">
@@ -198,7 +201,7 @@
         // ── Pin toggle (Desktop only) ───────────────────────────────
         pinBtn.addEventListener('click', function (e) {
             e.stopPropagation();
-            if (window.innerWidth <= 991) return; 
+            if (window.innerWidth <= 991) return;
 
             const isPinned = sidebar.classList.toggle(PINNED);
             sidebar.classList.toggle(EXPANDED, isPinned);

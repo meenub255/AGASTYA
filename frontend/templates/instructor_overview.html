@@ -526,7 +526,7 @@ $(function(){
         });
     }
 
-    function updateKpis(kpis, trends = []) {
+    function updateKpis(kpis, trends = [], sparklines = null) {
         animateNum($('#kpiInstructors'), kpis.total_instructors);
         animateNum($('#kpiSessions'),    kpis.total_sessions);
         
@@ -567,7 +567,12 @@ $(function(){
             $('#trendWrapperInstructors, #trendWrapperSessions, #trendWrapperAvgSessions, #trendWrapperStudents').attr('style', 'display: none !important;');
         }
 
-        if (trends && trends.length) {
+        if (sparklines) {
+            renderMiniChart('miniChartInstructors', sparklines.instructors, '#f39c12');
+            renderMiniChart('miniChartSessions',    sparklines.sessions,    '#28a745');
+            renderMiniChart('miniChartAvgSessions', sparklines.avg,         '#001f3f');
+            renderMiniChart('miniChartStudents',    sparklines.students,    '#dc3545');
+        } else if (trends && trends.length) {
             renderMiniChart('miniChartInstructors', trends.map(t => t.instructors), '#f39c12');
             renderMiniChart('miniChartSessions',    trends.map(t => t.sessions),    '#28a745');
             renderMiniChart('miniChartAvgSessions', trends.map(t => t.avg),         '#001f3f');
@@ -578,13 +583,15 @@ $(function(){
     let dt=null;
     let fullKpis = null;
     let fullTrends = null;
+    let fullSparklines = null;
     function loadData(){
         const q=getParams();
         fetch(`/category-overview/instructor?${q}`).then(r=>r.json()).then(data=>{
             fullKpis = data.kpis;
             fullTrends = data.trends;
+            fullSparklines = data.sparklines;
             
-            updateKpis(data.kpis, data.trends);
+            updateKpis(data.kpis, data.trends, data.sparklines);
 
             // Charts
             const ch=data.charts||{};
@@ -613,7 +620,7 @@ $(function(){
         // Update main KPIs for the region
         fetch(`/category-overview/instructor?${q}`).then(r=>r.json()).then(data => {
             if (data.kpis) {
-                updateKpis(data.kpis, data.trends);
+                updateKpis(data.kpis, data.trends, data.sparklines);
             }
         });
 
@@ -650,7 +657,7 @@ $(function(){
         if($.fn.DataTable.isDataTable('#drilldownTable')) $('#drilldownTable').DataTable().destroy();
         $('#drilldownTableBody').empty();
         if(fullKpis) {
-            updateKpis(fullKpis, fullTrends);
+            updateKpis(fullKpis, fullTrends, fullSparklines);
         }
     };
 

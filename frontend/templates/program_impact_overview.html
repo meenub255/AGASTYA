@@ -505,7 +505,7 @@ $(function(){
         });
     }
 
-    function updateKpis(kpis, trends = []) {
+    function updateKpis(kpis, trends = [], sparklines = null) {
         animateNum($('#kpiPrograms'), kpis.total_programs);
         animateNum($('#kpiSchools'),  kpis.total_schools);
         animateNum($('#kpiStudents'), kpis.total_students);
@@ -534,7 +534,12 @@ $(function(){
             $('#trendWrapperPrograms, #trendWrapperSchools, #trendWrapperStudents, #trendWrapperSessions').attr('style', 'display: none !important;');
         }
 
-        if (trends && trends.length) {
+        if (sparklines) {
+            renderMiniChart('miniChartPrograms', sparklines.programs, '#17a2b8');
+            renderMiniChart('miniChartSchools',  sparklines.schools,  '#28a745');
+            renderMiniChart('miniChartStudents', sparklines.students, '#001f3f');
+            renderMiniChart('miniChartSessions', sparklines.sessions, '#dc3545');
+        } else if (trends && trends.length) {
             renderMiniChart('miniChartPrograms', trends.map(t => t.programs), '#17a2b8');
             renderMiniChart('miniChartSchools',  trends.map(t => t.schools),  '#28a745');
             renderMiniChart('miniChartStudents', trends.map(t => t.students), '#001f3f');
@@ -542,14 +547,15 @@ $(function(){
         }
     }
 
-    let dt=null, fullKpis = null, fullTrends = null;
+    let dt=null, fullKpis = null, fullTrends = null, fullSparklines = null;
     function loadData(){
         const q=getParams();
         fetch(`/category-overview/program-impact?${q}`).then(r=>r.json()).then(data=>{
             fullKpis = data.kpis;
             fullTrends = data.trends;
+            fullSparklines = data.sparklines;
             
-            updateKpis(data.kpis, data.trends);
+            updateKpis(data.kpis, data.trends, data.sparklines);
 
             const ch=data.charts||{};
             renderDoughnut('chartProgram', ch.by_program||[]);
@@ -580,7 +586,7 @@ $(function(){
         // Update main KPIs for the region
         fetch(`/category-overview/program-impact?${q}`).then(r=>r.json()).then(data => {
             if (data.kpis) {
-                updateKpis(data.kpis, data.trends);
+                updateKpis(data.kpis, data.trends, data.sparklines);
             }
         });
 
@@ -617,7 +623,7 @@ $(function(){
         if($.fn.DataTable.isDataTable('#drilldownTable')) $('#drilldownTable').DataTable().destroy();
         $('#drilldownTableBody').empty();
         if(fullKpis) {
-            updateKpis(fullKpis, fullTrends);
+            updateKpis(fullKpis, fullTrends, fullSparklines);
         }
     };
 

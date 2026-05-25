@@ -505,7 +505,7 @@ $(function(){
         });
     }
 
-    function updateKpis(kpis, trends = []) {
+    function updateKpis(kpis, trends = [], sparklines = null) {
         animateNum($('#kpiWorkingDays'), kpis.working_days);
         animateNum($('#kpiActiveDrivers'), kpis.active_drivers);
         animateNum($('#kpiTotalKms'), kpis.total_kms);
@@ -534,7 +534,12 @@ $(function(){
             $('#trendWrapperWorkingDays, #trendWrapperActiveDrivers, #trendWrapperTotalKms, #trendWrapperActiveCenters').attr('style', 'display: none !important;');
         }
 
-        if (trends && trends.length) {
+        if (sparklines) {
+            renderMiniChart('miniChartWorkingDays',  sparklines.working_days,  '#17a2b8');
+            renderMiniChart('miniChartActiveDrivers', sparklines.active_drivers, '#28a745');
+            renderMiniChart('miniChartTotalKms',     sparklines.total_kms,      '#001f3f');
+            renderMiniChart('miniChartActiveCenters', sparklines.active_centers, '#dc3545');
+        } else if (trends && trends.length) {
             renderMiniChart('miniChartWorkingDays',  trends.map(t => t.working_days),  '#17a2b8');
             renderMiniChart('miniChartActiveDrivers', trends.map(t => t.active_drivers), '#28a745');
             renderMiniChart('miniChartTotalKms',     trends.map(t => t.total_kms),      '#001f3f');
@@ -542,14 +547,15 @@ $(function(){
         }
     }
 
-    let dt=null; let fullKpis = null; let fullTrends = null;
+    let dt=null; let fullKpis = null; let fullTrends = null; let fullSparklines = null;
     function loadData(){
         const q=getParams();
         fetch(`/category-overview/operations?${q}`).then(r=>r.json()).then(data=>{
             fullKpis = data.kpis;
             fullTrends = data.trends;
+            fullSparklines = data.sparklines;
             
-            updateKpis(data.kpis, data.trends);
+            updateKpis(data.kpis, data.trends, data.sparklines);
 
             const ch=data.charts||{};
             renderHBar('chartKm', ch.km_by_region||[], 'KMs Travelled');
@@ -577,7 +583,7 @@ $(function(){
         // Update main KPIs for the region
         fetch(`/category-overview/operations?${q}`).then(r=>r.json()).then(data => {
             if (data.kpis) {
-                updateKpis(data.kpis, data.trends);
+                updateKpis(data.kpis, data.trends, data.sparklines);
             }
         });
 
@@ -614,7 +620,7 @@ $(function(){
         if($.fn.DataTable.isDataTable('#drilldownTable')) $('#drilldownTable').DataTable().destroy();
         $('#drilldownTableBody').empty();
         if(fullKpis) {
-            updateKpis(fullKpis, fullTrends);
+            updateKpis(fullKpis, fullTrends, fullSparklines);
         }
     };
 
