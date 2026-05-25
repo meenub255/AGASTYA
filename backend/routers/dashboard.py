@@ -111,10 +111,20 @@ def get_data(
 
     trends = overview_service.get_overview_trends(years, region, program)
 
+    sparklines = {}
+    if trends and len(trends) >= 2:
+        sparklines = {
+            "instructors": [trends[0].get("instructors", 0), trends[1].get("instructors", 0)],
+            "drivers": [trends[0].get("drivers", 0), trends[1].get("drivers", 0)],
+            "states": [trends[0].get("states", 0), trends[1].get("states", 0)],
+            "programs": [trends[0].get("programs", 0), trends[1].get("programs", 0)]
+        }
+
     return {
         "kpis": kpis,
         "charts": formatted_charts,
-        "trends": trends
+        "trends": trends,
+        "sparklines": sparklines
     }
 
 @router.get("/drill-down")
