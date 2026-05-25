@@ -1,26 +1,18 @@
-from concurrent.futures import ThreadPoolExecutor
-
-from backend.services.query_utils import build_dimension_filters, fetch_all, fetch_one
-
-
-LOCATION_EXPRESSION = "g.region_name"
-PROGRAM_EXPRESSION = "p.program_name"
-YEAR_EXPRESSION = "d.year_actual"
-
+from backend.services.query_utils import fetch_all, fetch_one
+from backend.config import DATAMART_SCHEMA_NAME
 
 def get_session_count(years: list[int | str] | None = None) -> int:
-    where_clause, params = build_dimension_filters(
-        year=years,
-        region=None,
-        program=None,
-        year_expression=YEAR_EXPRESSION,
+    from backend.services.query_utils import build_standard_filters
+    where_clause, params, _ = build_standard_filters(
+        years=years,
+        date_alias="d"
     )
     row = fetch_one(
         f"""
         SELECT COUNT(f.sk_fact_session_id) AS count
         FROM dw.fact_session f
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
-        {where_clause}
+        WHERE {where_clause}
         """,
         params,
     )
@@ -31,35 +23,38 @@ def get_session_kpis(
     years: list[int | str] | None = None,
     region: str | list[str] | None = None,
     program: str | list[str] | None = None,
-) -> dict[str, int]:
-    where_clause, params = build_dimension_filters(
-        year=years,
-        region=region,
-        program=program,
-        year_expression=YEAR_EXPRESSION,
-        location_expression=LOCATION_EXPRESSION,
-        program_expression=PROGRAM_EXPRESSION,
-    )
-    row = fetch_one(
-        f"""
-        SELECT
-            COUNT(f.sk_fact_session_id) AS total_sessions,
-            COUNT(DISTINCT f.sk_user_id) AS total_instructors,
-            COUNT(DISTINCT g.region_name) AS active_regions,
-            COUNT(DISTINCT p.program_name) AS total_programs
-        FROM dw.fact_session f
+    month: list[int | str] | None = None,
+    quarter: list[int | str] | None = None,
+) -> dict:
+    from backend.services.query_utils import calculate_ytd_kpis
+    
+    kpi_defs = [
+        {"key": "total_sessions", "label": "Total Sessions", "sql": "COUNT(f.sk_fact_session_id)", "icon": "fas fa-chalkboard-teacher", "color": "bg-navy-blue"},
+        {"key": "total_instructors", "label": "Active Instructors", "sql": "COUNT(DISTINCT f.sk_user_id)", "icon": "fas fa-users", "color": "bg-success"},
+        {"key": "active_regions", "label": "Active Regions", "sql": "COUNT(DISTINCT g.region_name)", "icon": "fas fa-map-marked-alt", "color": "bg-info"},
+        {"key": "total_programs", "label": "Total Programs", "sql": "COUNT(DISTINCT p.program_name)", "icon": "fas fa-project-diagram", "color": "bg-warning"}
+    ]
+    
+    from_clause = f"""
+        dw.fact_session f
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-        {where_clause}
-        """,
-        params,
+    """
+    
+    kpis, sparklines = calculate_ytd_kpis(
+        kpi_defs=kpi_defs,
+        from_clause=from_clause,
+        years=years,
+        region=region,
+        program=program,
+        month=month,
+        quarter=quarter
     )
+    
     return {
-        "total_sessions": int(row.get("total_sessions", 0) or 0),
-        "total_instructors": int(row.get("total_instructors", 0) or 0),
-        "active_regions": int(row.get("active_regions", 0) or 0),
-        "total_programs": int(row.get("total_programs", 0) or 0),
+        "kpis": kpis,
+        "sparklines": sparklines
     }
 
 
@@ -67,14 +62,18 @@ def get_monthly_sessions(
     years: list[int | str] | None = None,
     region: str | list[str] | None = None,
     program: str | list[str] | None = None,
+    month: list[int | str] | None = None,
+    quarter: list[int | str] | None = None,
 ) -> list[dict]:
-    where_clause, params = build_dimension_filters(
-        year=years,
+    from backend.services.query_utils import build_standard_filters
+    where_clause, params, _ = build_standard_filters(
+        years=years,
         region=region,
+        area=None,
         program=program,
-        year_expression=YEAR_EXPRESSION,
-        location_expression=LOCATION_EXPRESSION,
-        program_expression=PROGRAM_EXPRESSION,
+        month=month,
+        quarter=quarter,
+        date_alias="d"
     )
     rows = fetch_all(
         f"""
@@ -85,7 +84,7 @@ def get_monthly_sessions(
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-        {where_clause}
+        WHERE {where_clause}
         GROUP BY DATE_TRUNC('month', d.full_date)
         ORDER BY DATE_TRUNC('month', d.full_date)
         """,
@@ -98,14 +97,18 @@ def get_sessions_by_region(
     years: list[int | str] | None = None,
     region: str | list[str] | None = None,
     program: str | list[str] | None = None,
+    month: list[int | str] | None = None,
+    quarter: list[int | str] | None = None,
 ) -> list[dict]:
-    where_clause, params = build_dimension_filters(
-        year=years,
+    from backend.services.query_utils import build_standard_filters
+    where_clause, params, _ = build_standard_filters(
+        years=years,
         region=region,
+        area=None,
         program=program,
-        year_expression=YEAR_EXPRESSION,
-        location_expression=LOCATION_EXPRESSION,
-        program_expression=PROGRAM_EXPRESSION,
+        month=month,
+        quarter=quarter,
+        date_alias="d"
     )
     rows = fetch_all(
         f"""
@@ -116,7 +119,7 @@ def get_sessions_by_region(
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-        {where_clause}
+        WHERE {where_clause}
         GROUP BY COALESCE(g.region_name, 'Unknown')
         ORDER BY value DESC, label
         LIMIT 20
@@ -143,78 +146,17 @@ def get_unified_session_data(
     years: list[int | str] | None = None,
     region: str | list[str] | None = None,
     program: str | list[str] | None = None,
+    month: list[int | str] | None = None,
+    quarter: list[int | str] | None = None,
 ) -> dict:
-    """
-    Returns KPIs + chart data in a single call with parallel DB queries.
-    Shape:
-      { kpis: {...}, charts: { monthly: <ChartJS dataset>, region: <ChartJS dataset> } }
-    """
-    where_clause, params = build_dimension_filters(
-        year=years,
-        region=region,
-        program=program,
-        year_expression=YEAR_EXPRESSION,
-        location_expression=LOCATION_EXPRESSION,
-        program_expression=PROGRAM_EXPRESSION,
-    )
-
-    SQL_KPI = f"""
-        SELECT COUNT(f.sk_fact_session_id) AS total_sessions,
-               COUNT(DISTINCT f.sk_user_id) AS total_instructors,
-               COUNT(DISTINCT g.region_name) AS active_regions,
-               COUNT(DISTINCT p.program_name) AS total_programs
-        FROM dw.fact_session f
-        LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
-        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-        LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-        {where_clause}
-    """
-
-    SQL_MONTHLY = f"""
-        SELECT TO_CHAR(DATE_TRUNC('month', d.full_date), 'YYYY-MM') AS label,
-               COUNT(f.sk_fact_session_id) AS value
-        FROM dw.fact_session f
-        LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
-        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-        LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-        {where_clause}
-        GROUP BY DATE_TRUNC('month', d.full_date)
-        ORDER BY DATE_TRUNC('month', d.full_date)
-    """
-
-    SQL_REGION = f"""
-        SELECT COALESCE(g.region_name, 'Unknown') AS label,
-               COUNT(f.sk_fact_session_id) AS value
-        FROM dw.fact_session f
-        LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
-        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-        LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-        {where_clause}
-        GROUP BY COALESCE(g.region_name, 'Unknown')
-        ORDER BY value DESC, label
-        LIMIT 20
-    """
+    kpis_data = get_session_kpis(years, region, program, month, quarter)
+    monthly_rows = get_monthly_sessions(years, region, program, month, quarter)
+    region_rows = get_sessions_by_region(years, region, program, month, quarter)
 
     PALETTE = [
         "#0d6efd", "#6610f2", "#6f42c1", "#d63384", "#dc3545",
         "#fd7e14", "#ffc107", "#198754", "#20c997", "#0dcaf0",
     ]
-
-    with ThreadPoolExecutor(max_workers=3) as ex:
-        f_kpi     = ex.submit(fetch_one, SQL_KPI,     params)
-        f_monthly = ex.submit(fetch_all, SQL_MONTHLY, params)
-        f_region  = ex.submit(fetch_all, SQL_REGION,  params)
-
-    kpi_row      = f_kpi.result()
-    monthly_rows = f_monthly.result()
-    region_rows  = f_region.result()
-
-    kpis = {
-        "total_sessions":    int(kpi_row.get("total_sessions",    0) or 0),
-        "total_instructors": int(kpi_row.get("total_instructors", 0) or 0),
-        "active_regions":    int(kpi_row.get("active_regions",    0) or 0),
-        "total_programs":    int(kpi_row.get("total_programs",    0) or 0),
-    }
 
     monthly_labels = [r["label"] for r in monthly_rows]
     monthly_values = [float(r["value"]) for r in monthly_rows]
@@ -247,7 +189,8 @@ def get_unified_session_data(
     }
 
     return {
-        "kpis": kpis,
+        "kpis": kpis_data["kpis"],
+        "sparklines": kpis_data["sparklines"],
         "charts": {
             "monthly": monthly_chart,
             "region":  region_chart,

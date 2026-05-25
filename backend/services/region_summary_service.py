@@ -50,41 +50,26 @@ def get_region_summary_filters(region_name: str | list[str] | None = None):
             "regions": regions,
             "programs": programs,
             "years": years,
-            "months": months
+            "months": months,
+            "quarters": [1, 2, 3, 4]
         }
     except Exception as e:
         logger.error(f"Error fetching region summary filters: {e}")
-        return {"regions": [], "programs": [], "years": [], "months": []}
+        return {"regions": [], "programs": [], "years": [], "months": [], "quarters": []}
 
 
-def get_region_summary_data(region=None, program_type=None, years=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
+def get_region_summary_data(region=None, program_type=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
     try:
-        clauses = []
-        params = []
+        kpi_defs = [
+            {"key": "total_sessions", "label": "Total Sessions", "sql": "COUNT(f.sk_fact_session_id)", "icon": "fas fa-clock", "color": "bg-info"},
+            {"key": "total_exposure", "label": "Total Schools Exposure", "sql": "SUM(COALESCE(sess_agg.total_students, 0))", "icon": "fas fa-user-graduate", "color": "bg-success"},
+            {"key": "sf_count", "label": "Total Science Fair (SF)", "sql": "SUM(CASE WHEN a.activity_name ILIKE '%%Fair%%' THEN 1 ELSE 0 END)", "icon": "fas fa-flask", "color": "bg-navy-blue"},
+            {"key": "ttp_count", "label": "Total Teacher Training (TTP)", "sql": "SUM(CASE WHEN (p.program_name ILIKE '%%Teacher%%' OR a.activity_name ILIKE '%%Training%%') THEN 1 ELSE 0 END)", "icon": "fas fa-chalkboard-teacher", "color": "bg-danger"}
+        ]
         
-        c, p = get_list_filter_clause("g.region_name", region)
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("p.program_name", program_type)
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("d.year_actual", years, cast_type="int")
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
-        clauses.append(c); params.extend(p)
-        
-        where_sql = " AND ".join(clauses)
-        
-        # KPI Query (sidebar filters only)
-        kpi_sql = f"""
-            SELECT 
-                COUNT(f.sk_fact_session_id) as total_sessions,
-                SUM(COALESCE(sess_agg.total_students, 0)) as total_exposure,
-                SUM(CASE WHEN a.activity_name ILIKE '%%Fair%%' THEN 1 ELSE 0 END) as sf_count,
-                SUM(CASE WHEN (p.program_name ILIKE '%%Teacher%%' OR a.activity_name ILIKE '%%Training%%') THEN 1 ELSE 0 END) as ttp_count
-            FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        from_clause = f"""
+            {DATAMART_SCHEMA_NAME}.fact_session f
             LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
@@ -94,9 +79,25 @@ def get_region_summary_data(region=None, program_type=None, years=None, month=No
                 FROM {DATAMART_SCHEMA_NAME}.fact_attendance_exposure
                 GROUP BY session_nk_id
             ) sess_agg ON f.session_nk_id = sess_agg.session_nk_id
-            WHERE {where_sql}
         """
-        totals = fetch_one(kpi_sql, params)
+        
+        kpi_list, sparklines = calculate_ytd_kpis(
+            kpi_defs=kpi_defs,
+            from_clause=from_clause,
+            years=years,
+            region=region,
+            program=program_type,
+            month=month,
+            quarter=quarter
+        )
+        
+        where_sql, params, max_month = build_standard_filters(
+            years=years,
+            region=region,
+            program=program_type,
+            month=month,
+            quarter=quarter
+        )
 
         # DataTable Logic
         search_sql = "TRUE"
@@ -152,12 +153,8 @@ def get_region_summary_data(region=None, program_type=None, years=None, month=No
         table_data = fetch_all(main_sql, params + search_params + [limit, offset])
         
         return {
-            "kpis": [
-                {"label": "Total Sessions", "value": int(totals.get("total_sessions", 0) or 0), "icon": "fas fa-clock"},
-                {"label": "Total Schools Exposure", "value": int(totals.get("total_exposure", 0) or 0), "icon": "fas fa-user-graduate"},
-                {"label": "Total Science Fair (SF)", "value": int(totals.get("sf_count", 0) or 0), "icon": "fas fa-flask"},
-                {"label": "Total Teacher Training Program (TTP)", "value": int(totals.get("ttp_count", 0) or 0), "icon": "fas fa-chalkboard-teacher"},
-            ],
+            "kpis": kpi_list,
+            "sparklines": sparklines,
             "table": table_data,
             "total_count": total_count
         }
@@ -165,7 +162,3 @@ def get_region_summary_data(region=None, program_type=None, years=None, month=No
     except Exception as e:
         logger.error(f"Error in region summary data: {e}", exc_info=True)
         return {"kpis": [], "table": [], "total_count": 0}
-
-
-
-

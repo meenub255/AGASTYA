@@ -29,65 +29,52 @@ def get_programwise_report_filters():
     return {
         "categories": categories,
         "years": years,
-        "months": months
+        "months": months,
+        "quarters": [1, 2, 3, 4]
     }
 
 
-def get_programwise_report_data(category=None, years=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql
-    where_clauses = []
-    params = []
+def get_programwise_report_data(category=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
     
-    # Use helper for list-based filters
-    c_clause, c_params = get_list_filter_clause("p.donor_name", category)
-    where_clauses.append(c_clause)
-    params.extend(c_params)
+    # Build standard filters (handles YTD capping automatically)
+    where_sql, params, max_month = build_standard_filters(
+        years=years,
+        month=month,
+        quarter=quarter,
+        date_alias="d"
+    )
     
-    y_clause, y_params = get_list_filter_clause("d.year_actual", years, cast_type="int")
-    where_clauses.append(y_clause)
-    params.extend(y_params)
+    # Add category (donor_name) filter if present
+    if category:
+        c, p = get_list_filter_clause("p.donor_name", category)
+        if c != "TRUE":
+            where_sql = where_sql + f" AND {c}" if where_sql != "TRUE" else c
+            params.extend(p)
     
-    m_clause, m_params = get_list_filter_clause("d.month_actual", month, cast_type="int")
-    where_clauses.append(m_clause)
-    params.extend(m_params)
+    kpi_defs = [
+        {"key": "total_programs", "label": "Total Programs", "sql": "COUNT(DISTINCT p.program_name)", "icon": "fas fa-project-diagram", "color": "bg-info"},
+        {"key": "total_schools", "label": "Total Schools", "sql": "COUNT(DISTINCT f.sk_school_id)", "icon": "fas fa-school", "color": "bg-success"},
+        {"key": "total_sessions", "label": "Total Sessions", "sql": "COUNT(DISTINCT f.sk_fact_session_id)", "icon": "fas fa-chalkboard-teacher", "color": "bg-navy-blue"},
+        {"key": "total_students", "label": "Total Students", "sql": "COALESCE(SUM(e.total_exposure_count), 0)", "icon": "fas fa-user-graduate", "color": "bg-danger"}
+    ]
     
-    where_sql = " AND ".join(where_clauses)
-    
-    # 1. KPI Query (sidebar filters only)
-    kpi_sql = f"""
-        SELECT 
-            COALESCE(COUNT(DISTINCT p.program_name), 0) as total_programs,
-            COALESCE(COUNT(DISTINCT f.sk_school_id), 0) as total_schools,
-            COALESCE(COUNT(DISTINCT f.sk_fact_session_id), 0) as total_sessions,
-            COALESCE(SUM(e.total_exposure_count), 0) as total_students
-        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+    from_clause = f"""
+        {DATAMART_SCHEMA_NAME}.fact_session f
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-        WHERE {where_sql}
     """
-    kpis_raw = fetch_one(kpi_sql, params)
     
-    # Insight Logic
-    top_donor_row = fetch_one(f"""
-        SELECT COALESCE(p.donor_name, 'Unknown') as donor_name,
-               COUNT(DISTINCT f.sk_fact_session_id) as sessions
-        FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-        WHERE {where_sql}
-        GROUP BY p.donor_name
-        ORDER BY sessions DESC
-        LIMIT 1
-    """, params)
-    top_donor = top_donor_row.get("donor_name", "N/A") if top_donor_row else "N/A"
-
-    kpis = [
-        {"label": "Total Programs", "value": int(kpis_raw.get('total_programs', 0) or 0), "icon": "fas fa-project-diagram", "color": "bg-info", "status": "Stable", "reason": f"Active projects including top contributor {top_donor}."},
-        {"label": "Total Schools", "value": int(kpis_raw.get('total_schools', 0) or 0), "icon": "fas fa-school", "color": "bg-success", "status": "High", "reason": f"Wide implementation reach across {int(kpis_raw.get('total_schools', 0) or 0)} campuses."},
-        {"label": "Total Sessions", "value": int(kpis_raw.get('total_sessions', 0) or 0), "icon": "fas fa-chalkboard-teacher", "color": "bg-navy-blue", "status": "Stable", "reason": f"Delivery consistent with {top_donor} requirements."},
-        {"label": "Total Students", "value": int(kpis_raw.get('total_students', 0) or 0), "icon": "fas fa-user-graduate", "color": "bg-danger", "status": "Growth", "reason": f"Broad educational impact with strong enrollment."}
-    ]
+    kpi_list, sparklines = calculate_ytd_kpis(
+        kpi_defs=kpi_defs,
+        from_clause=from_clause,
+        years=years,
+        month=month,
+        quarter=quarter,
+        program=category,
+        program_expr="p.donor_name"
+    )
 
     # 2. DataTable Logic
     search_sql = "TRUE"
@@ -97,7 +84,6 @@ def get_programwise_report_data(category=None, years=None, month=None, limit=15,
     if dt_params:
         searchable_cols = ["g.region_name", "g.area_name", "p.program_name", "p.donor_name"]
         sortable_cols = ["Region Name", "Area Name", "Program Name", "Donor Name", "No of Schools visited", "Total Number of Days worked", "School Sessions", "Average Session Durat", "Total Exposure"]
-        # Map some columns to actual complex SQL if needed, but here simple aliases work for Postgres "ORDER BY"
         
         inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
         search_sql = inner_search_sql
@@ -145,7 +131,6 @@ def get_programwise_report_data(category=None, years=None, month=None, limit=15,
     rows = fetch_all(sql, params + search_params + [limit, offset])
     
     # Chart 1: Schools Visited by Region (bar chart)
-    # Comparison Logic: If multiple donors are selected, group by donor as well
     compare_donor = isinstance(category, list) and len([v for v in category if v]) > 1
     
     group_sql = ""
@@ -166,7 +151,7 @@ def get_programwise_report_data(category=None, years=None, month=None, limit=15,
         GROUP BY g.region_name {group_sql} ORDER BY value DESC LIMIT 30
     """, params)
 
-    # Chart 2: Sessions by Donor (pie chart) - usually doesn't need grouping unless comparing years
+    # Chart 2: Sessions by Donor (pie chart)
     compare_year = isinstance(years, list) and len([v for v in years if v]) > 1
     yr_group_sql = ""
     yr_group_select = ""
@@ -186,7 +171,8 @@ def get_programwise_report_data(category=None, years=None, month=None, limit=15,
     """, params)
 
     return {
-        "kpis": kpis,
+        "kpis": kpi_list,
+        "sparklines": sparklines,
         "table": rows, 
         "total_count": int(total_count or 0),
         "charts": {
@@ -202,4 +188,3 @@ def get_programwise_report_data(category=None, years=None, month=None, limit=15,
             } for r in sessions_by_donor],
         }
     }
-

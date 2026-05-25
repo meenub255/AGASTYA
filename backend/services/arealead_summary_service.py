@@ -32,12 +32,13 @@ def get_arealead_summary_filters():
         "regions": sorted(list(set(row["region_name"] for row in locations))),
         "areas": sorted(list(set(row["area"] for row in locations if row.get("area")))),
         "years": years,
-        "months": months
+        "months": months,
+        "quarters": [1, 2, 3, 4]
     }
 
 
 def get_arealead_summary_data(region=None, area=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
     
     kpi_defs = [
         {"key": "total_leads", "label": "Area Leads", "sql": "COUNT(DISTINCT g.area_name)", "icon": "fas fa-user-tie", "color": "bg-info"},
@@ -124,6 +125,7 @@ def get_arealead_summary_data(region=None, area=None, years=None, month=None, qu
     
     return {
         "kpis": kpi_list,
+        "sparklines": sparklines,
         "table": rows, 
         "total_count": total_count
     }

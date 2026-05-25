@@ -40,77 +40,46 @@ def get_regionwise_filters(region_name=None):
             INNER JOIN {DW}.fact_session f ON d.date_id = f.date_id
             ORDER BY d.month_actual
         """)]
-        return {"regions": regions, "areas": areas, "years": years, "months": months}
+        return {"regions": regions, "areas": areas, "years": years, "months": months, "quarters": [1, 2, 3, 4]}
     except Exception as e:
         logger.error(f"regionwise filters error: {e}")
-        return {"regions": [], "areas": [], "years": [], "months": []}
+        return {"regions": [], "areas": [], "years": [], "months": [], "quarters": []}
 
 
-def get_regionwise_data(region=None, area=None, years=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import get_list_filter_clause, get_datatables_sql
+def get_regionwise_data(region=None, area=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
     try:
-        clauses = []
-        params = []
+        kpi_defs = [
+            {"key": "total_sessions", "label": "Total Sessions", "sql": "COUNT(DISTINCT f.sk_fact_session_id)", "icon": "fas fa-chalkboard-teacher", "color": "bg-info"},
+            {"key": "total_schools", "label": "Total Schools", "sql": "COUNT(DISTINCT f.sk_school_id)", "icon": "fas fa-school", "color": "bg-success"},
+            {"key": "total_exposure", "label": "Total Exposure", "sql": "COALESCE(SUM(e.total_exposure_count), 0)", "icon": "fas fa-user-graduate", "color": "bg-navy-blue"},
+            {"key": "avg_duration", "label": "Avg Session (min)", "sql": "ROUND(AVG(COALESCE(f.session_duration_minutes, 0)), 1)", "icon": "fas fa-clock", "color": "bg-danger"}
+        ]
         
-        c, p = get_list_filter_clause("g.region_name", region)
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("g.area_name", area)
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("d.year_actual", years, cast_type="int")
-        clauses.append(c); params.extend(p)
-        
-        c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
-        clauses.append(c); params.extend(p)
-        
-        where_sql = " AND ".join(clauses)
-
-        kpi_row = fetch_one(f"""
-            SELECT
-                COUNT(DISTINCT f.sk_fact_session_id)         AS total_sessions,
-                COUNT(DISTINCT f.sk_school_id)               AS total_schools,
-                COALESCE(SUM(e.total_exposure_count), 0)     AS total_exposure,
-                ROUND(AVG(COALESCE(f.session_duration_minutes, 0)), 1) AS avg_duration
-            FROM {DW}.fact_session f
+        from_clause = f"""
+            {DW}.fact_session f
             LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
             LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-            WHERE {where_sql}
-        """, params)
-
-        # Insight Logic
-        top_area_row = fetch_one(f"""
-            SELECT COALESCE(g.area_name, 'Unknown') as area_name, 
-                   COUNT(DISTINCT f.sk_fact_session_id) as sessions
-            FROM {DW}.fact_session f
-            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-            LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
-            WHERE {where_sql}
-            GROUP BY g.area_name
-            ORDER BY sessions DESC
-            LIMIT 1
-        """, params)
-        top_area = top_area_row.get("area_name", "N/A") if top_area_row else "N/A"
+        """
         
-        sess_status = "High" if int(kpi_row.get("total_sessions", 0)) > 500 else "Stable"
-        sess_reason = f"Consistent delivery across the region, led by {top_area}."
+        kpi_list, sparklines = calculate_ytd_kpis(
+            kpi_defs=kpi_defs,
+            from_clause=from_clause,
+            years=years,
+            region=region,
+            area=area,
+            month=month,
+            quarter=quarter
+        )
         
-        sch_status = "Stable"
-        sch_reason = f"Wide coverage maintained. {top_area} is the most active area."
-        
-        exp_status = "High" if int(kpi_row.get("total_exposure", 0)) > 5000 else "Stable"
-        exp_reason = "Strong student participation across all active schools."
-        
-        dur_status = "Average"
-        dur_reason = "Session duration remains within the target educational window."
-
-        kpis = [
-            {"label": "Total Sessions",        "value": int(kpi_row.get("total_sessions", 0) or 0),  "icon": "fas fa-chalkboard-teacher", "color": "bg-info", "status": sess_status, "reason": sess_reason},
-            {"label": "Total Schools",          "value": int(kpi_row.get("total_schools", 0) or 0),   "icon": "fas fa-school",             "color": "bg-success", "status": sch_status, "reason": sch_reason},
-            {"label": "Total Exposure",         "value": int(kpi_row.get("total_exposure", 0) or 0),  "icon": "fas fa-user-graduate",      "color": "bg-navy-blue", "status": exp_status, "reason": exp_reason},
-            {"label": "Avg Session (min)",      "value": float(kpi_row.get("avg_duration", 0) or 0),  "icon": "fas fa-clock",              "color": "bg-danger", "status": dur_status, "reason": dur_reason},
-        ]
+        where_sql, params, max_month = build_standard_filters(
+            years=years,
+            region=region,
+            area=area,
+            month=month,
+            quarter=quarter
+        )
 
         # DataTables search and sort
         search_sql = "TRUE"
@@ -186,7 +155,8 @@ def get_regionwise_data(region=None, area=None, years=None, month=None, limit=15
         """, params)
 
         return {
-            "kpis": kpis,
+            "kpis": kpi_list,
+            "sparklines": sparklines,
             "charts": {
                 "sessions_by_program": [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_program],
                 "exposure_by_month":   [{"label": r["label"], "value": float(r["value"])} for r in exposure_by_month],
@@ -196,4 +166,4 @@ def get_regionwise_data(region=None, area=None, years=None, month=None, limit=15
         }
     except Exception as e:
         logger.error(f"regionwise data error: {e}", exc_info=True)
-        return {"kpis": [], "table": [], "total_count": 0}
+        return {"kpis": [], "sparklines": {}, "charts": {}, "table": [], "total_count": 0}

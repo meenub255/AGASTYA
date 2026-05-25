@@ -49,14 +49,16 @@ def get_vehicle_report_filters(region_name=None):
             "regions": regions,
             "areas": areas,
             "years": years,
-            "months": months
+            "months": months,
+            "quarters": [1, 2, 3, 4]
         }
     except Exception as e:
         print(f"Error fetching vehicle filters: {e}")
-        return {"regions": [], "areas": [], "years": [], "months": []}
+        return {"regions": [], "areas": [], "years": [], "months": [], "quarters": []}
 
-def get_vehicle_report_data(region=None, area=None, years=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
+def get_vehicle_report_data(region=None, area=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import get_list_filter_clause, get_datatables_sql, calc_trend, get_kpi_insight, get_ytd_max_month
+    from backend.config import DEFAULT_YEAR
     try:
         clauses = []
         params = []
@@ -71,12 +73,35 @@ def get_vehicle_report_data(region=None, area=None, years=None, month=None, limi
         c, p = get_list_filter_clause("EXTRACT(YEAR FROM log.DATE::TIMESTAMP)", years, cast_type="int")
         clauses.append(c); params.extend(p)
         
-        c, p = get_list_filter_clause("EXTRACT(MONTH FROM log.DATE::TIMESTAMP)", month, cast_type="int", use_default_year=False)
-        clauses.append(c); params.extend(p)
+        if month:
+            c, p = get_list_filter_clause("EXTRACT(MONTH FROM log.DATE::TIMESTAMP)", month, cast_type="int", use_default_year=False)
+            clauses.append(c); params.extend(p)
+        
+        if quarter:
+            fiscal_q_expr = "CASE WHEN EXTRACT(MONTH FROM log.DATE::TIMESTAMP) IN (4,5,6) THEN 1 WHEN EXTRACT(MONTH FROM log.DATE::TIMESTAMP) IN (7,8,9) THEN 2 WHEN EXTRACT(MONTH FROM log.DATE::TIMESTAMP) IN (10,11,12) THEN 3 ELSE 4 END"
+            c, p = get_list_filter_clause(fiscal_q_expr, quarter, cast_type="int")
+            clauses.append(c); params.extend(p)
+        
+        # Apply YTD capping if no month/quarter specified
+        effective_years = years
+        if effective_years is None or (isinstance(effective_years, list) and len(effective_years) == 0):
+            effective_years = [DEFAULT_YEAR]
+        
+        single_year = None
+        if len(effective_years) == 1:
+            try: single_year = int(effective_years[0])
+            except (ValueError, TypeError): pass
+        prev_year = single_year - 1 if single_year is not None else None
+        
+        max_month = None
+        if not month and not quarter and single_year:
+            max_month = get_ytd_max_month(single_year)
+            clauses.append("EXTRACT(MONTH FROM log.DATE::TIMESTAMP) <= %s")
+            params.append(max_month)
         
         where_sql = " AND ".join(clauses) + " AND log.DATE != '0000-00-00'"
 
-        # 1. KPIs
+        # 1. Current KPIs
         kpi_sql = f"""
             SELECT 
                 SUM(COALESCE(log.closed_reading::numeric, 0) - COALESCE(log.open_reading::numeric, 0)) as total_kms,
@@ -93,6 +118,72 @@ def get_vehicle_report_data(region=None, area=None, years=None, month=None, limi
         total_kms = float(kpi_res.get("total_kms") or 0)
         used_days = int(kpi_res.get("used_days") or 1)
         avg_km_day = total_kms / used_days if used_days > 0 else 0
+        
+        c_kms = round(total_kms, 2)
+        c_avg = round(avg_km_day, 2)
+        c_fuel = round(float(kpi_res.get("total_fuel_qty") or 0), 2)
+        c_cost = round(float(kpi_res.get("total_fuel_cost") or 0), 2)
+        
+        # Previous period KPIs
+        prev_clauses = []
+        prev_params_list = []
+        c2, p2 = get_list_filter_clause("r.NAME", region)
+        prev_clauses.append(c2); prev_params_list.extend(p2)
+        c2, p2 = get_list_filter_clause("a.NAME", area)
+        prev_clauses.append(c2); prev_params_list.extend(p2)
+        
+        prev_year_vals = [int(y) - 1 for y in effective_years]
+        c2, p2 = get_list_filter_clause("EXTRACT(YEAR FROM log.DATE::TIMESTAMP)", prev_year_vals, cast_type="int")
+        prev_clauses.append(c2); prev_params_list.extend(p2)
+        
+        if month:
+            c2, p2 = get_list_filter_clause("EXTRACT(MONTH FROM log.DATE::TIMESTAMP)", month, cast_type="int", use_default_year=False)
+            prev_clauses.append(c2); prev_params_list.extend(p2)
+        if quarter:
+            c2, p2 = get_list_filter_clause(fiscal_q_expr, quarter, cast_type="int")
+            prev_clauses.append(c2); prev_params_list.extend(p2)
+        if not month and not quarter and prev_year:
+            prev_max = get_ytd_max_month(prev_year)
+            prev_clauses.append("EXTRACT(MONTH FROM log.DATE::TIMESTAMP) <= %s")
+            prev_params_list.append(prev_max)
+        
+        prev_where = " AND ".join(prev_clauses) + " AND log.DATE != '0000-00-00'"
+        prev_res = fetch_one(f"""
+            SELECT 
+                SUM(COALESCE(log.closed_reading::numeric, 0) - COALESCE(log.open_reading::numeric, 0)) as total_kms,
+                SUM(COALESCE(log.fuel_quantity::numeric, 0)) as total_fuel_qty,
+                SUM(COALESCE(log.fuel_quantity::numeric, 0) * COALESCE(log.fuel_price::numeric, 0)) as total_fuel_cost,
+                COUNT(DISTINCT log.date) as used_days
+            FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON log.vehicle_id = v.mst_vehicle_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON v.area_id = a.mst_area_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON a.region_id = r.mst_region_id
+            WHERE {prev_where} AND log.is_deleted = '0'
+        """, prev_params_list)
+        
+        p_kms = round(float(prev_res.get("total_kms") or 0), 2)
+        p_days = int(prev_res.get("used_days") or 1)
+        p_avg = round(p_kms / p_days, 2) if p_days > 0 else 0
+        p_fuel = round(float(prev_res.get("total_fuel_qty") or 0), 2)
+        p_cost = round(float(prev_res.get("total_fuel_cost") or 0), 2)
+        
+        kpis_data = [
+            {"label": "Total KMs", "curr": c_kms, "prev": p_kms, "icon": "fas fa-road", "color": "bg-info"},
+            {"label": "Cumulative Avg KM/Day", "curr": c_avg, "prev": p_avg, "icon": "fas fa-tachometer-alt", "color": "bg-success"},
+            {"label": "Total Fuel Quantity", "curr": c_fuel, "prev": p_fuel, "icon": "fas fa-gas-pump", "color": "bg-navy-blue"},
+            {"label": "Total Fuel Cost", "curr": c_cost, "prev": p_cost, "icon": "fas fa-rupee-sign", "color": "bg-danger"},
+        ]
+        
+        kpi_list = []
+        sparklines = {}
+        for item in kpis_data:
+            trend = calc_trend(item["curr"], item["prev"])
+            insights = get_kpi_insight(item["label"], float(item["curr"]), float(item["prev"]), single_year, prev_year, max_month, month, quarter)
+            kpi_list.append({
+                "label": item["label"], "value": item["curr"], "icon": item["icon"], "color": item["color"],
+                "trend": trend, "insights": insights, "trends": [item["prev"], item["curr"]]
+            })
+            sparklines[item["label"].lower().replace(" ", "_")] = [item["prev"], item["curr"]]
 
         # DataTable Logic
         search_sql = "TRUE"
@@ -145,16 +236,12 @@ def get_vehicle_report_data(region=None, area=None, years=None, month=None, limi
         rows = fetch_all(sql, params + search_params + [limit, offset])
 
         return {
-            "kpis": [
-                {"label": "Total KMs", "value": round(total_kms, 2), "icon": "fas fa-road", "color": "bg-info"},
-                {"label": "Cumulative Avg KM/Day", "value": round(avg_km_day, 2), "icon": "fas fa-tachometer-alt", "color": "bg-success"},
-                {"label": "Total Fuel Quantity", "value": round(float(kpi_res.get("total_fuel_qty") or 0), 2), "icon": "fas fa-gas-pump", "color": "bg-navy-blue"},
-                {"label": "Total Fuel Cost", "value": round(float(kpi_res.get("total_fuel_cost") or 0), 2), "icon": "fas fa-rupee-sign", "color": "bg-danger"},
-            ],
+            "kpis": kpi_list,
+            "sparklines": sparklines,
             "table": [{**row, "date": row["date"].strftime("%Y-%m-%d") if row["date"] else None} for row in rows],
             "total_count": total_count
         }
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return {"kpis": [], "table": [], "total_count": 0, "error": str(e)}
+        return {"kpis": [], "sparklines": {}, "table": [], "total_count": 0, "error": str(e)}

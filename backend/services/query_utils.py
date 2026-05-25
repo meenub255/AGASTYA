@@ -21,18 +21,24 @@ def get_ytd_max_month(year: int) -> int:
         return current_mo
     return 12
 
-def apply_ytd_filter(where_clause: str, params: list, years: list | None, date_alias: str = "d") -> tuple[str, list]:
-    single_year = None
-    if years and len(years) == 1:
-        try:
-            single_year = int(years[0])
-        except (ValueError, TypeError):
-            pass
-    elif years is None or len(years) == 0:
-        single_year = DEFAULT_YEAR
+def apply_ytd_filter(where_clause: str, params: list, years: list | None, date_alias: str = "d", force_max_month: int | None = None) -> tuple[str, list]:
+    max_month = None
+    if force_max_month is not None:
+        max_month = force_max_month
+    else:
+        single_year = None
+        if years and len(years) == 1:
+            try:
+                single_year = int(years[0])
+            except (ValueError, TypeError):
+                pass
+        elif years is None or len(years) == 0:
+            single_year = DEFAULT_YEAR
 
-    if single_year is not None:
-        max_month = get_ytd_max_month(single_year)
+        if single_year is not None:
+            max_month = get_ytd_max_month(single_year)
+
+    if max_month is not None:
         month_expr = f"{date_alias}.month_actual"
         
         where_clause_stripped = where_clause.strip() if where_clause else ""
@@ -65,7 +71,8 @@ def build_standard_filters(
     date_alias: str = "d",
     region_expr: str = "g.region_name",
     area_expr: str = "g.area_name",
-    program_expr: str = "p.program_name"
+    program_expr: str = "p.program_name",
+    force_max_month: int | None = None
 ) -> tuple[str, list, int | None]:
     """
     Builds the standard WHERE clause and params, including:
@@ -119,17 +126,22 @@ def build_standard_filters(
     # 7. Apply YTD capping if month and quarter are not specified
     max_month = None
     if not month and not quarter:
-        single_year = None
-        if effective_years and len(effective_years) == 1:
-            try:
-                single_year = int(effective_years[0])
-            except (ValueError, TypeError):
-                pass
-        elif effective_years is None or len(effective_years) == 0:
-            single_year = DEFAULT_YEAR
-            
-        if single_year is not None:
-            max_month = get_ytd_max_month(single_year)
+        if force_max_month is not None:
+            max_month = force_max_month
+        else:
+            single_year = None
+            if effective_years and len(effective_years) == 1:
+                try:
+                    single_year = int(effective_years[0])
+                except (ValueError, TypeError):
+                    pass
+            elif effective_years is None or len(effective_years) == 0:
+                single_year = DEFAULT_YEAR
+                
+            if single_year is not None:
+                max_month = get_ytd_max_month(single_year)
+                
+        if max_month is not None:
             clauses.append(f"{date_alias}.month_actual <= %s")
             params.append(max_month)
             
@@ -248,18 +260,24 @@ def build_dimension_filters(
 
 
 def fetch_one(query: str, params: Sequence[object] | None = None) -> dict:
-    with get_datamart_conn() as conn:
+    conn = get_datamart_conn()
+    try:
         with conn.cursor() as cur:
             cur.execute(query, params or [])
             row = cur.fetchone()
             return dict(row or {})
+    finally:
+        conn.close()
 
 
 def fetch_all(query: str, params: Sequence[object] | None = None) -> list[dict]:
-    with get_datamart_conn() as conn:
+    conn = get_datamart_conn()
+    try:
         with conn.cursor() as cur:
             cur.execute(query, params or [])
             return [dict(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
 
 
 def parse_datatables_params(params: dict):
@@ -482,10 +500,8 @@ def calculate_ytd_kpis(
     curr_row = fetch_one(curr_sql, params)
     
     # 3. Build previous period filters
-    effective_years = years
-    if effective_years is None or (isinstance(effective_years, list) and len(effective_years) == 0):
-        effective_years = [DEFAULT_YEAR]
-    prev_year_vals = [int(y) - 1 for y in effective_years]
+    effective_years = [int(y) for y in (years or [DEFAULT_YEAR])]
+    prev_year_vals = [y - 1 for y in effective_years]
     
     prev_where_sql, prev_params, _ = build_standard_filters(
         years=prev_year_vals,
@@ -497,7 +513,8 @@ def calculate_ytd_kpis(
         date_alias=date_alias,
         region_expr=region_expr,
         area_expr=area_expr,
-        program_expr=program_expr
+        program_expr=program_expr,
+        force_max_month=max_month
     )
     
     # Query previous period

@@ -32,31 +32,33 @@ def get_work_day_filters():
         "regions": sorted(list(set(row["region_name"] for row in locations))),
         "areas": sorted(list(set(row["area"] for row in locations if row.get("area")))),
         "years": years,
-        "months": months
+        "months": months,
+        "quarters": [1, 2, 3, 4]
     }
 
 
-def get_work_day_data(region=None, area=None, years=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
+def get_work_day_data(region=None, area=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import build_standard_filters, calc_trend, get_kpi_insight, get_datatables_sql
+    from backend.config import DEFAULT_YEAR
     
-    clauses = []
-    params = []
+    where_sql, params, max_month = build_standard_filters(
+        years=years,
+        region=region,
+        area=area,
+        month=month,
+        quarter=quarter
+    )
     
-    c, p = get_list_filter_clause("g.region_name", region)
-    clauses.append(c); params.extend(p)
+    effective_years = years
+    if effective_years is None or (isinstance(effective_years, list) and len(effective_years) == 0):
+        effective_years = [DEFAULT_YEAR]
+    single_year = None
+    if len(effective_years) == 1:
+        try: single_year = int(effective_years[0])
+        except (ValueError, TypeError): pass
+    prev_year = single_year - 1 if single_year is not None else None
     
-    c, p = get_list_filter_clause("g.area_name", area)
-    clauses.append(c); params.extend(p)
-    
-    c, p = get_list_filter_clause("d.year_actual", years, cast_type="int")
-    clauses.append(c); params.extend(p)
-    
-    c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
-    clauses.append(c); params.extend(p)
-    
-    where_sql = " AND ".join(clauses)
-    
-    # 1. KPI Query (sidebar filters only)
+    # Current period KPIs
     kpi_sql = f"""
         SELECT 
             COUNT(DISTINCT f.sk_user_id) as total_instructors,
@@ -67,19 +69,50 @@ def get_work_day_data(region=None, area=None, years=None, month=None, limit=15, 
         JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         WHERE {where_sql}
     """
-    kpis_raw = fetch_one(kpi_sql, params)
+    curr = fetch_one(kpi_sql, params)
     
-    instructors = kpis_raw.get('total_instructors', 0)
-    working_days = kpis_raw.get('total_working_days', 0)
-    avg_days = round(working_days / instructors, 2) if instructors > 0 else 0
-    active_centers = kpis_raw.get('active_centers', 0)
-
-    kpi_list = [
-        {"label": "Total Instructors", "value": instructors, "icon": "fas fa-users", "color": "bg-info"},
-        {"label": "Total Working Days", "value": working_days, "icon": "fas fa-calendar-check", "color": "bg-success"},
-        {"label": "Avg Days/Instructor", "value": avg_days, "icon": "fas fa-chart-line", "color": "bg-navy-blue"},
-        {"label": "Active Centers", "value": active_centers, "icon": "fas fa-map-marker-alt", "color": "bg-danger"}
+    # Previous period KPIs
+    prev_year_vals = [int(y) - 1 for y in effective_years]
+    prev_where_sql, prev_params, _ = build_standard_filters(
+        years=prev_year_vals, region=region, area=area, month=month, quarter=quarter
+    )
+    prev = fetch_one(f"""
+        SELECT 
+            COUNT(DISTINCT f.sk_user_id) as total_instructors,
+            COUNT(DISTINCT CONCAT(f.sk_user_id, '_', f.date_id)) as total_working_days,
+            COUNT(DISTINCT f.sk_geography_id) as active_centers
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        WHERE {prev_where_sql}
+    """, prev_params)
+    
+    c_inst = int(curr.get('total_instructors', 0) or 0)
+    p_inst = int(prev.get('total_instructors', 0) or 0)
+    c_days = int(curr.get('total_working_days', 0) or 0)
+    p_days = int(prev.get('total_working_days', 0) or 0)
+    c_avg = round(c_days / c_inst, 2) if c_inst > 0 else 0
+    p_avg = round(p_days / p_inst, 2) if p_inst > 0 else 0
+    c_centers = int(curr.get('active_centers', 0) or 0)
+    p_centers = int(prev.get('active_centers', 0) or 0)
+    
+    kpis_data = [
+        {"label": "Total Instructors", "curr": c_inst, "prev": p_inst, "icon": "fas fa-users", "color": "bg-info"},
+        {"label": "Total Working Days", "curr": c_days, "prev": p_days, "icon": "fas fa-calendar-check", "color": "bg-success"},
+        {"label": "Avg Days/Instructor", "curr": c_avg, "prev": p_avg, "icon": "fas fa-chart-line", "color": "bg-navy-blue"},
+        {"label": "Active Centers", "curr": c_centers, "prev": p_centers, "icon": "fas fa-map-marker-alt", "color": "bg-danger"}
     ]
+    
+    kpi_list = []
+    sparklines = {}
+    for item in kpis_data:
+        trend = calc_trend(item["curr"], item["prev"])
+        insights = get_kpi_insight(item["label"], float(item["curr"]), float(item["prev"]), single_year, prev_year, max_month, month, quarter)
+        kpi_list.append({
+            "label": item["label"], "value": item["curr"], "icon": item["icon"], "color": item["color"],
+            "trend": trend, "insights": insights, "trends": [item["prev"], item["curr"]]
+        })
+        sparklines[item["label"].lower().replace(" ", "_")] = [item["prev"], item["curr"]]
 
     # 2. DataTable Logic
     search_sql = "TRUE"
@@ -132,8 +165,7 @@ def get_work_day_data(region=None, area=None, years=None, month=None, limit=15, 
     
     return {
         "kpis": kpi_list,
+        "sparklines": sparklines,
         "table": rows, 
         "total_count": total_count
     }
-
-

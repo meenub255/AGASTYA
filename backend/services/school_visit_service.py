@@ -53,87 +53,48 @@ def get_school_visit_filters(region_name: str | list[str] | None = None):
         "areas": areas,
         "programs": programs,
         "years": years,
-        "months": months
+        "months": months,
+        "quarters": [1, 2, 3, 4]
     }
 
 
-def get_school_visit_data(region=None, area=None, program=None, years=None, month=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import parse_datatables_params, get_datatables_sql, get_list_filter_clause
+def get_school_visit_data(region=None, area=None, program=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
 
-    clauses = []
-    params = []
+    kpi_defs = [
+        {"key": "total_schools", "label": "Total Schools", "sql": "COUNT(DISTINCT f.sk_school_id)", "icon": "fas fa-school", "color": "bg-info"},
+        {"key": "total_students", "label": "Total Students", "sql": "COALESCE(SUM(e.total_exposure_count), 0)", "icon": "fas fa-user-graduate", "color": "bg-success"},
+        {"key": "total_sessions", "label": "Total Sessions", "sql": "COUNT(DISTINCT f.sk_fact_session_id)", "icon": "fas fa-chalkboard-teacher", "color": "bg-navy-blue"},
+        {"key": "total_days", "label": "Total Days Worked", "sql": "COUNT(DISTINCT f.date_id)", "icon": "fas fa-calendar-alt", "color": "bg-danger"}
+    ]
     
-    c, p = get_list_filter_clause("g.region_name", region)
-    clauses.append(c); params.extend(p)
-    
-    c, p = get_list_filter_clause("g.area_name", area)
-    clauses.append(c); params.extend(p)
-    
-    c, p = get_list_filter_clause("p.program_name", program)
-    clauses.append(c); params.extend(p)
-    
-    c, p = get_list_filter_clause("d.year_actual", years, cast_type="int")
-    clauses.append(c); params.extend(p)
-    
-    c, p = get_list_filter_clause("d.month_actual", month, cast_type="int")
-    clauses.append(c); params.extend(p)
-    
-    where_sql = " AND ".join(clauses)
-    
-    # Get KPIs (Using sidebar filters only)
-    kpi_sql = f"""
-        SELECT 
-            COUNT(DISTINCT f.sk_school_id) as total_schools,
-            COUNT(f.sk_fact_session_id) as total_sessions,
-            SUM(COALESCE(e.total_exposure_count, 0)) as total_students
-        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+    from_clause = f"""
+        {DATAMART_SCHEMA_NAME}.fact_session f
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-        WHERE {where_sql}
     """
-    kpi_res = fetch_one(kpi_sql, params)
-
-    # Monthly Sessions
-    monthly_sql = f"""
-        SELECT COUNT(f.sk_fact_session_id) as monthly_sessions
-        FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
-        WHERE {where_sql}
-        AND d.month_actual = (
-            SELECT MAX(d2.month_actual) 
-            FROM {DATAMART_SCHEMA_NAME}.fact_session f2
-            JOIN {DATAMART_SCHEMA_NAME}.dim_date d2 ON f2.date_id = d2.date_id
-            JOIN {DATAMART_SCHEMA_NAME}.dim_geography g2 ON f2.sk_geography_id = g2.sk_geography_id
-            JOIN {DATAMART_SCHEMA_NAME}.dim_program p2 ON f2.sk_program_id = p2.sk_program_id
-            WHERE {where_sql.replace('d.', 'd2.').replace('g.', 'g2.').replace('p.', 'p2.')}
-        )
-    """
-    monthly_res = fetch_one(monthly_sql, params + params)
-
-    # Insight Logic
-    top_school_row = fetch_one(f"""
-        SELECT COALESCE(s.school_name, 'Unknown') as school_name,
-               COUNT(DISTINCT f.sk_fact_session_id) as sessions
-        FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
-        WHERE {where_sql}
-        GROUP BY s.school_name
-        ORDER BY sessions DESC
-        LIMIT 1
-    """, params)
-    top_school = top_school_row.get("school_name", "N/A") if top_school_row else "N/A"
-
-    kpis = [
-        {"label": "Total Schools", "value": int(kpi_res.get("total_schools") or 0), "icon": "fas fa-school", "color": "bg-info", "status": "Stable", "reason": f"Active engagement across {int(kpi_res.get('total_schools') or 0)} schools."},
-        {"label": "Total Students", "value": int(kpi_res.get("total_students") or 0), "icon": "fas fa-user-graduate", "color": "bg-success", "status": "Growth", "reason": f"Strong exposure numbers, with {top_school} showing peak interest."},
-        {"label": "Total Sessions", "value": int(kpi_res.get("total_sessions") or 0), "icon": "fas fa-chalkboard-teacher", "color": "bg-navy-blue", "status": "Stable", "reason": f"Steady session delivery. {top_school} is currently the most visited site."},
-        {"label": "Monthly Sessions", "value": int(monthly_res.get("monthly_sessions") or 0) if monthly_res else 0, "icon": "fas fa-calendar-alt", "color": "bg-danger", "status": "Active", "reason": "Current month session count based on ongoing visits."}
-    ]
+    
+    kpi_list, sparklines = calculate_ytd_kpis(
+        kpi_defs=kpi_defs,
+        from_clause=from_clause,
+        years=years,
+        region=region,
+        area=area,
+        program=program,
+        month=month,
+        quarter=quarter
+    )
+    
+    where_sql, params, max_month = build_standard_filters(
+        years=years,
+        region=region,
+        area=area,
+        program=program,
+        month=month,
+        quarter=quarter
+    )
 
     # DataTable Logic
     search_sql = "TRUE"
@@ -214,13 +175,10 @@ def get_school_visit_data(region=None, area=None, program=None, years=None, mont
     return {
         "table": rows, 
         "total_count": total_count,
-        "kpis": kpis,
+        "kpis": kpi_list,
+        "sparklines": sparklines,
         "charts": {
             "sessions_by_program": [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_program],
             "sessions_trend_monthly": [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_month],
         }
     }
-
-
-
-

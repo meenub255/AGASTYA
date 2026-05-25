@@ -7,14 +7,14 @@ logger = logging.getLogger(__name__)
 DW = DATAMART_SCHEMA_NAME
 
 
-def _build_clauses(region=None, years=None, program=None):
+def _build_clauses(region=None, years=None, program=None, force_max_month=None):
     from backend.services.query_utils import apply_ytd_filter
     clauses, params = [], []
     c, p = get_list_filter_clause("g.region_name", region); clauses.append(c); params.extend(p)
     c, p = get_list_filter_clause("d.year_actual", years, cast_type="int"); clauses.append(c); params.extend(p)
     c, p = get_list_filter_clause("p.program_name", program); clauses.append(c); params.extend(p)
     where_sql = " AND ".join(clauses) if clauses else "TRUE"
-    where_sql, params = apply_ytd_filter(where_sql, params, years, date_alias="d")
+    where_sql, params = apply_ytd_filter(where_sql, params, years, date_alias="d", force_max_month=force_max_month)
     return where_sql, params
 
 
@@ -31,7 +31,7 @@ def calc_trend(curr, prev):
 #  INSTRUCTOR PERFORMANCE INSIGHTS GENERATOR
 # ═══════════════════════════════════════════════════════════════
 
-def generate_instructor_insights(curr_vals, prev_vals, trends, single_year, prev_year):
+def generate_instructor_insights(curr_vals, prev_vals, trends, single_year, prev_year, max_month=None):
     insights = {}
     meta = {
         "total_instructors": {
@@ -63,9 +63,8 @@ def generate_instructor_insights(curr_vals, prev_vals, trends, single_year, prev
     for key, info in meta.items():
         curr_val = curr_vals.get(key, 0)
         prev_val = prev_vals.get(key, 0) if prev_vals else 0
-        # Monthly averages (supplied as key_avg; fall back to raw value)
-        curr_avg = curr_vals.get(key + "_avg", curr_val)
-        prev_avg = prev_vals.get(key + "_avg", prev_val) if prev_vals else 0
+        curr_avg = curr_val
+        prev_avg = prev_val
         trend = trends.get(key, {"pct": 0, "dir": "neutral"}) if trends else {"pct": 0, "dir": "neutral"}
         
         def fmt(v):
@@ -80,9 +79,19 @@ def generate_instructor_insights(curr_vals, prev_vals, trends, single_year, prev
                 change_desc = f"representing a decrease of <strong>{pct_str}</strong> compared to last year"
             else:
                 change_desc = "remaining unchanged compared to last year"
-            comparison_text = f"In the current year <strong>{single_year}</strong>, the monthly average {info['name'].lower()} is <strong>{fmt(curr_avg)}</strong> while the previous year <strong>{prev_year}</strong> monthly average was <strong>{fmt(prev_avg)}</strong> ({change_desc})."
+                
+            months_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            month_range_str = f"Jan-{months_names[max_month-1]}" if (max_month and 1 <= max_month <= 12) else "YTD"
+            
+            if key == "avg_per_instructor":
+                comparison_text = f"In the current year-to-date period ({month_range_str}) of <strong>{single_year}</strong>, the average {info['name'].lower()} is <strong>{fmt(curr_val)}</strong> while the previous year-to-date period ({month_range_str}) of <strong>{prev_year}</strong> was <strong>{fmt(prev_val)}</strong> ({change_desc})."
+            else:
+                comparison_text = f"In the current year-to-date period ({month_range_str}) of <strong>{single_year}</strong>, the total {info['name'].lower()} is <strong>{fmt(curr_val)}</strong> while the previous year-to-date period ({month_range_str}) of <strong>{prev_year}</strong> was <strong>{fmt(prev_val)}</strong> ({change_desc})."
         else:
-            comparison_text = f"Currently viewing aggregated data across multiple years. Monthly average {info['name'].lower()} is <strong>{fmt(curr_avg)}</strong>."
+            if key == "avg_per_instructor":
+                comparison_text = f"Currently viewing aggregated data across multiple years. Average {info['name'].lower()} is <strong>{fmt(curr_val)}</strong>."
+            else:
+                comparison_text = f"Currently viewing aggregated data across multiple years. Total {info['name'].lower()} is <strong>{fmt(curr_val)}</strong>."
             
         rationale = ""
         suggestions = []
@@ -201,8 +210,8 @@ def generate_instructor_insights(curr_vals, prev_vals, trends, single_year, prev
 
 
 def get_instructor_overview(region=None, years=None, program=None, limit=15, offset=0, dt_params=None):
-    where_sql, params = _build_clauses(region, years, program)
     try:
+        from backend.services.query_utils import get_ytd_max_month
         # Determine single year up-front so prev_year clauses can be built before threading
         single_year = None
         if years and len(years) == 1:
@@ -213,8 +222,11 @@ def get_instructor_overview(region=None, years=None, program=None, limit=15, off
         elif not years:
             single_year = DEFAULT_YEAR
 
+        max_month = get_ytd_max_month(single_year) if single_year is not None else None
+        where_sql, params = _build_clauses(region, years, program, force_max_month=max_month)
+
         prev_year = single_year - 1 if single_year is not None else None
-        prev_where_sql, prev_params = (_build_clauses(region, [str(prev_year)], program)
+        prev_where_sql, prev_params = (_build_clauses(region, [str(prev_year)], program, force_max_month=max_month)
                                        if prev_year is not None else (where_sql, params))
 
         # DataTables params resolved early so table queries can run in parallel
@@ -376,27 +388,27 @@ def get_instructor_overview(region=None, years=None, program=None, limit=15, off
                 p_stu_avg = round(p_stu / pm, 1)
 
                 prev_vals = {
-                    "total_instructors": p_ti, "total_instructors_avg": p_ti_avg,
-                    "total_sessions": p_ts,    "total_sessions_avg": p_ts_avg,
+                    "total_instructors": p_ti,
+                    "total_sessions": p_ts,
                     "avg_per_instructor": p_avg,
-                    "total_students": p_stu,   "total_students_avg": p_stu_avg
+                    "total_students": p_stu
                 }
                 trends_yo_y = {
-                    "total_instructors": calc_trend(ti_avg, p_ti_avg),
-                    "total_sessions":    calc_trend(ts_avg, p_ts_avg),
+                    "total_instructors": calc_trend(ti, p_ti),
+                    "total_sessions":    calc_trend(ts, p_ts),
                     "avg_per_instructor": calc_trend(avg, p_avg),
-                    "total_students":    calc_trend(stu_avg, p_stu_avg),
+                    "total_students":    calc_trend(stu, p_stu),
                 }
             except Exception as e:
                 logger.error(f"instructor previous year fetch error: {e}")
 
         curr_vals = {
-            "total_instructors": ti, "total_instructors_avg": (ti_avg if 'ti_avg' in dir() else ti),
-            "total_sessions": ts,    "total_sessions_avg": (ts_avg if 'ts_avg' in dir() else ts),
+            "total_instructors": ti,
+            "total_sessions": ts,
             "avg_per_instructor": avg,
-            "total_students": stu,   "total_students_avg": (stu_avg if 'stu_avg' in dir() else stu)
+            "total_students": stu
         }
-        insights = generate_instructor_insights(curr_vals, prev_vals, trends_yo_y, single_year, prev_year)
+        insights = generate_instructor_insights(curr_vals, prev_vals, trends_yo_y, single_year, prev_year, max_month)
 
         kpis_response = {"total_instructors": ti, "total_sessions": ts,
                          "avg_per_instructor": avg, "total_students": stu, "insights": insights}
@@ -428,7 +440,7 @@ def get_instructor_overview(region=None, years=None, program=None, limit=15, off
 #  PROGRAM IMPACT INSIGHTS GENERATOR
 # ═══════════════════════════════════════════════════════════════
 
-def generate_program_insights(curr_vals, prev_vals, trends, single_year, prev_year):
+def generate_program_insights(curr_vals, prev_vals, trends, single_year, prev_year, max_month=None):
     insights = {}
     meta = {
         "total_programs": {
@@ -460,9 +472,8 @@ def generate_program_insights(curr_vals, prev_vals, trends, single_year, prev_ye
     for key, info in meta.items():
         curr_val = curr_vals.get(key, 0)
         prev_val = prev_vals.get(key, 0) if prev_vals else 0
-        # Monthly averages
-        curr_avg = curr_vals.get(key + "_avg", curr_val)
-        prev_avg = prev_vals.get(key + "_avg", prev_val) if prev_vals else 0
+        curr_avg = curr_val
+        prev_avg = prev_val
         trend = trends.get(key, {"pct": 0, "dir": "neutral"}) if trends else {"pct": 0, "dir": "neutral"}
 
         def fmt(v):
@@ -477,9 +488,13 @@ def generate_program_insights(curr_vals, prev_vals, trends, single_year, prev_ye
                 change_desc = f"representing a decrease of <strong>{pct_str}</strong> compared to last year"
             else:
                 change_desc = "remaining unchanged compared to last year"
-            comparison_text = f"In the current year <strong>{single_year}</strong>, the monthly average {info['name'].lower()} is <strong>{fmt(curr_avg)}</strong> while the previous year <strong>{prev_year}</strong> monthly average was <strong>{fmt(prev_avg)}</strong> ({change_desc})."
+                
+            months_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            month_range_str = f"Jan-{months_names[max_month-1]}" if (max_month and 1 <= max_month <= 12) else "YTD"
+            
+            comparison_text = f"In the current year-to-date period ({month_range_str}) of <strong>{single_year}</strong>, the total {info['name'].lower()} is <strong>{fmt(curr_val)}</strong> while the previous year-to-date period ({month_range_str}) of <strong>{prev_year}</strong> was <strong>{fmt(prev_val)}</strong> ({change_desc})."
         else:
-            comparison_text = f"Currently viewing aggregated data across multiple years. Monthly average {info['name'].lower()} is <strong>{fmt(curr_avg)}</strong>."
+            comparison_text = f"Currently viewing aggregated data across multiple years. Total {info['name'].lower()} is <strong>{fmt(curr_val)}</strong>."
             
         rationale = ""
         suggestions = []
@@ -596,8 +611,8 @@ def generate_program_insights(curr_vals, prev_vals, trends, single_year, prev_ye
 
 
 def get_program_impact_overview(region=None, years=None, program=None, limit=15, offset=0, dt_params=None):
-    where_sql, params = _build_clauses(region, years, program)
     try:
+        from backend.services.query_utils import get_ytd_max_month
         # ── resolve year context up-front ─────────────────────────────────────
         single_year = None
         if years and len(years) == 1:
@@ -607,8 +622,12 @@ def get_program_impact_overview(region=None, years=None, program=None, limit=15,
                 pass
         elif not years:
             single_year = DEFAULT_YEAR
+            
+        max_month = get_ytd_max_month(single_year) if single_year is not None else None
+        where_sql, params = _build_clauses(region, years, program, force_max_month=max_month)
+        
         prev_year = single_year - 1 if single_year is not None else None
-        prev_where_sql, prev_params = (_build_clauses(region, [str(prev_year)], program)
+        prev_where_sql, prev_params = (_build_clauses(region, [str(prev_year)], program, force_max_month=max_month)
                                        if prev_year is not None else (where_sql, params))
 
         search_sql, search_params = "TRUE", []
@@ -759,7 +778,7 @@ def get_program_impact_overview(region=None, years=None, program=None, limit=15,
 
         curr_vals = {"total_programs": tp, "total_schools": t_sch,
                      "total_students": t_stu, "total_sessions": t_sess}
-        insights = generate_program_insights(curr_vals, prev_vals, trends_yo_y, single_year, prev_year)
+        insights = generate_program_insights(curr_vals, prev_vals, trends_yo_y, single_year, prev_year, max_month)
 
         kpis_response = {"total_programs": tp, "total_schools": t_sch,
                          "total_students": t_stu, "total_sessions": t_sess, "insights": insights}
@@ -787,7 +806,7 @@ def get_program_impact_overview(region=None, years=None, program=None, limit=15,
 #  OPERATIONS INSIGHTS GENERATOR
 # ═══════════════════════════════════════════════════════════════
 
-def generate_operations_insights(curr_vals, prev_vals, trends, single_year, prev_year):
+def generate_operations_insights(curr_vals, prev_vals, trends, single_year, prev_year, max_month=None):
     insights = {}
     meta = {
         "working_days": {
@@ -821,6 +840,10 @@ def generate_operations_insights(curr_vals, prev_vals, trends, single_year, prev
         prev_val = prev_vals.get(key, 0) if prev_vals else 0
         trend = trends.get(key, {"pct": 0, "dir": "neutral"}) if trends else {"pct": 0, "dir": "neutral"}
         
+        def fmt(v):
+            v = float(v)
+            return str(int(v)) if v == int(v) else f"{v:.1f}"
+
         if single_year is not None:
             pct_str = f"{abs(trend['pct'])}%"
             if trend['dir'] == 'up':
@@ -829,9 +852,13 @@ def generate_operations_insights(curr_vals, prev_vals, trends, single_year, prev
                 change_desc = f"representing a decrease of <strong>{pct_str}</strong> compared to last year"
             else:
                 change_desc = "remaining unchanged compared to last year"
-            comparison_text = f"In the current year <strong>{single_year}</strong>, active {info['name'].lower()} count/value is <strong>{curr_val}</strong> while the previous year <strong>{prev_year}</strong> was <strong>{prev_val}</strong> ({change_desc})."
+                
+            months_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            month_range_str = f"Jan-{months_names[max_month-1]}" if (max_month and 1 <= max_month <= 12) else "YTD"
+            
+            comparison_text = f"In the current year-to-date period ({month_range_str}) of <strong>{single_year}</strong>, the total {info['name'].lower()} is <strong>{fmt(curr_val)}</strong> while the previous year-to-date period ({month_range_str}) of <strong>{prev_year}</strong> was <strong>{fmt(prev_val)}</strong> ({change_desc})."
         else:
-            comparison_text = f"Currently viewing aggregated data across multiple years. Total {info['name'].lower()} count/value is <strong>{curr_val}</strong>."
+            comparison_text = f"Currently viewing aggregated data across multiple years. Total {info['name'].lower()} is <strong>{fmt(curr_val)}</strong>."
             
         rationale = ""
         suggestions = []
@@ -945,14 +972,8 @@ def generate_operations_insights(curr_vals, prev_vals, trends, single_year, prev
 
 
 def get_operations_overview(region=None, years=None, program=None, limit=15, offset=0, dt_params=None):
-    where_sql, params = _build_clauses(region, years, program)
     try:
-        # ── vehicle WHERE clause (no program filter) ──────────────────────────
-        veh_clauses, veh_params = [], []
-        c, p = get_list_filter_clause("g.region_name", region); veh_clauses.append(c); veh_params.extend(p)
-        c, p = get_list_filter_clause("d.year_actual", years, cast_type="int"); veh_clauses.append(c); veh_params.extend(p)
-        veh_where_sql = " AND ".join(veh_clauses) if veh_clauses else "TRUE"
-
+        from backend.services.query_utils import get_ytd_max_month, apply_ytd_filter
         # ── resolve year context ──────────────────────────────────────────────
         single_year = None
         if years and len(years) == 1:
@@ -962,8 +983,19 @@ def get_operations_overview(region=None, years=None, program=None, limit=15, off
                 pass
         elif not years:
             single_year = DEFAULT_YEAR
+            
+        max_month = get_ytd_max_month(single_year) if single_year is not None else None
+        where_sql, params = _build_clauses(region, years, program, force_max_month=max_month)
+
+        # ── vehicle WHERE clause (no program filter) ──────────────────────────
+        veh_clauses, veh_params = [], []
+        c, p = get_list_filter_clause("g.region_name", region); veh_clauses.append(c); veh_params.extend(p)
+        c, p = get_list_filter_clause("d.year_actual", years, cast_type="int"); veh_clauses.append(c); veh_params.extend(p)
+        veh_where_sql = " AND ".join(veh_clauses) if veh_clauses else "TRUE"
+        veh_where_sql, veh_params = apply_ytd_filter(veh_where_sql, veh_params, years, date_alias="d", force_max_month=max_month)
+
         prev_year = single_year - 1 if single_year is not None else None
-        prev_where_sql, prev_params = (_build_clauses(region, [str(prev_year)], program)
+        prev_where_sql, prev_params = (_build_clauses(region, [str(prev_year)], program, force_max_month=max_month)
                                        if prev_year is not None else (where_sql, params))
 
         prev_veh_params = []
@@ -974,6 +1006,7 @@ def get_operations_overview(region=None, years=None, program=None, limit=15, off
             c, _ = get_list_filter_clause("g.region_name", region); prev_veh_clauses.append(c)
             c, _ = get_list_filter_clause("d.year_actual", [str(prev_year)], cast_type="int"); prev_veh_clauses.append(c)
             prev_veh_where_sql = " AND ".join(prev_veh_clauses) if prev_veh_clauses else "TRUE"
+            prev_veh_where_sql, prev_veh_params = apply_ytd_filter(prev_veh_where_sql, prev_veh_params, [str(prev_year)], date_alias="d", force_max_month=max_month)
         else:
             prev_veh_where_sql, prev_veh_params = veh_where_sql, veh_params
 
@@ -1143,7 +1176,7 @@ def get_operations_overview(region=None, years=None, program=None, limit=15, off
 
         curr_vals = {"working_days": wd, "active_drivers": ad,
                      "total_kms": tk, "active_centers": ac}
-        insights = generate_operations_insights(curr_vals, prev_vals, trends_yo_y, single_year, prev_year)
+        insights = generate_operations_insights(curr_vals, prev_vals, trends_yo_y, single_year, prev_year, max_month)
 
         kpis_response = {"working_days": wd, "active_drivers": ad,
                          "total_kms": tk, "active_centers": ac, "insights": insights}
