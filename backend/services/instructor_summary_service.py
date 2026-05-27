@@ -115,13 +115,13 @@ def get_instructor_summary_data(region=None, area=None, years=None, month=None, 
     
     if dt_params:
         searchable_cols = ["u.user_name"]
-        sortable_cols = ["instructor_name", "days_worked", "school_sessions", "total_sessions", "total_exposures", "fair_count", "training_exposures", "sf_exposures", "yil_sessions", "yil_exposures", "cv_visits", "cv_exposures"]
-        
+        sortable_cols = ["instructor_name", "days_worked", "school_sessions", "total_exposures", "fair_count", "training_exposures", "sf_exposures", "yil_sessions", "yil_exposures", "cv_visits", "cv_exposures"]
         inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
         search_sql = inner_search_sql
         search_params = inner_search_params
         if inner_sort_sql:
             sort_sql = inner_sort_sql
+
 
     # Get total count for pagination
     count_sql = f"""
