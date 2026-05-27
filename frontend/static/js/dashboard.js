@@ -1161,36 +1161,38 @@
                 const serverSideOptions = {
                     serverSide: true,
                     processing: true,
-                    ajax: {
-                        url: ajaxUrl,
-                        traditional: true, // Crucial for FastAPI to receive ?param=A&param=B instead of ?param[]=A
-                        data: function(d) {
-                            // Merge DataTables params with our custom filters
-                            const customFilters = typeof getFilters === 'function' ? getFilters() : {};
-                            return $.extend({}, d, customFilters);
-                        },
-                        dataSrc: function(json) {
-                            // DataTables expects 'recordsTotal' and 'recordsFiltered'
-                            // In our backend, total_count reflects the filtered count
-                            json.recordsTotal = json.total_count || 0;
-                            json.recordsFiltered = json.total_count || 0; 
-                            
-                            if (typeof onDataLoad === 'function') {
-                                onDataLoad(json);
+                    ajax: function(data, callback, settings) {
+                        const customFilters = typeof getFilters === 'function' ? getFilters() : {};
+                        const filterStr = $.param(customFilters, true);
+                        const dtStr = $.param(data);
+                        const combinedStr = dtStr + (filterStr ? '&' + filterStr : '');
+                        
+                        $.ajax({
+                            url: ajaxUrl,
+                            data: combinedStr,
+                            dataType: 'json',
+                            success: function(json) {
+                                // DataTables expects 'recordsTotal' and 'recordsFiltered'
+                                json.recordsTotal = json.total_count || 0;
+                                json.recordsFiltered = json.total_count || 0;
+                                json.data = json.table || [];
+                                
+                                if (typeof onDataLoad === 'function') {
+                                    onDataLoad(json);
+                                }
+                                
+                                // Automatically enhance KPI cards with insights/sparklines fallback
+                                if (window.PramanaInsights) {
+                                    setTimeout(() => window.PramanaInsights.enhanceAllKpiCards(json.kpis), 50);
+                                }
+                                
+                                callback(json);
+                            },
+                            error: function(xhr, error, thrown) {
+                                console.error('DataTable AJAX error:', error, thrown);
+                                $(selector + ' tbody').html('<tr><td colspan="100%" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle mr-2"></i> Failed to load data from server</td></tr>');
                             }
-                            
-                            // Automatically enhance KPI cards with insights/sparklines fallback
-                            if (window.PramanaInsights) {
-                                setTimeout(() => window.PramanaInsights.enhanceAllKpiCards(json.kpis), 50);
-                            }
-                            
-                            return json.table || [];
-                        },
-                        error: function(xhr, error, thrown) {
-                            console.error('DataTable AJAX error:', error, thrown);
-                            // Optional: Show user-friendly error in the table
-                            $(selector + ' tbody').html('<tr><td colspan="100%" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle mr-2"></i> Failed to load data from server</td></tr>');
-                        }
+                        });
                     }
                 };
                 delete options.ajaxUrl;
