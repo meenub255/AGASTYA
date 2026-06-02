@@ -31,12 +31,13 @@ def monthly_sessions(
     region: list[str] | None = Query(default=None),
     program: list[str] | None = Query(default=None),
     month: list[str] | None = Query(default=None),
-    quarter: list[str] | None = Query(default=None)
+    quarter: list[str] | None = Query(default=None),
+    group_by: str = Query(default="month")
 ):
     return {
         "title": "Monthly Sessions",
         "data": session_service.get_monthly_sessions(
-            years=years, region=region, program=program, month=month, quarter=quarter
+            years=years, region=region, program=program, month=month, quarter=quarter, group_by=group_by
         ),
     }
 
@@ -74,9 +75,11 @@ def session_data(
     region: list[str] | None = Query(default=None),
     program: list[str] | None = Query(default=None),
     month: list[str] | None = Query(default=None),
-    quarter: list[str] | None = Query(default=None)
+    quarter: list[str] | None = Query(default=None),
+    group_by: str = Query(default="month")
 ):
     """Unified endpoint returning KPIs + ChartJS datasets for the session dashboard."""
     return session_service.get_unified_session_data(
-        years=years, region=region, program=program, month=month, quarter=quarter
+        years=years, region=region, program=program, month=month, quarter=quarter, group_by=group_by
     )
+

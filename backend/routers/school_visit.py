@@ -17,7 +17,8 @@ def get_data(
     month: list[str] | None = Query(None),
     quarter: list[str] | None = Query(None),
     limit: int = Query(15),
-    offset: int = Query(0)
+    offset: int = Query(0),
+    group_by: str = Query(default="month")
 ):
     from backend.services.query_utils import parse_datatables_params
     dt_params = parse_datatables_params(dict(request.query_params))
@@ -26,7 +27,8 @@ def get_data(
         limit = dt_params["length"]
         offset = dt_params["start"]
         
-    return school_visit_service.get_school_visit_data(region, area, program, years, month, quarter, limit, offset, dt_params)
+    return school_visit_service.get_school_visit_data(region, area, program, years, month, quarter, limit, offset, dt_params, group_by)
+
 
 @router.get("/export")
 def export_data(

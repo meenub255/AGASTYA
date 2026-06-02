@@ -17,6 +17,7 @@ def get_data(
     quarter: list[str] | None = Query(None),
     limit:  int        = Query(default=15),
     offset: int        = Query(default=0),
+    group_by: str = Query(default="month")
 ):
     from backend.services.query_utils import parse_datatables_params
     dt_params = parse_datatables_params(dict(request.query_params))
@@ -25,7 +26,7 @@ def get_data(
         limit = dt_params["length"]
         offset = dt_params["start"]
 
-    return regionwise_service.get_regionwise_data(region, area, years, month, quarter, limit, offset, dt_params)
+    return regionwise_service.get_regionwise_data(region, area, years, month, quarter, limit, offset, dt_params, group_by=group_by)
 
 @router.get("/export")
 def export_data(

@@ -9,11 +9,12 @@ def get_region_data(
     region:     list[str] | None = Query(None),
     program:    list[str] | None = Query(None),
     month:      list[str] | None = Query(None),
-    quarter:    list[str] | None = Query(None)
+    quarter:    list[str] | None = Query(None),
+    group_by:   str = Query(default="month")
 ):
     """Unified data endpoint for Region Dashboard."""
     return region_service.get_unified_region_data(
-        years=years, region=region, program=program, month=month, quarter=quarter
+        years=years, region=region, program=program, month=month, quarter=quarter, group_by=group_by
     )
 
 @router.get("/filters")
@@ -54,14 +55,16 @@ def monthly_region_impact(
     region:     list[str] | None = Query(None),
     program:    list[str] | None = Query(None),
     month:      list[str] | None = Query(None),
-    quarter:    list[str] | None = Query(None)
+    quarter:    list[str] | None = Query(None),
+    group_by:   str = Query(default="month")
 ):
     return {
         "title": "Monthly Region Impact",
         "data": region_service.get_monthly_region_impact(
-            years=years, region=region, program=program, month=month, quarter=quarter
+            years=years, region=region, program=program, month=month, quarter=quarter, group_by=group_by
         ),
     }
+
 
 @router.get("/options")
 def region_options():
