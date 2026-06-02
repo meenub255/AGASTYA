@@ -10,11 +10,12 @@ def get_instructor_data(
     program:    list[str] | None = Query(None),
     instructor: list[str] | None = Query(None),
     month:      list[str] | None = Query(None),
-    quarter:    list[str] | None = Query(None)
+    quarter:    list[str] | None = Query(None),
+    group_by:   str = Query(default="month")
 ):
     """Unified data endpoint for Instructor Dashboard."""
     return instructor_service.get_unified_instructor_data(
-        years=years, region=region, program=program, instructor=instructor, month=month, quarter=quarter
+        years=years, region=region, program=program, instructor=instructor, month=month, quarter=quarter, group_by=group_by
     )
 
 @router.get("/filters")
@@ -57,11 +58,12 @@ def get_monthly(
     program:    list[str] | None = Query(None),
     instructor: list[str] | None = Query(None),
     month:      list[str] | None = Query(None),
-    quarter:    list[str] | None = Query(None)
+    quarter:    list[str] | None = Query(None),
+    group_by:   str = Query(default="month")
 ):
     return {
         "data": instructor_service.get_monthly_instructor_activity(
-            years=years, region=region, program=program, instructor=instructor, month=month, quarter=quarter
+            years=years, region=region, program=program, instructor=instructor, month=month, quarter=quarter, group_by=group_by
         )
     }
 
