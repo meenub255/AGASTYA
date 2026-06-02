@@ -1,0 +1,540 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .content-header {
+        display: none !important;
+    }
+
+    /* Redesigned Workspace Layout */
+    .intelligence-container {
+        display: flex;
+        gap: 24px;
+        height: calc(100vh - 130px);
+        min-height: 600px;
+        margin-top: 10px;
+    }
+
+    /* Floating Left Metrics Panel */
+    .stats-sidebar {
+        width: 300px;
+        background: #ffffff;
+        border-radius: 24px;
+        border: 1px solid #f1f5f9;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.02);
+    }
+
+    .sidebar-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .sidebar-title i {
+        color: #ea580c;
+    }
+
+    .stats-card {
+        background: #fafafa;
+        border: 1px solid #f1f5f9;
+        border-radius: 16px;
+        padding: 16px;
+        transition: all 0.2s;
+    }
+
+    .stats-card:hover {
+        border-color: #ffedd5;
+        background: #fff7ed;
+    }
+
+    .stats-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #94a3b8;
+        letter-spacing: 0.05em;
+    }
+
+    .stats-value {
+        font-size: 20px;
+        font-weight: 800;
+        color: #1e293b;
+        margin-top: 4px;
+        font-family: Inter, sans-serif;
+    }
+
+    .topic-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 10px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .topic-item {
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .topic-item:hover {
+        border-color: #fdba74;
+        background: #fff7ed;
+        color: #ea580c;
+        transform: translateY(-1px);
+    }
+
+    .topic-item i {
+        color: #94a3b8;
+        font-size: 12px;
+    }
+
+    .topic-item:hover i {
+        color: #ea580c;
+    }
+
+    /* Main Floating Workspace */
+    .chat-workspace {
+        flex: 1;
+        background: #ffffff;
+        border-radius: 24px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.02);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* Chat workspace header */
+    .workspace-header {
+        padding: 20px 28px;
+        border-bottom: 1px solid #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .agent-status {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .agent-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+        border: 1px solid #fed7aa;
+        color: #ea580c;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+
+    .agent-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .agent-name {
+        font-size: 16px;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .agent-indicator {
+        font-size: 12px;
+        color: #ea580c;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .pulse-dot {
+        width: 6px;
+        height: 6px;
+        background: #ea580c;
+        border-radius: 50%;
+        animation: pulseAnimation 2s infinite;
+    }
+
+    @keyframes pulseAnimation {
+
+        0%,
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        50% {
+            transform: scale(1.3);
+            opacity: 0.4;
+        }
+    }
+
+    /* Message list container */
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        background: #ffffff;
+    }
+
+    .message {
+        display: flex;
+        gap: 16px;
+        max-width: 80%;
+    }
+
+    .message.user {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+    }
+
+    .message.bot {
+        align-self: flex-start;
+    }
+
+    .msg-content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .msg-bubble {
+        padding: 16px 20px;
+        border-radius: 20px;
+        font-size: 14px;
+        line-height: 1.6;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+
+    .message.user .msg-bubble {
+        background: #fff7ed;
+        color: #ea580c;
+        border: 1px solid #ffedd5;
+        border-bottom-right-radius: 4px;
+        font-weight: 500;
+    }
+
+    .message.bot .msg-bubble {
+        background: #f8fafc;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+        border-bottom-left-radius: 4px;
+        border-left: 4px solid #ea580c;
+        /* Distinct orange accent bar */
+    }
+
+    .msg-time {
+        font-size: 11px;
+        color: #94a3b8;
+        margin-top: 6px;
+        font-weight: 500;
+    }
+
+    .message.user .msg-time {
+        text-align: right;
+    }
+
+    /* Suggestion Chips */
+    .quick-suggestions {
+        display: flex;
+        gap: 8px;
+        padding: 0 32px 16px 32px;
+        flex-wrap: wrap;
+        background: #ffffff;
+    }
+
+    .suggestion-chip {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.01);
+    }
+
+    .suggestion-chip:hover {
+        background: #fff7ed;
+        border-color: #fed7aa;
+        color: #ea580c;
+        transform: translateY(-1px);
+    }
+
+    /* Floating Pill Input Panel */
+    .chat-input-panel {
+        padding: 20px 32px 32px;
+        background: #ffffff;
+    }
+
+    .chat-input-container {
+        display: flex;
+        align-items: center;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 8px 16px;
+        gap: 12px;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.02);
+        transition: all 0.25s ease;
+    }
+
+    .chat-input-container:focus-within {
+        border-color: #fdba74;
+        box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.08);
+    }
+
+    .chat-input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        outline: none;
+        font-size: 14px;
+        color: #1e293b;
+        padding: 10px 0;
+    }
+
+    .chat-action-btn {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 12px;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .chat-action-btn:hover {
+        background: #f8fafc;
+        color: #ea580c;
+    }
+
+    .send-btn {
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+        color: white !important;
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
+    }
+
+    .send-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(249, 115, 22, 0.3);
+    }
+</style>
+
+<div class="col-md-12">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h1 class="m-0 font-weight-bold"
+                style="font-size:1.5rem;color:#1e293b; font-family: Arial, sans-serif !important;">Pramana Intelligence
+            </h1>
+            <p class="text-muted small mb-0">Ask natural language questions to analyze operations and targets</p>
+        </div>
+    </div>
+
+    <!-- Redesigned Workspace Layout -->
+    <div class="intelligence-container">
+
+        <!-- Left Side Stats Panel -->
+        <div class="stats-sidebar">
+            <div>
+                <span class="sidebar-title"><i class="fas fa-brain"></i> AI Assistant Stats</span>
+                <p class="text-muted" style="font-size: 11px; margin-bottom: 0;">System integration status</p>
+            </div>
+
+            <div class="stats-card">
+                <div class="stats-label">Knowledge Engine</div>
+                <div class="stats-value"
+                    style="font-size: 15px; font-weight: 700; color: #ea580c; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-database"></i> Preview Mode
+                </div>
+            </div>
+
+            <div class="stats-card">
+                <div class="stats-label">Suggested Analytics</div>
+                <div class="topic-list">
+                    <div class="topic-item">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Session Trends</span>
+                    </div>
+                    <div class="topic-item">
+                        <i class="fas fa-users"></i>
+                        <span>Instructor Workloads</span>
+                    </div>
+                    <div class="topic-item">
+                        <i class="fas fa-shipping-fast"></i>
+                        <span>Vehicle Operations</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Workspace -->
+        <div class="chat-workspace">
+            <!-- Header -->
+            <div class="workspace-header">
+                <div class="agent-status">
+                    <div class="agent-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="agent-details">
+                        <span class="agent-name">Pramana AI</span>
+                        <div class="agent-indicator">
+                            <span class="pulse-dot"></span> Active Assistant
+                        </div>
+                    </div>
+                </div>
+                <div class="workspace-actions">
+                    <button class="chat-action-btn" title="Reset Session"><i class="fas fa-sync-alt"></i></button>
+                </div>
+            </div>
+
+            <!-- Messages Log -->
+            <div class="chat-messages" id="chatMessages">
+                <!-- Welcome Message -->
+                <div class="message bot">
+                    <div class="agent-avatar" style="width: 32px; height: 32px; font-size: 14px; border-radius: 10px;">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="msg-content">
+                        <div class="msg-bubble">
+                            Hello! I am your Pramana Intelligence Assistant. I can help you analyze instructor
+                            performance, regional reach metrics, vehicle operations, and target completions. What
+                            insights can I generate for you today?
+                        </div>
+                        <span class="msg-time">Just now</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suggestions -->
+            <div class="quick-suggestions">
+                <div class="suggestion-chip">Show session completion by region</div>
+                <div class="suggestion-chip">Find top-performing instructors</div>
+                <div class="suggestion-chip">Summarize Q1 program outreach</div>
+            </div>
+
+            <!-- Input Panel -->
+            <div class="chat-input-panel">
+                <form id="chatForm">
+                    <div class="chat-input-container">
+                        <button type="button" class="chat-action-btn" title="Add source"><i
+                                class="fas fa-plus"></i></button>
+                        <input type="text" class="chat-input" id="chatInput" placeholder="Ask Pramana AI..."
+                            autocomplete="off">
+                        <button type="button" class="chat-action-btn" title="Voice"><i
+                                class="fas fa-microphone"></i></button>
+                        <button type="submit" class="chat-action-btn send-btn" title="Send"><i
+                                class="fas fa-paper-plane" style="color: #fff;"></i></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(function () {
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const chatForm = document.getElementById('chatForm');
+
+        // Handle form submit
+        chatForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            // User Message
+            appendMessage(text, 'user');
+            chatInput.value = '';
+
+            // Mock Bot Response (Simulating AI chatbot response)
+            setTimeout(() => {
+                appendMessage("Thank you for your request! As this is a skeleton layout, the dynamic AI integrations will be hooked up shortly to analyze the live data warehouses.", 'bot');
+            }, 800);
+        });
+
+        // Handle suggestion chips click
+        $('.suggestion-chip, .topic-item').click(function () {
+            const text = $(this).find('span').length ? $(this).find('span').text() : $(this).text();
+            appendMessage(text, 'user');
+            setTimeout(() => {
+                appendMessage("Processing query: \"" + text + "\". AI database indexing will return real-time graphs and metrics here once database connectivity is finalized.", 'bot');
+            }, 800);
+        });
+
+        function appendMessage(text, sender) {
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const html = sender === 'user' ? `
+            <div class="message user">
+                <div class="msg-content">
+                    <div class="msg-bubble">
+                        ${text}
+                    </div>
+                    <span class="msg-time">${time}</span>
+                </div>
+            </div>
+        ` : `
+            <div class="message bot">
+                <div class="agent-avatar" style="width: 32px; height: 32px; font-size: 14px; border-radius: 10px;">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="msg-content">
+                    <div class="msg-bubble">
+                        ${text}
+                    </div>
+                    <span class="msg-time">${time}</span>
+                </div>
+            </div>
+        `;
+
+            chatMessages.insertAdjacentHTML('beforeend', html);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    });
+</script>
+{% endblock %}
