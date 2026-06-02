@@ -20,7 +20,8 @@ def get_data(
     month: list[str] | None = Query(None),
     quarter: list[str] | None = Query(None),
     limit: int = Query(15),
-    offset: int = Query(0)
+    offset: int = Query(0),
+    group_by: str = Query("month")
 ):
     from backend.services.query_utils import parse_datatables_params
     dt_params = parse_datatables_params(dict(request.query_params))
@@ -37,7 +38,8 @@ def get_data(
         quarter=quarter,
         limit=limit,
         offset=offset,
-        dt_params=dt_params
+        dt_params=dt_params,
+        group_by=group_by
     )
 
 @router.get("/export")
@@ -58,9 +60,10 @@ def get_monthly_data(
     area: list[str] | None = Query(None),
     years: list[str] | None = Query(None),
     month: list[str] | None = Query(None),
-    quarter: list[str] | None = Query(None)
+    quarter: list[str] | None = Query(None),
+    group_by: str = Query("month")
 ):
     return {
         "title": "Monthly Activity Comparison",
-        "data": instructor_summary_service.get_monthly_instructor_summary(region, area, years, month, quarter)
+        "data": instructor_summary_service.get_monthly_instructor_summary(region, area, years, month, quarter, group_by=group_by)
     }
