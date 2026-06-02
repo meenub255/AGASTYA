@@ -76,6 +76,35 @@
         if (window.ChartDataLabels) {
             Chart.register(ChartDataLabels);
         }
+
+        // Dynamically inject Group By filter into the filter drawer
+        injectGroupByFilter();
+
+        // Dynamically inject subtle Export options next to the filter launcher
+        injectSubtleExportOptions();
+
+        // Bind global change listener for Group By filter
+        $(document).on('change', '#groupByFilter', function() {
+            const page = getPage();
+            const mainPages = ["sessions", "region", "instructor", "programs"];
+            if (mainPages.includes(page)) {
+                // Done by bindFilters, but safe to call
+                refreshPage().catch(console.error);
+            } else if (typeof window.loadReportData === 'function') {
+                window.loadReportData();
+            } else {
+                const seeReport = document.getElementById('seeReport');
+                if (seeReport) {
+                    seeReport.click();
+                } else {
+                    $('.table').each(function() {
+                        if ($.fn.DataTable.isDataTable(this)) {
+                            $(this).DataTable().ajax.reload();
+                        }
+                    });
+                }
+            }
+        });
         
         const page = getPage();
         const mainPages = ["sessions", "region", "instructor", "programs"];
@@ -98,12 +127,72 @@
         }
     });
 
+    function injectGroupByFilter() {
+        const $fdBody = $('#filterDrawer .fd-body');
+        if (!$fdBody.length) return;
+
+        // If it already exists, ensure it has the correct data-filter attribute
+        if ($('#groupByFilter').length) {
+            $('#groupByFilter').attr('data-filter', 'group_by');
+            return;
+        }
+
+        const html = `
+            <div class="fd-section" id="groupBySection">
+                <label class="fd-label">Group By</label>
+                <select id="groupByFilter" data-filter="group_by" class="form-control" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px; width: 100%;">
+                    <option value="day">Day</option>
+                    <option value="month" selected>Month</option>
+                    <option value="quarter">Quarter</option>
+                    <option value="year">Year</option>
+                </select>
+            </div>
+        `;
+
+        // Try to insert it before the chart settings / labels switch if present, otherwise append
+        const $settings = $fdBody.find('.custom-switch').closest('.fd-section');
+        if ($settings.length) {
+            $settings.before(html);
+        } else {
+            $fdBody.append(html);
+        }
+    }
+
+    function injectSubtleExportOptions() {
+        const $launcher = $('#filterLauncher');
+        if (!$launcher.length) return;
+
+        // Prevent double injection
+        if ($('#exportDropdownContainer').length) return;
+
+        // Wrap the filter launcher in a flex container if not already wrapped
+        if (!$launcher.parent().hasClass('launcher-wrapper')) {
+            $launcher.wrap('<div class="launcher-wrapper d-flex align-items-center" style="gap: 12px; margin-left: auto;"></div>');
+        }
+
+        const exportDropdownHtml = `
+            <div class="dropdown d-inline-block" id="exportDropdownContainer">
+                <button class="btn btn-outline-secondary dropdown-toggle subtle-export-btn" type="button" id="subtleExportBtn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 16px; background: #fff; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                    <i class="fas fa-file-export" style="color: #3b82f6;"></i>
+                    <span>Export</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right shadow-sm" aria-labelledby="subtleExportBtn" style="border-radius: 10px; border: 1px solid #e2e8f0; padding: 6px 0; z-index: 2500;">
+                    <a class="dropdown-item export-option" data-format="excel" href="#" style="font-size: 13px; font-weight: 500; color: #334155; padding: 8px 16px; display: flex; align-items: center; gap: 8px;"><i class="fas fa-file-excel text-success" style="width: 16px;"></i> Excel</a>
+                    <a class="dropdown-item export-option" data-format="csv" href="#" style="font-size: 13px; font-weight: 500; color: #334155; padding: 8px 16px; display: flex; align-items: center; gap: 8px;"><i class="fas fa-file-csv text-info" style="width: 16px;"></i> CSV</a>
+                    <a class="dropdown-item export-option" data-format="pdf" href="#" style="font-size: 13px; font-weight: 500; color: #334155; padding: 8px 16px; display: flex; align-items: center; gap: 8px;"><i class="fas fa-file-pdf text-danger" style="width: 16px;"></i> PDF</a>
+                </div>
+            </div>
+        `;
+
+        $launcher.parent().prepend(exportDropdownHtml);
+    }
+
     function getPage() {
         return document.body.dataset.page || "dashboard";
     }
 
     function bindFilters() {
-        const filterIds = ["startYear", "endYear", "regionFilter", "programFilter", "instructorTypeFilter"];
+        const filterIds = ["startYear", "endYear", "regionFilter", "programFilter", "instructorTypeFilter", "groupByFilter"];
         filterIds.forEach((id) => {
             const element = document.getElementById(id);
             if (!element) {
@@ -1026,6 +1115,150 @@
             alert("Failed to export data");
         }
     };
+
+    window.exportToCSV = async function(url, filename) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("CSV Export failed");
+            const blob = await response.blob();
+            const link = document.createElement("a");
+            link.href = window.URL.createObjectURL(blob);
+            link.download = filename || "export.csv";
+            link.click();
+        } catch (error) {
+            console.error(error);
+            alert("Failed to export data as CSV");
+        }
+    };
+
+    window.exportToPDF = function(title = "Report") {
+        const table = document.querySelector('table');
+        if (!table) {
+            alert("No table found to export as PDF");
+            return;
+        }
+
+        const printWindow = window.open('', '_blank', 'height=600,width=800');
+        printWindow.document.write('<html><head><title>' + title + '</title>');
+        printWindow.document.write('<style>');
+        printWindow.document.write('body { font-family: Arial, sans-serif; padding: 25px; color: #1e293b; background: #fff; }');
+        printWindow.document.write('h1 { font-size: 22px; margin-bottom: 5px; color: #0f172a; font-weight: bold; }');
+        printWindow.document.write('p { font-size: 13px; color: #64748b; margin-top: 0; margin-bottom: 20px; }');
+        printWindow.document.write('table { width: 100%; border-collapse: collapse; margin-top: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }');
+        printWindow.document.write('th, td { border: 1px solid #e2e8f0; padding: 10px 12px; text-align: left; font-size: 12px; }');
+        printWindow.document.write('th { background-color: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }');
+        printWindow.document.write('.text-center { text-align: center; }');
+        printWindow.document.write('.badge { padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 10px; display: inline-block; }');
+        printWindow.document.write('.badge-success { background-color: #d1fae5; color: #065f46; }');
+        printWindow.document.write('</style></head><body>');
+        printWindow.document.write('<h1>' + title + '</h1>');
+        printWindow.document.write('<p>Generated on: ' + new Date().toLocaleString() + '</p>');
+        
+        const clonedTable = table.cloneNode(true);
+        clonedTable.querySelectorAll('.sorting, .sorting_asc, .sorting_desc').forEach(el => {
+            el.classList.remove('sorting', 'sorting_asc', 'sorting_desc');
+        });
+        
+        printWindow.document.write(clonedTable.outerHTML);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.focus();
+        
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
+    };
+
+    function getExportConfig(format) {
+        const page = getPage();
+        const filters = getFilters();
+        
+        let path = '';
+        let filename = '';
+
+        if (page === "sessions" || page === "session") {
+            path = `/session/export?${filters}`;
+            filename = `session_report`;
+        } else if (page === "region") {
+            path = `/region/export?${filters}`;
+            filename = `region_report`;
+        } else if (page === "instructor") {
+            path = `/instructor/export?${filters}`;
+            filename = `instructor_report`;
+        } else if (page === "programs" || page === "exposure") {
+            path = `/exposure/export?${filters}`;
+            filename = `exposure_report`;
+        } else {
+            const pageConfigs = {
+                'school-visits': { path: '/school-visit/export', name: 'school_visit_report' },
+                'program-visits': { path: '/school-visit/export', name: 'school_visit_report' },
+                'regionwise-dashboard': { path: '/regionwise-dashboard/export', name: 'regionwise_dashboard' },
+                'nationwide-dashboard': { path: '/nationwide/export', name: 'nationwide_dashboard' },
+                'exposure-session-dashboard': { path: '/exposure-session-dashboard/export', name: 'exposure_session' },
+                'instructor-summary': { path: '/instructor-summary/export', name: 'instructor_summary_report' },
+                'instructor-feedback': { path: '/instructor-feedback/export', name: 'instructor_feedback' },
+                'instructor-detail': { path: '/instructor-detail/export', name: 'instructor_detail' },
+                'attendance': { path: '/attendance/export', name: 'attendance_report' },
+                'arealead-summary': { path: '/arealead-summary/export', name: 'arealead_summary' },
+                'manpower-vehicle-dashboard': { path: '/manpower-vehicle-dashboard/export', name: 'manpower_vehicle' },
+                'work-days-report': { path: '/work-day/export', name: 'work_day_report' },
+                'work_day': { path: '/work-day/export', name: 'work_day_report' },
+                'work_days': { path: '/work-days/export', name: 'work_days_report' },
+                'vehicle-report': { path: '/vehicle-report/export', name: 'vehicle_report' },
+                'programwise-report': { path: '/programwise-report/export', name: 'programwise_report' },
+                'region-summary': { path: '/region-summary/export', name: 'region_summary' }
+            };
+            
+            const config = pageConfigs[page];
+            if (config) {
+                let q = '';
+                if (typeof window.collectFilters === 'function') {
+                    q = $.param(window.collectFilters(), true);
+                } else if (typeof collectFilters === 'function') {
+                    q = $.param(collectFilters(), true);
+                } else {
+                    q = filters;
+                }
+                path = `${config.path}?${q}`;
+                filename = config.name;
+            }
+        }
+        
+        if (path) {
+            if (format === 'csv') {
+                return { url: `${path}&format=csv`, filename: `${filename}.csv` };
+            } else if (format === 'pdf') {
+                return { url: null, filename: `${filename}.pdf` };
+            } else {
+                return { url: path, filename: `${filename}.xlsx` };
+            }
+        }
+        return null;
+    }
+
+    $(document).on('click', '.export-option', function(e) {
+        e.preventDefault();
+        const format = $(this).data('format');
+        const config = getExportConfig(format);
+        if (!config) {
+            if (format === 'excel' && $('#exportXlsx').length) {
+                $('#exportXlsx').click();
+            } else {
+                alert("Export not supported on this page.");
+            }
+            return;
+        }
+
+        if (format === 'pdf') {
+            const title = $('h1').first().text().trim() || 'Report';
+            window.exportToPDF(title);
+        } else if (format === 'csv') {
+            window.exportToCSV(config.url, config.filename);
+        } else {
+            window.exportToXLSX(config.url, config.filename);
+        }
+    });
 
     window.PramanaDashboard = {
         initDataTable: function(selector, options = {}) {
