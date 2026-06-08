@@ -193,6 +193,10 @@
             <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="years" data-placeholder="Select Year"></select>
         </div>
         <div class="fd-section">
+            <label class="fd-label">Months</label>
+            <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month"></select>
+        </div>
+        <div class="fd-section">
             <label class="fd-label">Regional Hubs</label>
             <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region"></select>
         </div>
@@ -339,7 +343,7 @@
         }
 
         // ── Filters ─────────────────────────────────────────────────────
-        const rf = $('#regionFilter'), pf = $('#programFilter'), yf = $('#yearFilter');
+        const rf = $('#regionFilter'), pf = $('#programFilter'), yf = $('#yearFilter'), mf = $('#monthFilter');
 
         if ($.fn.select2) {
             $('.select2').select2({ 
@@ -375,7 +379,8 @@
             const regions = $('#regionFilter').val() || [];
             const programs = $('#programFilter').val() || [];
             const years = $('#yearFilter').val() || [];
-            const total = (regions ? regions.length : 0) + (programs ? programs.length : 0) + (years ? years.length : 0);
+            const months = $('#monthFilter').val() || [];
+            const total = (regions ? regions.length : 0) + (programs ? programs.length : 0) + (years ? years.length : 0) + (months ? months.length : 0);
             
             if (total === 0) {
                 $('#activeFilterCount').text('All Data');
@@ -446,11 +451,17 @@
                         
                         pf.empty();
                         data.programs.forEach(p => pf.append(new Option(p, p)));
+
+                        mf.empty();
+                        if (data.months) {
+                            data.months.forEach(m => mf.append(new Option(m.name, m.id)));
+                        }
                         
                         // Notify Select2
                         yf.trigger('change.select2', { internal: true });
                         rf.trigger('change.select2', { internal: true });
                         pf.trigger('change.select2', { internal: true });
+                        mf.trigger('change.select2', { internal: true });
                     } else if (target === 'regions') {
                         const currentSel = rf.val() || [];
                         rf.empty();
@@ -488,6 +499,11 @@
         });
 
         pf.on('change', function (e, data) {
+            if (data && data.internal) return;
+            loadData();
+        });
+
+        mf.on('change', function (e, data) {
             if (data && data.internal) return;
             loadData();
         });
@@ -899,6 +915,7 @@
             yf.val(null).trigger('change', { internal: true });
             rf.val(null).trigger('change', { internal: true });
             pf.val(null).trigger('change', { internal: true });
+            mf.val(null).trigger('change', { internal: true });
             fetchFilters('all').then(() => {
                 loadData();
                 updateFilterSummary();
