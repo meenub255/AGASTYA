@@ -65,10 +65,20 @@ def get_filters(
     """
     programs_data = [r["program_name"] for r in fetch_all(programs_query, params)]
     
+    # 4. Fetch Months
+    months_query = f"""
+        SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text, 'MM'), 'Month') as month_name 
+        FROM {DATAMART_SCHEMA_NAME}.dim_date d
+        INNER JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON d.date_id = f.date_id
+        ORDER BY d.month_actual
+    """
+    months_data = [{"id": r["month_actual"], "name": r["month_name"].strip()} for r in fetch_all(months_query)]
+    
     return {
         "years": years_data,
         "regions": regions_data,
-        "programs": programs_data
+        "programs": programs_data,
+        "months": months_data
     }
 
 
@@ -77,10 +87,11 @@ def get_filters(
 def get_data(
     years: list[str] | None = Query(None),
     region: list[str] | None = Query(None),
-    program: list[str] | None = Query(None)
+    program: list[str] | None = Query(None),
+    month: list[str] | None = Query(None)
 ):
-    kpis = overview_service.get_overview_kpis(years, region, program)
-    charts = overview_service.get_overview_charts(years, region, program)
+    kpis = overview_service.get_overview_kpis(years, region, program, month=month)
+    charts = overview_service.get_overview_charts(years, region, program, month=month)
 
     formatted_charts = {
         "instructors_by_region": {
@@ -109,7 +120,7 @@ def get_data(
         }
     }
 
-    trends = overview_service.get_overview_trends(years, region, program)
+    trends = overview_service.get_overview_trends(years, region, program, month=month)
 
     sparklines = {}
     if trends and len(trends) >= 2:
@@ -132,17 +143,19 @@ def get_drilldown(
     region: str = Query(...),
     years: list[str] | None = Query(None),
     program: list[str] | None = Query(None),
+    month: list[str] | None = Query(None)
 ):
-    return overview_service.get_drilldown_data(region=region, years=years, program=program)
+    return overview_service.get_drilldown_data(region=region, years=years, program=program, month=month)
 
 @router.get("/export")
 def export_data(
     years: list[str] | None = Query(None),
     region: list[str] | None = Query(None),
-    program: list[str] | None = Query(None)
+    program: list[str] | None = Query(None),
+    month: list[str] | None = Query(None)
 ):
     from backend.services.export_utils import json_to_excel_streaming_response
-    targets = overview_service.get_program_targets(years, region, program, limit=100000, offset=0)
+    targets = overview_service.get_program_targets(years, region, program, month=month, limit=100000, offset=0)
     
     formatted_table = []
     for row in targets["table"]:
