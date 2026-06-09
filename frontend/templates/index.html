@@ -4,10 +4,12 @@
     <!-- Dashboard Content -->
     <div class="col-md-12">
         <!-- Top Action Bar (Filters + Title) -->
-        <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-4 pt-3">
             <div>
                 <h1 class="m-0 font-weight-bold" style="font-size: 1.5rem; color: #1e293b; font-family: Arial, sans-serif !important;">Overview</h1>
-                <p class="text-muted small mb-0">Global metrics and regional performance tracking</p>
+                <p class="text-muted small mb-0">
+                    Global metrics and regional performance tracking <span class="mx-1">•</span> <span id="reportPeriodText" style="color: #4f46e5; font-weight: 600;">Viewing report for YTD 2026</span>
+                </p>
             </div>
             
             <!-- Filter Launcher Card (Rounded Rectangle like KPI) -->
@@ -389,7 +391,59 @@
             }
         }
 
-        $('.select2').on('change', updateFilterSummary);
+        function updateReportPeriodText() {
+            const years = yf.val() || [];
+            const months = mf.val() || [];
+            
+            const monthNamesShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            
+            let yearStr = "";
+            if (years.length > 0) {
+                yearStr = years.join(", ");
+            } else {
+                const allYears = [];
+                yf.find('option').each(function() {
+                    if ($(this).val()) allYears.push($(this).val());
+                });
+                if (allYears.length > 0) {
+                    yearStr = allYears[0];
+                } else {
+                    yearStr = String(new Date().getFullYear());
+                }
+            }
+            
+            let periodStr = "";
+            if (months.length > 0) {
+                const sortedMonths = months.map(Number).sort((a, b) => a - b);
+                if (sortedMonths.length === 1) {
+                    periodStr = monthNamesShort[sortedMonths[0] - 1];
+                } else if (sortedMonths.length === 12) {
+                    periodStr = "Full Year";
+                } else {
+                    let isContiguous = true;
+                    for (let i = 1; i < sortedMonths.length; i++) {
+                        if (sortedMonths[i] !== sortedMonths[i-1] + 1) {
+                            isContiguous = false;
+                            break;
+                        }
+                    }
+                    if (isContiguous) {
+                        periodStr = `${monthNamesShort[sortedMonths[0] - 1]}-${monthNamesShort[sortedMonths[sortedMonths.length - 1] - 1]}`;
+                    } else {
+                        periodStr = sortedMonths.map(m => monthNamesShort[m - 1]).join(", ");
+                    }
+                }
+            } else {
+                periodStr = "YTD";
+            }
+            
+            $('#reportPeriodText').html(`Viewing report for <strong>${periodStr} ${yearStr}</strong>`);
+        }
+
+        $('.select2').on('change', function() {
+            updateFilterSummary();
+            updateReportPeriodText();
+        });
 
         $('.region-legend-trigger').popover({
             html: true,
@@ -822,6 +876,7 @@
                     renderPolarAreaChart(data.charts.instructors_by_region);
                     renderBarChart(data.charts.programs_by_region);
                     updateLegendPopover();
+                    updateReportPeriodText();
                 });
         }
 
