@@ -64,8 +64,9 @@ def get_monthly_sessions(
     program: str | list[str] | None = None,
     month: list[int | str] | None = None,
     quarter: list[int | str] | None = None,
+    group_by: str = "month",
 ) -> list[dict]:
-    from backend.services.query_utils import build_standard_filters
+    from backend.services.query_utils import build_standard_filters, get_time_grouping_expressions
     where_clause, params, _ = build_standard_filters(
         years=years,
         region=region,
@@ -75,18 +76,19 @@ def get_monthly_sessions(
         quarter=quarter,
         date_alias="d"
     )
+    label_expr, sort_expr, grp_expr = get_time_grouping_expressions(group_by)
     rows = fetch_all(
         f"""
         SELECT
-            TO_CHAR(DATE_TRUNC('month', d.full_date), 'YYYY-MM') AS label,
+            {label_expr} AS label,
             COUNT(f.sk_fact_session_id) AS value
         FROM dw.fact_session f
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
         WHERE {where_clause}
-        GROUP BY DATE_TRUNC('month', d.full_date)
-        ORDER BY DATE_TRUNC('month', d.full_date)
+        GROUP BY {grp_expr}
+        ORDER BY {sort_expr}
         """,
         params,
     )
@@ -148,10 +150,12 @@ def get_unified_session_data(
     program: str | list[str] | None = None,
     month: list[int | str] | None = None,
     quarter: list[int | str] | None = None,
+    group_by: str = "month",
 ) -> dict:
     kpis_data = get_session_kpis(years, region, program, month, quarter)
-    monthly_rows = get_monthly_sessions(years, region, program, month, quarter)
+    monthly_rows = get_monthly_sessions(years, region, program, month, quarter, group_by)
     region_rows = get_sessions_by_region(years, region, program, month, quarter)
+
 
     PALETTE = [
         "#0d6efd", "#6610f2", "#6f42c1", "#d63384", "#dc3545",
