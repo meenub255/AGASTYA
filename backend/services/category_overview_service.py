@@ -12,7 +12,16 @@ def _build_clauses(region=None, years=None, program=None, force_max_month=None):
     clauses, params = [], []
     c, p = get_list_filter_clause("g.region_name", region); clauses.append(c); params.extend(p)
     c, p = get_list_filter_clause("d.year_actual", years, cast_type="int"); clauses.append(c); params.extend(p)
-    c, p = get_list_filter_clause("p.program_name", program); clauses.append(c); params.extend(p)
+    if program:
+        if isinstance(program, list):
+            clean_programs = [pr for pr in program if pr and pr != ""]
+            if clean_programs:
+                clauses.append("f.sk_activity_type_id IN (SELECT sk_activity_type_id FROM dw.dim_activity_type WHERE activity_name = ANY(%s))")
+                params.append(clean_programs)
+        else:
+            if program and program != "":
+                clauses.append("f.sk_activity_type_id IN (SELECT sk_activity_type_id FROM dw.dim_activity_type WHERE activity_name = %s)")
+                params.append(program)
     where_sql = " AND ".join(clauses) if clauses else "TRUE"
     where_sql, params = apply_ytd_filter(where_sql, params, years, date_alias="d", force_max_month=force_max_month)
     return where_sql, params
