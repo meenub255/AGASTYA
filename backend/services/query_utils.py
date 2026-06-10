@@ -95,11 +95,17 @@ def build_standard_filters(
         if c != "TRUE":
             clauses.append(c); params.extend(p)
             
-    # 3. Program
+    # 3. Program (mapped to Activity Type filter)
     if program is not None:
-        c, p = get_list_filter_clause(program_expr, program)
-        if c != "TRUE":
-            clauses.append(c); params.extend(p)
+        if isinstance(program, list):
+            clean_programs = [pr for pr in program if pr and pr != ""]
+            if clean_programs:
+                clauses.append("f.sk_activity_type_id IN (SELECT sk_activity_type_id FROM dw.dim_activity_type WHERE activity_name = ANY(%s))")
+                params.append(clean_programs)
+        else:
+            if program and program != "":
+                clauses.append("f.sk_activity_type_id IN (SELECT sk_activity_type_id FROM dw.dim_activity_type WHERE activity_name = %s)")
+                params.append(program)
             
     # 4. Years
     effective_years = years
@@ -247,8 +253,16 @@ def build_dimension_filters(
     if location_expression:
         add_list_filter(location_expression, region)
 
-    if program_expression:
-        add_list_filter(program_expression, program)
+    if program is not None:
+        if isinstance(program, list):
+            clean_programs = [pr for pr in program if pr and pr != ""]
+            if clean_programs:
+                clauses.append("f.sk_activity_type_id IN (SELECT sk_activity_type_id FROM dw.dim_activity_type WHERE activity_name = ANY(%s))")
+                params.append(clean_programs)
+        else:
+            if program and program != "":
+                clauses.append("f.sk_activity_type_id IN (SELECT sk_activity_type_id FROM dw.dim_activity_type WHERE activity_name = %s)")
+                params.append(program)
 
     if instructor_expression:
         add_list_filter(instructor_expression, instructor)
@@ -560,6 +574,39 @@ def calculate_ytd_kpis(
         sparklines[sparkline_key] = [prev_val, curr_val]
         
     return kpis, sparklines
+
+def get_time_grouping_expressions(
+    group_by: str = "month",
+    date_col: str = "d.full_date",
+    month_col: str = "d.month_actual",
+    year_col: str = "d.year_actual"
+) -> tuple[str, str, str]:
+    """
+    Returns (label_expr, sort_expr, grp_expr) for dynamic date/time SQL grouping.
+    """
+    group_by = (group_by or "month").lower()
+    fiscal_q_expr = f"CASE WHEN {month_col} IN (4,5,6) THEN 1 WHEN {month_col} IN (7,8,9) THEN 2 WHEN {month_col} IN (10,11,12) THEN 3 ELSE 4 END"
+    fiscal_y_expr = f"CASE WHEN {month_col} >= 4 THEN {year_col} ELSE {year_col} - 1 END"
+
+    if group_by == "day":
+        label_expr = f"TO_CHAR({date_col}, 'YYYY-MM-DD')"
+        sort_expr = f"MIN({date_col})"
+        grp_expr = date_col
+    elif group_by == "quarter":
+        label_expr = f"'Q' || {fiscal_q_expr} || ' ' || {fiscal_y_expr}"
+        sort_expr = f"MIN({date_col})"
+        grp_expr = f"{fiscal_q_expr}, {fiscal_y_expr}"
+    elif group_by == "year":
+        label_expr = f"{year_col}::text"
+        sort_expr = f"{year_col}"
+        grp_expr = year_col
+    else:  # month (default)
+        label_expr = f"TO_CHAR({date_col}, 'YYYY-MM')"
+        sort_expr = f"MIN({date_col})"
+        grp_expr = f"DATE_TRUNC('month', {date_col})"
+        
+    return label_expr, sort_expr, grp_expr
+
 
 
 
