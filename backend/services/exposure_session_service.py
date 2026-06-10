@@ -42,8 +42,8 @@ def get_exposure_session_filters():
         return {"regions": [], "programs": [], "years": [], "months": []}
 
 
-def get_exposure_session_data(region=None, program=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
+def get_exposure_session_data(region=None, program=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None, group_by="month"):
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql, get_time_grouping_expressions
     try:
         kpi_defs = [
             {"key": "total_students", "label": "Total Students Exposed", "sql": "COALESCE(SUM(e.boys_count + e.girls_count), 0)", "icon": "fas fa-user-graduate", "color": "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)"},
@@ -155,9 +155,11 @@ def get_exposure_session_data(region=None, program=None, years=None, month=None,
             {"label": "Girls", "value": int(girls_val)},
         ]
 
-        # Chart 2: Exposure by Month (line chart with trend)
+        label_expr, sort_expr, grp_expr = get_time_grouping_expressions(group_by)
+
+        # Chart 2: Exposure Trend (dynamic date grouping)
         exposure_by_month = fetch_all(f"""
-            SELECT TO_CHAR(d.full_date, 'YYYY-MM') AS label,
+            SELECT {label_expr} AS label,
                    COALESCE(SUM(e.total_exposure_count), 0) AS value
             FROM {DW}.fact_session f
             LEFT JOIN {DW}.dim_geography g  ON f.sk_geography_id = g.sk_geography_id
@@ -165,8 +167,8 @@ def get_exposure_session_data(region=None, program=None, years=None, month=None,
             LEFT JOIN {DW}.dim_date d       ON f.date_id = d.date_id
             LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
             WHERE {where_sql} AND d.full_date IS NOT NULL
-            GROUP BY TO_CHAR(d.full_date, 'YYYY-MM')
-            ORDER BY label
+            GROUP BY {grp_expr}
+            ORDER BY {sort_expr}
         """, params)
 
         return {
@@ -182,3 +184,4 @@ def get_exposure_session_data(region=None, program=None, years=None, month=None,
     except Exception as e:
         logger.error(f"exposure session data error: {e}", exc_info=True)
         return {"kpis": [], "table": [], "total_count": 0}
+
