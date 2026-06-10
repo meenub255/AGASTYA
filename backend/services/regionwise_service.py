@@ -46,8 +46,8 @@ def get_regionwise_filters(region_name=None):
         return {"regions": [], "areas": [], "years": [], "months": [], "quarters": []}
 
 
-def get_regionwise_data(region=None, area=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
+def get_regionwise_data(region=None, area=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None, group_by="month"):
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql, get_time_grouping_expressions
     try:
         kpi_defs = [
             {"key": "total_sessions", "label": "Total Sessions", "sql": "COUNT(DISTINCT f.sk_fact_session_id)", "icon": "fas fa-chalkboard-teacher", "color": "bg-info"},
@@ -140,9 +140,11 @@ def get_regionwise_data(region=None, area=None, years=None, month=None, quarter=
             GROUP BY p.program_name ORDER BY value DESC LIMIT 10
         """, params)
 
-        # Chart 2: Exposure by Month (line chart with trend)
+        label_expr, sort_expr, grp_expr = get_time_grouping_expressions(group_by)
+
+        # Chart 2: Exposure Trend (dynamic date grouping)
         exposure_by_month = fetch_all(f"""
-            SELECT TO_CHAR(d.full_date, 'YYYY-MM') AS label,
+            SELECT {label_expr} AS label,
                    COALESCE(SUM(e.total_exposure_count), 0) AS value
             FROM {DW}.fact_session f
             LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
@@ -150,8 +152,8 @@ def get_regionwise_data(region=None, area=None, years=None, month=None, quarter=
             LEFT JOIN {DW}.dim_program p    ON f.sk_program_id = p.sk_program_id
             LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
             WHERE {where_sql} AND d.full_date IS NOT NULL
-            GROUP BY TO_CHAR(d.full_date, 'YYYY-MM')
-            ORDER BY label
+            GROUP BY {grp_expr}
+            ORDER BY {sort_expr}
         """, params)
 
         return {
@@ -167,3 +169,4 @@ def get_regionwise_data(region=None, area=None, years=None, month=None, quarter=
     except Exception as e:
         logger.error(f"regionwise data error: {e}", exc_info=True)
         return {"kpis": [], "sparklines": {}, "charts": {}, "table": [], "total_count": 0}
+
