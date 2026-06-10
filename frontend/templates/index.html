@@ -1,185 +1,196 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <!-- Dashboard Content -->
-    <div class="col-md-12">
-        <!-- Top Action Bar (Filters + Title) -->
-        <div class="d-flex align-items-center justify-content-between mb-4 pt-3">
-            <div>
-                <h1 class="m-0 font-weight-bold" style="font-size: 1.5rem; color: #1e293b; font-family: Arial, sans-serif !important;">Overview</h1>
-                <p class="text-muted small mb-0">
-                    Global metrics and regional performance tracking <span class="mx-1">•</span> <span id="reportPeriodText" style="color: #4f46e5; font-weight: 600;">Viewing report for YTD 2026</span>
-                </p>
+<!-- Dashboard Content -->
+<div class="col-md-12">
+    <!-- Top Action Bar (Filters + Title) -->
+    <div class="d-flex align-items-center justify-content-between mb-2 pt-3">
+        <div>
+            <h1 class="m-0 font-weight-bold"
+                style="font-size: 1.5rem; color: #1e293b; font-family: Arial, sans-serif !important;">Overview</h1>
+            <p class="text-muted small mb-0">Global metrics and regional performance tracking</p>
+        </div>
+
+        <!-- Filter Launcher Card (Rounded Rectangle like KPI) -->
+        <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
+            <div class="fl-content">
+                <div class="fl-icon">
+                    <i class="fas fa-sliders-h"></i>
+                </div>
+                <div class="fl-text">
+                    <span class="fl-label">Data Filters</span>
+                    <span class="fl-value" id="activeFilterCount">All Data</span>
+                </div>
             </div>
-            
-            <!-- Filter Launcher Card (Rounded Rectangle like KPI) -->
-            <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
-                <div class="fl-content">
-                    <div class="fl-icon">
-                        <i class="fas fa-sliders-h"></i>
+            <div class="fl-chevron">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Summary Details Banner -->
+    <div class="mb-4 p-3 d-flex align-items-center" id="filterStatusBanner"
+        style="background: #ffffff; border-radius: 12px; border-left: 4px solid #f59e0b; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05), 0 1px 5px rgba(0, 0, 0, 0.03) !important;">
+        <div class="d-flex align-items-center w-100 flex-wrap" style="gap: 12px; font-size: 1rem; color: #1e293b;">
+            <i class="fas fa-info-circle" style="font-size: 1.35rem; color: #ed802d !important;"></i>
+            <div id="filterStatusText"
+                style="font-weight: 500; font-family: Inter, Arial, sans-serif; letter-spacing: 0.3px; color: #334155;">
+                The <span style="color: #64748b; font-weight: 500;">YTD filter</span> applied is : <span
+                    style="color: #f59e0b; font-weight: 700; font-size: 1.15rem; margin-left: 4px;">YTD 2026</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Grid -->
+    {% include "partials/overview_kpis.html" %}
+
+    <!-- Charts Row -->
+    <section class="overview-content-stack mt-2">
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <div class="card h-100 white-chart-card">
+                    <div class="card-header border-0 pb-1 d-flex align-items-center"
+                        style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
+                        <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Number of
+                            Programs by Region</h3>
+                        <div class="d-flex align-items-center ml-auto">
+                            <i class="fas fa-info-circle text-muted region-legend-trigger mr-2" style="cursor: pointer;"
+                                data-toggle="popover" data-trigger="click" data-html="true" tabindex="0"
+                                title="Region Code Legend" data-content="Loading..."></i>
+                            <span id="programChartHint" class="text-muted" style="font-size:11px; display:none;">
+                                <i class="fas fa-hand-pointer mr-1"></i>Click a bar to drill down
+                            </span>
+                        </div>
                     </div>
-                    <div class="fl-text">
-                        <span class="fl-label">Data Filters</span>
-                        <span class="fl-value" id="activeFilterCount">All Data</span>
+                    <div class="card-body">
+                        <div style="height:380px;">
+                            <canvas id="programChart"></canvas>
+                        </div>
                     </div>
                 </div>
-                <div class="fl-chevron">
-                    <i class="fas fa-chevron-right"></i>
+            </div>
+
+            <div class="col-md-6 mb-2">
+                <div class="card h-100 white-chart-card">
+                    <div class="card-header border-0 pb-1 d-flex align-items-center"
+                        style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
+                        <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Number of
+                            Instructors per Region</h3>
+                        <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" style="cursor: pointer;"
+                            data-toggle="popover" data-trigger="click" data-html="true" tabindex="0"
+                            title="Region Code Legend" data-content="Loading..."></i>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:380px;">
+                            <canvas id="instructorRegionChart"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+    </section>
 
-        <!-- KPI Grid -->
-        {% include "partials/overview_kpis.html" %}
-
-        <!-- Charts Row -->
-        <section class="overview-content-stack mt-2">
-            <div class="row">
-                <div class="col-md-6 mb-2">
-                    <div class="card h-100 white-chart-card">
-                        <div class="card-header border-0 pb-1 d-flex align-items-center" style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
-                            <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Number of Programs by Region</h3>
-                            <div class="d-flex align-items-center ml-auto">
-                                <i class="fas fa-info-circle text-muted region-legend-trigger mr-2" 
-                                   style="cursor: pointer;"
-                                   data-toggle="popover" 
-                                   data-trigger="click" 
-                                   data-html="true"
-                                   tabindex="0"
-                                   title="Region Code Legend" 
-                                   data-content="Loading..."></i>
-                                <span id="programChartHint" class="text-muted" style="font-size:11px; display:none;">
-                                    <i class="fas fa-hand-pointer mr-1"></i>Click a bar to drill down
-                                </span>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div style="height:380px;">
-                                <canvas id="programChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6 mb-2">
-                    <div class="card h-100 white-chart-card">
-                        <div class="card-header border-0 pb-1 d-flex align-items-center" style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
-                            <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Number of Instructors per Region</h3>
-                            <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
-                               style="cursor: pointer;"
-                               data-toggle="popover" 
-                               data-trigger="click" 
-                               data-html="true"
-                               tabindex="0"
-                               title="Region Code Legend" 
-                               data-content="Loading..."></i>
-                        </div>
-                        <div class="card-body">
-                            <div style="height:380px;">
-                                <canvas id="instructorRegionChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ============================================================
+    <!-- ============================================================
              DRILL-DOWN PANEL (hidden by default)
         ============================================================ -->
-        <div id="drilldownPanel" style="display:none; margin-top: 16px;">
+    <div id="drilldownPanel" style="display:none; margin-top: 16px;">
 
-            <!-- Breadcrumb bar -->
-            <div id="drilldownBreadcrumb" class="d-flex align-items-center mb-3 px-1" style="gap: 8px;">
-                <span class="text-muted" style="font-size:13px; cursor:pointer;" onclick="clearDrilldown()">
-                    <i class="fas fa-th-large mr-1"></i>All Regions
-                </span>
-                <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
-                <span id="drilldownRegionLabel" style="font-size:13px; font-weight:600; color:#1e3a8a;"></span>
-                <button onclick="clearDrilldown()" class="btn btn-md ml-auto clear-drilldown-btn"
+        <!-- Breadcrumb bar -->
+        <div id="drilldownBreadcrumb" class="d-flex align-items-center mb-3 px-1" style="gap: 8px;">
+            <span class="text-muted" style="font-size:13px; cursor:pointer;" onclick="clearDrilldown()">
+                <i class="fas fa-th-large mr-1"></i>All Regions
+            </span>
+            <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
+            <span id="drilldownRegionLabel" style="font-size:13px; font-weight:600; color:#1e3a8a;"></span>
+            <button onclick="clearDrilldown()" class="btn btn-md ml-auto clear-drilldown-btn"
                 style="background: #991b1b; border: 1px solid #991b1b; color: #ffffff; font-weight: 600; font-size: 15px; padding: 10px 24px; border-radius: 24px; transition: all 0.2s ease-in-out; box-shadow: 0 2px 4px rgba(153, 27, 27, 0.2);">
                 <i class="fas fa-times mr-1"></i>Clear Selection
             </button>
-            </div>
+        </div>
 
-            <!-- Extra stat mini-cards (sessions, students, schools) -->
-            <div class="row mb-3" id="drilldownStats">
-                <div class="col-md-4 mb-2">
-                    <div class="kpi-card-bitcoin" id="ddCardSessions">
-                        <div class="kpi-bitcoin-header">
-                            <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
-                                <i class="fas fa-chalkboard"></i>
-                            </div>
-                            <div class="kpi-bitcoin-title-box">
-                                <span class="kpi-bitcoin-label">Sessions</span>
-                                <span class="kpi-bitcoin-sublabel">In Region</span>
-                            </div>
+        <!-- Extra stat mini-cards (sessions, students, schools) -->
+        <div class="row mb-3" id="drilldownStats">
+            <div class="col-md-4 mb-2">
+                <div class="kpi-card-bitcoin" id="ddCardSessions">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper"
+                            style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+                            <i class="fas fa-chalkboard"></i>
                         </div>
-                        <div class="kpi-bitcoin-value" id="ddSessions">0</div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-2">
-                    <div class="kpi-card-bitcoin" id="ddCardStudents">
-                        <div class="kpi-bitcoin-header">
-                            <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                                <i class="fas fa-user-graduate"></i>
-                            </div>
-                            <div class="kpi-bitcoin-title-box">
-                                <span class="kpi-bitcoin-label">Students</span>
-                                <span class="kpi-bitcoin-sublabel">Reached</span>
-                            </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Sessions</span>
+                            <span class="kpi-bitcoin-sublabel">In Region</span>
                         </div>
-                        <div class="kpi-bitcoin-value" id="ddStudents">0</div>
                     </div>
-                </div>
-                <div class="col-md-4 mb-2">
-                    <div class="kpi-card-bitcoin" id="ddCardSchools">
-                        <div class="kpi-bitcoin-header">
-                            <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-                                <i class="fas fa-school"></i>
-                            </div>
-                            <div class="kpi-bitcoin-title-box">
-                                <span class="kpi-bitcoin-label">Schools</span>
-                                <span class="kpi-bitcoin-sublabel">Visited</span>
-                            </div>
-                        </div>
-                        <div class="kpi-bitcoin-value" id="ddSchools">0</div>
-                    </div>
+                    <div class="kpi-bitcoin-value" id="ddSessions">0</div>
                 </div>
             </div>
-
-
-            <!-- Program Breakdown Table -->
-            <div class="card white-chart-card shadow-sm" style="border-radius: 15px; overflow: hidden;">
-                <div class="card-header d-flex align-items-center" style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
-                    <i class="fas fa-table mr-2" style="color: #6366f1;"></i>
-                    <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">
-                        Program Breakdown — <span id="ddTableRegionLabel" style="color: #6366f1;"></span>
-                    </h3>
-                    <span id="ddProgramCount" class="badge badge-pill ml-2" style="background: #ede9fe; color: #6366f1; font-size: 11px;"></span>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table id="drilldownTable" class="table table-hover mb-0" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>Program</th>
-                                    <th>Donor</th>
-                                    <th class="text-right">Sessions</th>
-                                    <th class="text-right">Students</th>
-                                    <th class="text-right">Schools</th>
-                                    <th class="text-right">Instructors</th>
-                                </tr>
-                            </thead>
-                            <tbody id="drilldownTableBody">
-                            </tbody>
-                        </table>
+            <div class="col-md-4 mb-2">
+                <div class="kpi-card-bitcoin" id="ddCardStudents">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper"
+                            style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Students</span>
+                            <span class="kpi-bitcoin-sublabel">Reached</span>
+                        </div>
                     </div>
+                    <div class="kpi-bitcoin-value" id="ddStudents">0</div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-2">
+                <div class="kpi-card-bitcoin" id="ddCardSchools">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper"
+                            style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                            <i class="fas fa-school"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Schools</span>
+                            <span class="kpi-bitcoin-sublabel">Visited</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="ddSchools">0</div>
                 </div>
             </div>
         </div>
 
-    </div><!-- /.col-md-12 -->
+
+        <!-- Program Breakdown Table -->
+        <div class="card white-chart-card shadow-sm" style="border-radius: 15px; overflow: hidden;">
+            <div class="card-header d-flex align-items-center"
+                style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
+                <i class="fas fa-table mr-2" style="color: #6366f1;"></i>
+                <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">
+                    Program Breakdown — <span id="ddTableRegionLabel" style="color: #6366f1;"></span>
+                </h3>
+                <span id="ddProgramCount" class="badge badge-pill ml-2"
+                    style="background: #ede9fe; color: #6366f1; font-size: 11px;"></span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="drilldownTable" class="table table-hover mb-0" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Program</th>
+                                <th>Donor</th>
+                                <th class="text-right">Sessions</th>
+                                <th class="text-right">Students</th>
+                                <th class="text-right">Schools</th>
+                                <th class="text-right">Instructors</th>
+                            </tr>
+                        </thead>
+                        <tbody id="drilldownTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /.col-md-12 -->
 </div><!-- /.row -->
 
 <!-- Filter Overlay Drawer -->
@@ -192,19 +203,23 @@
     <div class="fd-body">
         <div class="fd-section">
             <label class="fd-label">Fiscal Year</label>
-            <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="years" data-placeholder="Select Year"></select>
+            <select id="yearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="years"
+                data-placeholder="Select Year"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Months</label>
-            <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month"></select>
+            <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month"
+                data-placeholder="Select Month"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Regional Hubs</label>
-            <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region"></select>
+            <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region"
+                data-placeholder="Select Region"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Program Category</label>
-            <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program" data-placeholder="Select Program"></select>
+            <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple"
+                data-filter="program" data-placeholder="Select Program"></select>
         </div>
     </div>
     <div class="fd-footer">
@@ -222,16 +237,35 @@
         transform: scale(1.03);
         box-shadow: 0 4px 12px rgba(127, 29, 29, 0.3) !important;
     }
+
     #drilldownPanel {
         animation: slideDown 0.3s ease;
     }
+
     @keyframes slideDown {
-        from { opacity: 0; transform: translateY(-12px); }
-        to   { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(-12px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
-    #drilldownTable tbody tr:hover { background: #f8fafc; }
-    .bar-selected { outline: 3px solid #f59e0b; }
-    .dd-stat-number { transition: all 0.4s ease; }
+
+    #drilldownTable tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .bar-selected {
+        outline: 3px solid #f59e0b;
+    }
+
+    .dd-stat-number {
+        transition: all 0.4s ease;
+    }
+
     .select2-container--open {
         z-index: 9999 !important;
     }
@@ -248,6 +282,7 @@
         border-top-right-radius: 16px !important;
         padding: 1.5rem 2rem !important;
     }
+
     .insight-card {
         border-radius: 16px !important;
         border: 1px solid #e2e8f0 !important;
@@ -256,9 +291,11 @@
         margin-bottom: 1.5rem !important;
         transition: transform 0.2s ease !important;
     }
+
     .insight-card:hover {
         transform: translateY(-2px) !important;
     }
+
     .insight-list-item {
         display: flex !important;
         align-items: start !important;
@@ -266,6 +303,7 @@
         padding-bottom: 0.75rem !important;
         border-bottom: 1px dashed #f1f5f9;
     }
+
     .insight-list-item:last-child {
         border-bottom: none;
         margin-bottom: 0 !important;
@@ -274,20 +312,25 @@
 </style>
 
 <!-- KPI Insights Modal -->
-<div class="modal fade" id="kpiInsightModal" tabindex="-1" role="dialog" aria-labelledby="kpiInsightModalLabel" aria-hidden="true">
+<div class="modal fade" id="kpiInsightModal" tabindex="-1" role="dialog" aria-labelledby="kpiInsightModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content shadow-lg" style="border-radius: 16px; border: none; overflow: hidden;">
             <div class="modal-header d-flex align-items-center insight-modal-header">
                 <div class="d-flex align-items-center">
-                    <div id="modalIconWrapper" class="mr-3 shadow-sm" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #fff;">
+                    <div id="modalIconWrapper" class="mr-3 shadow-sm"
+                        style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #fff;">
                         <i id="modalHeaderIcon" class="fas fa-chart-line"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title font-weight-bold text-white" id="modalTitle" style="font-size: 1.2rem; font-family: Inter, Arial, sans-serif;">Metric Insights</h5>
-                        <span class="text-white-50" style="font-size: 0.8rem;">Performance analysis and recommendations</span>
+                        <h5 class="modal-title font-weight-bold text-white" id="modalTitle"
+                            style="font-size: 1.2rem; font-family: Inter, Arial, sans-serif;">Metric Insights</h5>
+                        <span class="text-white-50" style="font-size: 0.8rem;">Performance analysis and
+                            recommendations</span>
                     </div>
                 </div>
-                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Close" style="opacity: 0.8; outline: none; background: none; border: none; padding: 0;">
+                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Close"
+                    style="opacity: 0.8; outline: none; background: none; border: none; padding: 0;">
                     <span aria-hidden="true" style="font-size: 1.5rem;">&times;</span>
                 </button>
             </div>
@@ -299,8 +342,11 @@
                             <i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>
                         </div>
                         <div>
-                            <h6 class="font-weight-bold text-dark mb-1" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Year-over-Year Comparison</h6>
-                            <p class="text-muted mb-0" id="modalComparisonText" style="font-size: 0.95rem; line-height: 1.5;"></p>
+                            <h6 class="font-weight-bold text-dark mb-1"
+                                style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Year-over-Year Comparison</h6>
+                            <p class="text-muted mb-0" id="modalComparisonText"
+                                style="font-size: 0.95rem; line-height: 1.5;"></p>
                         </div>
                     </div>
                 </div>
@@ -312,7 +358,9 @@
                             <div class="mr-2 text-success" style="font-size: 1.15rem;">
                                 <i class="fas fa-tasks"></i>
                             </div>
-                            <h6 class="font-weight-bold text-dark mb-0" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Strategic Suggestions to Improve</h6>
+                            <h6 class="font-weight-bold text-dark mb-0"
+                                style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Strategic
+                                Suggestions to Improve</h6>
                         </div>
                         <ul class="list-unstyled mb-0" id="modalSuggestionsList">
                             <!-- Dynamic items -->
@@ -320,8 +368,10 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer" style="border-top: none; background-color: #f8fafc; padding: 1rem 2rem 2rem 2rem;">
-                <button type="button" class="btn btn-secondary px-4" data-dismiss="modal" style="border-radius: 8px; font-weight: 600; font-size: 0.9rem; background-color: #64748b; border: none;">Close</button>
+            <div class="modal-footer"
+                style="border-top: none; background-color: #f8fafc; padding: 1rem 2rem 2rem 2rem;">
+                <button type="button" class="btn btn-secondary px-4" data-dismiss="modal"
+                    style="border-radius: 8px; font-weight: 600; font-size: 0.9rem; background-color: #64748b; border: none;">Close</button>
             </div>
         </div>
     </div>
@@ -331,12 +381,12 @@
 {% block scripts %}
 <script>
     $(function () {
-        let regionMapping    = {};
+        let regionMapping = {};
         let programChartInst = null;
-        let fullKpis         = null;   // cached full KPIs for restore
-        let fullTrends       = null;
-        let fullSparklines   = null;
-        let selectedRegion   = null;   // currently drilled-in region
+        let fullKpis = null;   // cached full KPIs for restore
+        let fullTrends = null;
+        let fullSparklines = null;
+        let selectedRegion = null;   // currently drilled-in region
         let programChartData = null;   // raw labels/colors for reset
 
         // Register Chart plugins
@@ -348,7 +398,7 @@
         const rf = $('#regionFilter'), pf = $('#programFilter'), yf = $('#yearFilter'), mf = $('#monthFilter');
 
         if ($.fn.select2) {
-            $('.select2').select2({ 
+            $('.select2').select2({
                 theme: 'bootstrap4',
                 dropdownParent: $('#filterDrawer'),
                 width: '100%',
@@ -383,7 +433,7 @@
             const years = $('#yearFilter').val() || [];
             const months = $('#monthFilter').val() || [];
             const total = (regions ? regions.length : 0) + (programs ? programs.length : 0) + (years ? years.length : 0) + (months ? months.length : 0);
-            
+
             if (total === 0) {
                 $('#activeFilterCount').text('All Data');
             } else {
@@ -394,15 +444,15 @@
         function updateReportPeriodText() {
             const years = yf.val() || [];
             const months = mf.val() || [];
-            
+
             const monthNamesShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            
+
             let yearStr = "";
             if (years.length > 0) {
                 yearStr = years.join(", ");
             } else {
                 const allYears = [];
-                yf.find('option').each(function() {
+                yf.find('option').each(function () {
                     if ($(this).val()) allYears.push($(this).val());
                 });
                 if (allYears.length > 0) {
@@ -411,9 +461,11 @@
                     yearStr = String(new Date().getFullYear());
                 }
             }
-            
+
             let periodStr = "";
+            let filterType = "YTD filter";
             if (months.length > 0) {
+                filterType = "Month filter";
                 const sortedMonths = months.map(Number).sort((a, b) => a - b);
                 if (sortedMonths.length === 1) {
                     periodStr = monthNamesShort[sortedMonths[0] - 1];
@@ -422,7 +474,7 @@
                 } else {
                     let isContiguous = true;
                     for (let i = 1; i < sortedMonths.length; i++) {
-                        if (sortedMonths[i] !== sortedMonths[i-1] + 1) {
+                        if (sortedMonths[i] !== sortedMonths[i - 1] + 1) {
                             isContiguous = false;
                             break;
                         }
@@ -436,11 +488,12 @@
             } else {
                 periodStr = "YTD";
             }
-            
-            $('#reportPeriodText').html(`Viewing report for <strong>${periodStr} ${yearStr}</strong>`);
+
+            const appliedFilterVal = `${periodStr} ${yearStr}`;
+            $('#filterStatusText').html(`The <span style="color: #64748b; font-weight: 500;">${filterType}</span> applied is : <span style="color: #f59e0b; font-weight: 700; font-size: 1.15rem; margin-left: 4px;">${appliedFilterVal}</span>`);
         }
 
-        $('.select2').on('change', function() {
+        $('.select2').on('change', function () {
             updateFilterSummary();
             updateReportPeriodText();
         });
@@ -493,16 +546,16 @@
                         // Clear and populate all
                         yf.empty();
                         data.years.forEach(y => yf.append(new Option(y, y)));
-                        
+
                         // Default to current year if available and nothing is selected
                         const currentYear = String(new Date().getFullYear());
                         if (!currentYears.length && data.years.includes(currentYear)) {
                             yf.val([currentYear]);
                         }
-                        
+
                         rf.empty();
                         data.regions.forEach(r => rf.append(new Option(r, r)));
-                        
+
                         pf.empty();
                         data.programs.forEach(p => pf.append(new Option(p, p)));
 
@@ -510,7 +563,7 @@
                         if (data.months) {
                             data.months.forEach(m => mf.append(new Option(m.name, m.id)));
                         }
-                        
+
                         // Notify Select2
                         yf.trigger('change.select2', { internal: true });
                         rf.trigger('change.select2', { internal: true });
@@ -607,17 +660,17 @@
                             bottom: 10
                         }
                     },
-                    plugins: { 
-                        legend: { display: false }, 
+                    plugins: {
+                        legend: { display: false },
                         tooltip: { enabled: false },
                         datalabels: {
-                            display: function(context) {
+                            display: function (context) {
                                 return context.dataIndex === 0 || context.dataIndex === context.dataset.data.length - 1;
                             },
-                            align: function(context) {
+                            align: function (context) {
                                 return context.dataIndex === 0 ? 'right' : 'left';
                             },
-                            anchor: function(context) {
+                            anchor: function (context) {
                                 return context.dataIndex === 0 ? 'start' : 'end';
                             },
                             offset: 4,
@@ -626,7 +679,7 @@
                                 size: 10,
                                 weight: 'bold'
                             },
-                            formatter: function(value) {
+                            formatter: function (value) {
                                 return value.toLocaleString();
                             }
                         }
@@ -638,9 +691,9 @@
 
         function updateKpis(kpis, trends = [], sparklines = null) {
             animateNumber($('#kpiInstructors'), kpis.total_instructors);
-            animateNumber($('#kpiDrivers'),     kpis.total_drivers);
-            animateNumber($('#kpiStates'),      kpis.total_states);
-            animateNumber($('#kpiPrograms'),    kpis.total_programs);
+            animateNumber($('#kpiDrivers'), kpis.total_drivers);
+            animateNumber($('#kpiStates'), kpis.total_states);
+            animateNumber($('#kpiPrograms'), kpis.total_programs);
 
             // Render trend pills
             function renderTrend(wrapperId, containerId, trend) {
@@ -658,29 +711,29 @@
 
             if (kpis.trends) {
                 renderTrend('#trendWrapperInstructors', '#trendInstructors', kpis.trends.total_instructors);
-                renderTrend('#trendWrapperDrivers',     '#trendDrivers',     kpis.trends.total_drivers);
-                renderTrend('#trendWrapperStates',      '#trendStates',      kpis.trends.total_states);
-                renderTrend('#trendWrapperPrograms',    '#trendPrograms',    kpis.trends.total_programs);
+                renderTrend('#trendWrapperDrivers', '#trendDrivers', kpis.trends.total_drivers);
+                renderTrend('#trendWrapperStates', '#trendStates', kpis.trends.total_states);
+                renderTrend('#trendWrapperPrograms', '#trendPrograms', kpis.trends.total_programs);
             } else {
                 $('#trendWrapperInstructors, #trendWrapperDrivers, #trendWrapperStates, #trendWrapperPrograms').attr('style', 'display: none !important;');
             }
 
             if (sparklines) {
                 renderMiniChart('miniChartInstructors', sparklines.instructors, '#f39c12');
-                renderMiniChart('miniChartDrivers',     sparklines.drivers,     '#3498db');
-                renderMiniChart('miniChartStates',      sparklines.states,      '#2ecc71');
-                renderMiniChart('miniChartPrograms',    sparklines.programs,    '#e74c3c');
+                renderMiniChart('miniChartDrivers', sparklines.drivers, '#3498db');
+                renderMiniChart('miniChartStates', sparklines.states, '#2ecc71');
+                renderMiniChart('miniChartPrograms', sparklines.programs, '#e74c3c');
             } else if (trends && trends.length) {
                 renderMiniChart('miniChartInstructors', trends.map(t => t.instructors), '#f39c12');
-                renderMiniChart('miniChartDrivers',     trends.map(t => t.drivers),     '#3498db');
-                renderMiniChart('miniChartStates',      trends.map(t => t.states),      '#2ecc71');
-                renderMiniChart('miniChartPrograms',    trends.map(t => t.programs),    '#e74c3c');
+                renderMiniChart('miniChartDrivers', trends.map(t => t.drivers), '#3498db');
+                renderMiniChart('miniChartStates', trends.map(t => t.states), '#2ecc71');
+                renderMiniChart('miniChartPrograms', trends.map(t => t.programs), '#e74c3c');
             }
         }
 
         // ── Bar Chart ────────────────────────────────────────────────────
-        const BASE_BAR_COLOR     = '#f59e0b';
-        const DIMMED_BAR_COLOR   = 'rgba(245,158,11,0.25)';
+        const BASE_BAR_COLOR = '#f59e0b';
+        const DIMMED_BAR_COLOR = 'rgba(245,158,11,0.25)';
         const SELECTED_BAR_COLOR = '#f59e0b';
 
         function renderBarChart(chartData) {
@@ -699,7 +752,7 @@
             // Store original data for drill-down reset
             programChartData = {
                 labels: [...chartData.labels],
-                data:   [...chartData.datasets[0].data]
+                data: [...chartData.datasets[0].data]
             };
 
             if (programChartInst) programChartInst.destroy();
@@ -910,7 +963,7 @@
             // Mini-stats
             animateNumber($('#ddSessions'), data.summary.total_sessions);
             animateNumber($('#ddStudents'), data.summary.total_students);
-            animateNumber($('#ddSchools'),  data.summary.total_schools);
+            animateNumber($('#ddSchools'), data.summary.total_schools);
 
             // Program breakdown table
             const programs = data.programs || [];
@@ -947,7 +1000,7 @@
         window.clearDrilldown = function (restoreKpis = true) {
             selectedRegion = null;
             $('#drilldownPanel').hide();
-            
+
             // Clean up DataTable properly
             if ($.fn.DataTable.isDataTable('#drilldownTable')) {
                 $('#drilldownTable').DataTable().destroy();
@@ -978,26 +1031,26 @@
         });
 
         // ── KPI Tooltip Click Handler ────────────────────────────────────
-        $(document).on('click', '.kpi-info-btn', function(e) {
+        $(document).on('click', '.kpi-info-btn', function (e) {
             e.preventDefault();
             e.stopPropagation();
-            
+
             const kpiKey = $(this).attr('data-kpi');
             if (!fullKpis || !fullKpis.insights || !fullKpis.insights[kpiKey]) {
                 console.error("Insights not loaded or not found for: " + kpiKey);
                 return;
             }
-            
+
             const insight = fullKpis.insights[kpiKey];
-            
+
             // Set Modal Header details
             $('#modalTitle').text(insight.title);
             $('#modalHeaderIcon').attr('class', insight.icon);
             $('#modalIconWrapper').css('background', insight.color);
-            
+
             // Set YoY Comparison
             $('#modalComparisonText').html(insight.comparison_text);
-            
+
             // Highlight YoY card icon/color based on trend direction
             const trend = (fullKpis.trends && fullKpis.trends[kpiKey]) ? fullKpis.trends[kpiKey] : { dir: 'neutral' };
             const compIcon = $('#modalComparisonIcon').empty();
@@ -1008,7 +1061,7 @@
             } else {
                 compIcon.append('<i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>');
             }
-            
+
             // Set Suggestions
             const suggestionsList = $('#modalSuggestionsList').empty();
             if (insight.suggestions && insight.suggestions.length) {
@@ -1025,7 +1078,7 @@
             } else {
                 suggestionsList.append('<li class="text-muted">No suggestions available for this view.</li>');
             }
-            
+
             // Show modal
             $('#kpiInsightModal').modal('show');
         });
