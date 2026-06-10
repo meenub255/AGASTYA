@@ -58,8 +58,8 @@ def get_school_visit_filters(region_name: str | list[str] | None = None):
     }
 
 
-def get_school_visit_data(region=None, area=None, program=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
+def get_school_visit_data(region=None, area=None, program=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None, group_by="month"):
+    from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql, get_time_grouping_expressions
 
     kpi_defs = [
         {"key": "total_schools", "label": "Total Schools", "sql": "COUNT(DISTINCT f.sk_school_id)", "icon": "fas fa-school", "color": "bg-info"},
@@ -160,16 +160,18 @@ def get_school_visit_data(region=None, area=None, program=None, years=None, mont
         GROUP BY p.program_name ORDER BY value DESC LIMIT 8
     """, params)
 
-    # Chart 2: Sessions by Month (line chart with trend)
+    label_expr, sort_expr, grp_expr = get_time_grouping_expressions(group_by)
+
+    # Chart 2: Sessions Trend (dynamic time-series)
     sessions_by_month = fetch_all(f"""
-        SELECT TO_CHAR(d.full_date, 'YYYY-MM') AS label,
+        SELECT {label_expr} AS label,
                COUNT(DISTINCT f.sk_fact_session_id) AS value
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         WHERE {where_sql} AND d.full_date IS NOT NULL
-        GROUP BY TO_CHAR(d.full_date, 'YYYY-MM')
-        ORDER BY label
+        GROUP BY {grp_expr}
+        ORDER BY {sort_expr}
     """, params)
 
     return {
