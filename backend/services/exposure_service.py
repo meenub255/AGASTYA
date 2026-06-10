@@ -52,6 +52,7 @@ def get_unified_exposure_data(years=None, region=None, program=None, month=None,
             SELECT
                 (
                     SELECT COALESCE(SUM(total_exposure_count), 0) FROM {DATAMART_SCHEMA_NAME}.fact_attendance_exposure fae 
+                     LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON fae.session_nk_id = f.session_nk_id
                      LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = fae.date_id 
                      LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = fae.sk_geography_id 
                      LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON p.sk_program_id = fae.sk_program_id 
@@ -101,6 +102,7 @@ def get_unified_exposure_data(years=None, region=None, program=None, month=None,
                 ) AS total_teachers,
                 (
                     SELECT COALESCE(AVG(total_exposure_count), 0) FROM {DATAMART_SCHEMA_NAME}.fact_attendance_exposure fae 
+                     LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON fae.session_nk_id = f.session_nk_id
                      LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = fae.date_id 
                      LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = fae.sk_geography_id 
                      LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON p.sk_program_id = fae.sk_program_id 
