@@ -62,7 +62,7 @@ def get_instructor_summary_filters(years=None, region=None, area=None):
         return {"regions": [], "areas": [], "years": [], "months": []}
 
 
-def get_instructor_summary_data(region=None, area=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
+def get_instructor_summary_data(region=None, area=None, years=None, month=None, quarter=None, limit=15, offset=0, dt_params=None, group_by="month"):
     from backend.services.query_utils import build_standard_filters, calculate_ytd_kpis, get_datatables_sql
     
     kpi_defs = [
@@ -176,8 +176,8 @@ def get_instructor_summary_data(region=None, area=None, years=None, month=None, 
     }
 
 
-def get_monthly_instructor_summary(region=None, area=None, years=None, month=None, quarter=None):
-    from backend.services.query_utils import build_standard_filters
+def get_monthly_instructor_summary(region=None, area=None, years=None, month=None, quarter=None, group_by="month"):
+    from backend.services.query_utils import build_standard_filters, get_time_grouping_expressions
     
     where_sql, params, max_month = build_standard_filters(
         years=years,
@@ -193,19 +193,20 @@ def get_monthly_instructor_summary(region=None, area=None, years=None, month=Non
         effective_years = [DEFAULT_YEAR]
     is_multi_year = len(effective_years) > 1
     
+    label_expr, sort_expr, grp_expr = get_time_grouping_expressions(group_by)
     group_col = "d.year_actual::text" if is_multi_year else "'All Years'"
     
     query = f"""
         SELECT 
-            d.month_name as label,
+            {label_expr} as label,
             {group_col} as group,
-            COUNT(f.sk_fact_session_id) as value,
-            d.month_actual as month_sort
+            COUNT(f.sk_fact_session_id) as value
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         WHERE {where_sql}
-        GROUP BY d.month_name, {group_col}, d.month_actual
-        ORDER BY d.month_actual, {group_col}
+        GROUP BY {grp_expr}, {group_col}
+        ORDER BY {sort_expr}, {group_col}
     """
     return fetch_all(query, params)
+
