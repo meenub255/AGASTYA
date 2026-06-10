@@ -46,7 +46,7 @@ def get_filters(
     """
     regions_data = [r["region_name"] for r in fetch_all(regions_query, params)]
     
-    # 3. Fetch Programs (filtered by years and regions)
+    # 3. Fetch Programs (filtered by years and regions) - mapped to Activity Types
     if regions:
         sql, p = get_list_filter_clause("g.region_name", regions)
         where_clauses.append(sql)
@@ -55,15 +55,15 @@ def get_filters(
     where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
     
     programs_query = f"""
-        SELECT DISTINCT p.program_name 
+        SELECT DISTINCT at.activity_name 
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
-        JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON p.sk_program_id = f.sk_program_id
+        JOIN {DATAMART_SCHEMA_NAME}.dim_activity_type at ON at.sk_activity_type_id = f.sk_activity_type_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
-        WHERE {where_sql} AND p.program_name IS NOT NULL
-        ORDER BY p.program_name
+        WHERE {where_sql} AND at.activity_name IS NOT NULL
+        ORDER BY at.activity_name
     """
-    programs_data = [r["program_name"] for r in fetch_all(programs_query, params)]
+    programs_data = [r["activity_name"] for r in fetch_all(programs_query, params)]
     
     # 4. Fetch Months
     months_query = f"""
