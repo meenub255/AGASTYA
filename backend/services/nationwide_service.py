@@ -34,8 +34,8 @@ def get_nationwide_filters():
         return {"regions": [], "years": [], "months": [], "quarters": []}
 
 
-def get_nationwide_data(years=None, region=None, month=None, quarter=None, limit=15, offset=0, dt_params=None):
-    from backend.services.query_utils import build_standard_filters, calc_trend, get_kpi_insight, get_datatables_sql, get_list_filter_clause
+def get_nationwide_data(years=None, region=None, month=None, quarter=None, limit=15, offset=0, dt_params=None, group_by="month"):
+    from backend.services.query_utils import build_standard_filters, calc_trend, get_kpi_insight, get_datatables_sql, get_list_filter_clause, get_time_grouping_expressions
     from backend.config import DEFAULT_YEAR
     try:
         where_sql, params, max_month = build_standard_filters(
@@ -136,16 +136,18 @@ def get_nationwide_data(years=None, region=None, month=None, quarter=None, limit
             sparkline_key = item["key"].replace("total_", "")
             sparklines[sparkline_key] = [prev_val, curr_val]
 
-        # Chart 1: Monthly sessions trend (for line chart with trend line)
+        label_expr, sort_expr, grp_expr = get_time_grouping_expressions(group_by)
+
+        # Chart 1: dynamic period sessions trend
         sessions_trend_monthly = fetch_all(f"""
-            SELECT TO_CHAR(d.full_date, 'YYYY-MM') AS label,
+            SELECT {label_expr} AS label,
                    COUNT(DISTINCT f.sk_fact_session_id) AS value
             FROM {DW}.fact_session f
             LEFT JOIN {DW}.dim_date d      ON f.date_id = d.date_id
             LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
             WHERE {where_sql} AND d.full_date IS NOT NULL
-            GROUP BY TO_CHAR(d.full_date, 'YYYY-MM')
-            ORDER BY label
+            GROUP BY {grp_expr}
+            ORDER BY {sort_expr}
         """, params)
 
         # Chart 2: Students by region (for pie chart)
@@ -229,3 +231,4 @@ def get_nationwide_data(years=None, region=None, month=None, quarter=None, limit
     except Exception as e:
         logger.error(f"nationwide data error: {e}", exc_info=True)
         return {"kpis": [], "sparklines": {}, "charts": {}, "table": [], "total_count": 0}
+
