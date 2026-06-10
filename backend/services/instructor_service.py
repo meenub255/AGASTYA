@@ -23,13 +23,13 @@ def _build_filters(years=None, region=None, program=None, instructor=None, month
             params.extend(p)
     return where_sql, params
 
-def get_unified_instructor_data(years=None, region=None, program=None, instructor=None, month=None, quarter=None):
+def get_unified_instructor_data(years=None, region=None, program=None, instructor=None, month=None, quarter=None, group_by="month"):
     """Unified data for Instructor Dashboard."""
     kpis = get_instructor_kpis(years, region, program, instructor, month, quarter)
     type_breakdown = get_sessions_by_instructor_type(years, region, program, instructor, month, quarter)
     multi_program = get_multi_program_instructors(years, region, program, instructor, month, quarter)
     productivity = get_instructor_productivity(years, region, program, instructor, month, quarter)
-    monthly = get_monthly_instructor_activity(years, region, program, instructor, month, quarter)
+    monthly = get_monthly_instructor_activity(years, region, program, instructor, month, quarter, group_by)
     
     return {
         "kpis": kpis["kpis"],
@@ -88,7 +88,7 @@ def get_instructor_kpis(years=None, region=None, program=None, instructor=None, 
             params.extend(inst_params)
             prev_where_sql += f" AND {inst_clause}"
             prev_params.extend(inst_params)
-
+ 
     def query_kpis(w_clause, w_params):
         sql = f"""
             SELECT
@@ -117,7 +117,7 @@ def get_instructor_kpis(years=None, region=None, program=None, instructor=None, 
                 COUNT(f.sk_fact_session_id) AS top_region_sessions
             FROM {DATAMART_SCHEMA_NAME}.fact_session f
             LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
-            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON u.sk_user_id = f.sk_user_id
             WHERE {w_clause}
             GROUP BY g.region_name
@@ -133,7 +133,7 @@ def get_instructor_kpis(years=None, region=None, program=None, instructor=None, 
             "top_region_sessions": int(tr_row.get("top_region_sessions", 0) or 0) if tr_row else 0,
             "unprocessed_sessions": int(row.get("unprocessed_sessions", 0) or 0)
         }
-
+ 
     curr_res = query_kpis(where_sql, params)
     prev_res = query_kpis(prev_where_sql, prev_params)
     
@@ -176,11 +176,11 @@ def get_instructor_kpis(years=None, region=None, program=None, instructor=None, 
         "sparklines": sparklines,
         "metrics": curr_res
     }
-
+ 
 def get_instructor_session_log(years=None, region=None, program=None, instructor=None, month=None, quarter=None, limit=10, offset=0, dt_params=None) -> dict:
     from backend.services.query_utils import get_datatables_sql
     where_clause, params = _build_filters(years, region, program, instructor, month, quarter)
-
+ 
     search_sql = "TRUE"
     search_params = []
     sort_sql = "ORDER BY sessions DESC, students DESC, name"
@@ -193,7 +193,7 @@ def get_instructor_session_log(years=None, region=None, program=None, instructor
         search_params = inner_search_params
         if inner_sort_sql:
             sort_sql = inner_sort_sql
-
+ 
     rows = fetch_all(
         f"""
         SELECT
@@ -217,14 +217,14 @@ def get_instructor_session_log(years=None, region=None, program=None, instructor
         """,
         [*params, *search_params, limit, offset],
     )
-
+ 
     total_count_row = fetch_one(
         f"""
         SELECT COUNT(*) FROM (
             SELECT u.sk_user_id
             FROM {DATAMART_SCHEMA_NAME}.fact_session f
             LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
-            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON u.sk_user_id = u.sk_user_id
             WHERE {where_clause} AND {search_sql}
             GROUP BY u.sk_user_id
@@ -233,7 +233,7 @@ def get_instructor_session_log(years=None, region=None, program=None, instructor
         params + search_params,
     )
     total_count = total_count_row.get("count", 0) if total_count_row else 0
-
+ 
     return {
         "table": [
             {
@@ -249,10 +249,10 @@ def get_instructor_session_log(years=None, region=None, program=None, instructor
         ],
         "total_count": total_count
     }
-
+ 
 def get_multi_program_instructors(years=None, region=None, program=None, instructor=None, month=None, quarter=None, limit=5) -> list[dict]:
     where_clause, params = _build_filters(years, region, program, instructor, month, quarter)
-
+ 
     rows = fetch_all(
         f"""
         SELECT
@@ -273,7 +273,7 @@ def get_multi_program_instructors(years=None, region=None, program=None, instruc
         """,
         [*params, limit],
     )
-
+ 
     return [
         {
             "name": row["name"],
@@ -285,7 +285,7 @@ def get_multi_program_instructors(years=None, region=None, program=None, instruc
         }
         for row in rows
     ]
-
+ 
 def get_sessions_by_instructor_type(years=None, region=None, program=None, instructor=None, month=None, quarter=None) -> list[dict]:
     where_clause, params = _build_filters(years, region, program, instructor, month, quarter)
     rows = fetch_all(
@@ -295,7 +295,7 @@ def get_sessions_by_instructor_type(years=None, region=None, program=None, instr
             COUNT(f.sk_fact_session_id) AS value
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = g.sk_geography_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON u.sk_user_id = f.sk_user_id
         WHERE {where_clause}
         GROUP BY u.role_name
@@ -304,26 +304,28 @@ def get_sessions_by_instructor_type(years=None, region=None, program=None, instr
         params,
     )
     return [{"label": row["label"], "value": float(row["value"] or 0)} for row in rows]
-
+ 
 def get_instructor_productivity(years=None, region=None, program=None, instructor=None, month=None, quarter=None, limit=20) -> list[dict]:
     data = get_instructor_session_log(years=years, region=region, program=program, instructor=instructor, month=month, quarter=quarter, limit=limit)
     return [{"label": row["name"], "value": float(row["sessions"])} for row in data["table"]]
-
-def get_monthly_instructor_activity(years=None, region=None, program=None, instructor=None, month=None, quarter=None) -> list[dict]:
+ 
+def get_monthly_instructor_activity(years=None, region=None, program=None, instructor=None, month=None, quarter=None, group_by="month") -> list[dict]:
     where_clause, params = _build_filters(years, region, program, instructor, month, quarter)
+    from backend.services.query_utils import get_time_grouping_expressions
+    label_expr, sort_expr, grp_expr = get_time_grouping_expressions(group_by)
     rows = fetch_all(
         f"""
         SELECT
-            TO_CHAR(d.full_date, 'Mon') AS label,
-            COUNT(f.sk_fact_session_id) AS value,
-            EXTRACT(MONTH FROM d.full_date) AS sort_key
+            {label_expr} AS label,
+            COUNT(f.sk_fact_session_id) AS value
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
-        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON g.sk_geography_id = g.sk_geography_id
         WHERE {where_clause}
-        GROUP BY TO_CHAR(d.full_date, 'Mon'), EXTRACT(MONTH FROM d.full_date)
-        ORDER BY sort_key
+        GROUP BY {grp_expr}
+        ORDER BY {sort_expr}
         """,
         params,
     )
     return [{"label": row["label"], "value": float(row["value"])} for row in rows]
+
