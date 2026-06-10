@@ -42,7 +42,20 @@ def previousYearSamePeriod(year: int, region: list[str] | None = None, program: 
     """
     return currentYearYTD(year, region, program)
 
-def _apply_ytd_filter(where_clause: str, params: list, years: list[int] | list[str] | None, region: list[str] | None = None, program: list[str] | None = None) -> tuple[str, list]:
+def _apply_ytd_filter(where_clause: str, params: list, years: list[int] | list[str] | None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | list[int] | None = None) -> tuple[str, list]:
+    if month and len(month) > 0:
+        try:
+            month_ints = [int(m) for m in month if str(m).isdigit()]
+            if month_ints:
+                if where_clause:
+                    where_clause += " AND d.month_actual = ANY(%s)"
+                else:
+                    where_clause = "WHERE d.month_actual = ANY(%s)"
+                params.append(month_ints)
+                return where_clause, params
+        except Exception:
+            pass
+
     single_year = None
     if years and len(years) == 1:
         try:
@@ -75,7 +88,7 @@ def _build_filters(years: list[int] | list[str] | None = None, region: list[str]
 
 
 
-def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year):
+def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year, month=None):
     insights = {}
     
     meta = {
@@ -109,9 +122,19 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year)
     def fmt(v):
         return str(int(v)) if v == int(v) else f"{v:.1f}"
 
-    max_month = currentYearYTD(single_year) if single_year is not None else 12
     months_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    month_range_str = f"Jan-{months_names[max_month-1]}" if 1 <= max_month <= 12 else "YTD"
+    if month and len(month) > 0:
+        try:
+            sorted_months = sorted([int(m) for m in month if str(m).isdigit()])
+            if len(sorted_months) == 1:
+                month_range_str = months_names[sorted_months[0] - 1]
+            else:
+                month_range_str = f"{months_names[sorted_months[0] - 1]}-{months_names[sorted_months[-1] - 1]}"
+        except Exception:
+            month_range_str = "Selected Months"
+    else:
+        max_month = currentYearYTD(single_year) if single_year is not None else 12
+        month_range_str = f"Jan-{months_names[max_month-1]}" if 1 <= max_month <= 12 else "YTD"
 
     for key, info in meta.items():
         curr_val = curr_vals.get(key, 0)
@@ -297,10 +320,10 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year)
         
     return insights
 
-def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
+def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | None = None):
     where_clause, params = _build_filters(years=years, region=region, program=program)
     # Apply YTD month boundary filtering
-    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program)
+    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program, month=month)
 
     # 1. Main session-based KPIs
     kpis_row = fetch_one(
@@ -349,7 +372,7 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
             prev_year = single_year - 1
             prev_where_clause, prev_params = _build_filters(years=[prev_year], region=region, program=program)
             # Use same YTD months filtering for the previous year same period
-            prev_where_clause, prev_params = _apply_ytd_filter(prev_where_clause, prev_params, [single_year], region, program)
+            prev_where_clause, prev_params = _apply_ytd_filter(prev_where_clause, prev_params, [single_year], region, program, month=month)
             
             # Fetch previous year's values
             prev_kpis_row = fetch_one(
@@ -451,16 +474,16 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
         "total_programs_avg": response_data["total_programs"],
     }
     prev_year = single_year - 1 if single_year is not None else None
-    response_data["insights"] = generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year)
+    response_data["insights"] = generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year, month=month)
     
     return response_data
 
 
-def get_overview_trends(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
+def get_overview_trends(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | None = None):
     """Returns YoY YTD trend comparisons for sparkline charts (previous YTD vs current YTD)."""
     # 1. Calculate current YTD totals
     where_clause, params = _build_filters(years=years, region=region, program=program)
-    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program)
+    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program, month=month)
     
     curr_kpis_row = fetch_one(
         f"""
@@ -514,7 +537,7 @@ def get_overview_trends(years: list[int] | list[str] | None = None, region: list
         try:
             prev_year = single_year - 1
             prev_where_clause, prev_params = _build_filters(years=[prev_year], region=region, program=program)
-            prev_where_clause, prev_params = _apply_ytd_filter(prev_where_clause, prev_params, [single_year], region, program)
+            prev_where_clause, prev_params = _apply_ytd_filter(prev_where_clause, prev_params, [single_year], region, program, month=month)
             
             prev_kpis_row = fetch_one(
                 f"""
@@ -572,10 +595,10 @@ def get_overview_trends(years: list[int] | list[str] | None = None, region: list
         }
     ]
 
-def get_overview_charts(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
+def get_overview_charts(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | None = None):
     where_clause, params = _build_filters(years=years, region=region, program=program)
     # Apply YTD month boundary filtering
-    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program)
+    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program, month=month)
     
     # 1. Instructors per region
     instructors_rows = fetch_all(
@@ -641,10 +664,10 @@ def get_overview_charts(years: list[int] | list[str] | None = None, region: list
     }
 
 
-def get_program_targets(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, limit: int = 10, offset: int = 0):
+def get_program_targets(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | None = None, limit: int = 10, offset: int = 0):
     where_clause, params = _build_filters(years=years, region=region, program=program)
     # Apply YTD month boundary filtering
-    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program)
+    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program, month=month)
     
     total_count = fetch_one(
         f"""
@@ -704,10 +727,10 @@ def get_program_targets(years: list[int] | list[str] | None = None, region: list
     return {"table": items, "total_count": total_count}
 
 
-def get_sessions_by_activity(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
+def get_sessions_by_activity(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | None = None):
     where_clause, params = _build_filters(years=years, region=region, program=program)
     # Apply YTD month boundary filtering
-    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program)
+    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program, month=month)
     rows = fetch_all(
         f"""
         SELECT
@@ -729,10 +752,10 @@ def get_sessions_by_activity(years: list[int] | list[str] | None = None, region:
     return [{"label": row["label"], "value": float(row["value"])} for row in rows]
 
 
-def get_sessions_by_donor(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
+def get_sessions_by_donor(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | None = None):
     where_clause, params = _build_filters(years=years, region=region, program=program)
     # Apply YTD month boundary filtering
-    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program)
+    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program, month=month)
     rows = fetch_all(
         f"""
         SELECT
@@ -757,6 +780,7 @@ def get_drilldown_data(
     region: str,
     years: list[int] | list[str] | None = None,
     program: list[str] | None = None,
+    month: list[str] | None = None
 ):
     """
     Returns rich drill-down stats for a specific region click.
@@ -765,7 +789,7 @@ def get_drilldown_data(
     # 1. Build base filters (default to 2026 if none provided)
     where_clause, params = _build_filters(years=years, program=program)
     # Apply YTD month boundary filtering
-    where_clause, params = _apply_ytd_filter(where_clause, params, years, region=None, program=program)
+    where_clause, params = _apply_ytd_filter(where_clause, params, years, region=None, program=program, month=month)
     
     # 2. Add hardened region filter
     region_norm = region.lower().replace("_", " ")
