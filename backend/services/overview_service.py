@@ -76,14 +76,14 @@ def _apply_ytd_filter(where_clause: str, params: list, years: list[int] | list[s
     return where_clause, params
 
 
-def _build_filters(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None):
+def _build_filters(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, is_vehicle_ops: bool = False):
     return build_dimension_filters(
         year=years,
         region=region,
-        program=program,
+        program=None if is_vehicle_ops else program,
         year_expression="d.year_actual",
         location_expression=LOCATION_EXPRESSION,
-        program_expression=PROGRAM_EXPRESSION,
+        program_expression=None,
     )
 
 
@@ -342,6 +342,8 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
     )
 
     # 2. Driver-specific KPI from vehicle operations
+    driver_where, driver_params = _build_filters(years=years, region=region, program=program, is_vehicle_ops=True)
+    driver_where, driver_params = _apply_ytd_filter(driver_where, driver_params, years, region, program, month=month)
     driver_row = fetch_one(
         f"""
         SELECT
@@ -350,9 +352,9 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-        {where_clause}
+        {driver_where}
         """,
-        params,
+        driver_params,
     )
 
     # Determine the single year for trend calculation
@@ -390,6 +392,8 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
                 prev_params,
             )
             
+            prev_driver_where, prev_driver_params = _build_filters(years=[prev_year], region=region, program=program, is_vehicle_ops=True)
+            prev_driver_where, prev_driver_params = _apply_ytd_filter(prev_driver_where, prev_driver_params, [single_year], region, program, month=month)
             prev_driver_row = fetch_one(
                 f"""
                 SELECT
@@ -398,9 +402,9 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
                 LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
                 LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
                 LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-                {prev_where_clause}
+                {prev_driver_where}
                 """,
-                prev_params,
+                prev_driver_params,
             )
             
             curr_inst = int(kpis_row.get("total_instructors", 0) or 0)
@@ -500,6 +504,8 @@ def get_overview_trends(years: list[int] | list[str] | None = None, region: list
         params,
     )
     
+    curr_driver_where, curr_driver_params = _build_filters(years=years, region=region, program=program, is_vehicle_ops=True)
+    curr_driver_where, curr_driver_params = _apply_ytd_filter(curr_driver_where, curr_driver_params, years, region, program, month=month)
     curr_driver_row = fetch_one(
         f"""
         SELECT
@@ -508,9 +514,9 @@ def get_overview_trends(years: list[int] | list[str] | None = None, region: list
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-        {where_clause}
+        {curr_driver_where}
         """,
-        params,
+        curr_driver_params,
     )
     
     curr_inst = int(curr_kpis_row.get("total_instructors", 0) or 0)
@@ -554,6 +560,8 @@ def get_overview_trends(years: list[int] | list[str] | None = None, region: list
                 prev_params,
             )
             
+            prev_driver_where, prev_driver_params = _build_filters(years=[prev_year], region=region, program=program, is_vehicle_ops=True)
+            prev_driver_where, prev_driver_params = _apply_ytd_filter(prev_driver_where, prev_driver_params, [single_year], region, program, month=month)
             prev_driver_row = fetch_one(
                 f"""
                 SELECT
@@ -562,9 +570,9 @@ def get_overview_trends(years: list[int] | list[str] | None = None, region: list
                 LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
                 LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
                 LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-                {prev_where_clause}
+                {prev_driver_where}
                 """,
-                prev_params,
+                prev_driver_params,
             )
             
             prev_inst = int(prev_kpis_row.get("total_instructors", 0) or 0)
@@ -638,6 +646,8 @@ def get_overview_charts(years: list[int] | list[str] | None = None, region: list
     )
 
     # 3. Drivers per region
+    driver_where, driver_params = _build_filters(years=years, region=region, program=program, is_vehicle_ops=True)
+    driver_where, driver_params = _apply_ytd_filter(driver_where, driver_params, years, region, program, month=month)
     drivers_rows = fetch_all(
         f"""
         SELECT
@@ -648,12 +658,12 @@ def get_overview_charts(years: list[int] | list[str] | None = None, region: list
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-        {where_clause} AND u.role_name = 'DRIVER' AND g.region_name IS NOT NULL
+        {driver_where} AND u.role_name = 'DRIVER' AND g.region_name IS NOT NULL
         GROUP BY g.region_name
         ORDER BY value DESC
         LIMIT 10
         """,
-        params,
+        driver_params,
     )
 
 
