@@ -384,6 +384,7 @@
         let regionMapping = {};
         let programChartInst = null;
         let fullKpis = null;   // cached full KPIs for restore
+        let drilldownKpis = null; // cached drilldown KPIs
         let fullTrends = null;
         let fullSparklines = null;
         let selectedRegion = null;   // currently drilled-in region
@@ -942,7 +943,10 @@
             // Update KPIs to region-filtered view with cache-busting
             fetch(`/dashboard/data?${query}`, { cache: 'no-store' })
                 .then(r => r.json())
-                .then(data => updateKpis(data.kpis, data.trends, data.sparklines));
+                .then(data => {
+                    drilldownKpis = data.kpis;
+                    updateKpis(data.kpis, data.trends, data.sparklines);
+                });
 
             // Fetch drill-down detail with cache-busting
             fetch(`/dashboard/drill-down?${query}`, { cache: 'no-store' })
@@ -985,7 +989,7 @@
 
             // Re-initialize DataTable with the fresh content
             PramanaDashboard.initDataTable('#drilldownTable', {
-                paging: true,
+                padding: true,
                 searching: true,
                 pageLength: 10,
                 order: [[2, 'desc']] // Sort by sessions by default
@@ -999,6 +1003,7 @@
         // ── Clear drill-down ─────────────────────────────────────────────
         window.clearDrilldown = function (restoreKpis = true) {
             selectedRegion = null;
+            drilldownKpis = null;
             $('#drilldownPanel').hide();
 
             // Clean up DataTable properly
@@ -1036,12 +1041,13 @@
             e.stopPropagation();
 
             const kpiKey = $(this).attr('data-kpi');
-            if (!fullKpis || !fullKpis.insights || !fullKpis.insights[kpiKey]) {
+            const currentKpis = selectedRegion ? drilldownKpis : fullKpis;
+            if (!currentKpis || !currentKpis.insights || !currentKpis.insights[kpiKey]) {
                 console.error("Insights not loaded or not found for: " + kpiKey);
                 return;
             }
 
-            const insight = fullKpis.insights[kpiKey];
+            const insight = currentKpis.insights[kpiKey];
 
             // Set Modal Header details
             $('#modalTitle').text(insight.title);
@@ -1052,7 +1058,7 @@
             $('#modalComparisonText').html(insight.comparison_text);
 
             // Highlight YoY card icon/color based on trend direction
-            const trend = (fullKpis.trends && fullKpis.trends[kpiKey]) ? fullKpis.trends[kpiKey] : { dir: 'neutral' };
+            const trend = (currentKpis.trends && currentKpis.trends[kpiKey]) ? currentKpis.trends[kpiKey] : { dir: 'neutral' };
             const compIcon = $('#modalComparisonIcon').empty();
             if (trend.dir === 'up') {
                 compIcon.append('<i class="fas fa-arrow-alt-circle-up text-success" style="font-size: 2rem;"></i>');
