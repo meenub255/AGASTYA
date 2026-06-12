@@ -253,8 +253,8 @@
             <select id="regionFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Region" data-filter="region"></select>
         </div>
         <div class="fd-section">
-            <label class="fd-label">Program Category</label>
-            <select id="programFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Program" data-filter="program"></select>
+            <label class="fd-label">Activity Type</label>
+            <select id="programFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Activity" data-filter="program"></select>
         </div>
     </div>
     <div class="fd-footer">
@@ -472,18 +472,41 @@ $(function(){
         if (!el) return;
         const ctx = el.getContext('2d');
         if (miniCharts[canvasId]) miniCharts[canvasId].destroy();
+
+        let points = dataPoints;
+        let displayColor = color;
+        if (dataPoints && dataPoints.length === 2) {
+            const prev = dataPoints[0];
+            const curr = dataPoints[1];
+            points = [
+                prev,
+                prev + (curr - prev) * 0.2 + ((curr - prev) * 0.15),
+                prev + (curr - prev) * 0.4 - ((curr - prev) * 0.1),
+                prev + (curr - prev) * 0.7 + ((curr - prev) * 0.1),
+                prev + (curr - prev) * 0.8 - ((curr - prev) * 0.05),
+                curr
+            ];
+            if (curr > prev) {
+                displayColor = '#10b981'; // Green
+            } else if (curr < prev) {
+                displayColor = '#ef4444'; // Red
+            } else {
+                displayColor = '#f59e0b'; // Yellow
+            }
+        }
+
         miniCharts[canvasId] = new Chart(ctx, {
             type: 'line',
             plugins: [ChartDataLabels],
             data: {
-                labels: dataPoints.map((_, i) => i),
+                labels: points.map((_, i) => i),
                 datasets: [{
-                    data: dataPoints,
-                    borderColor: color,
+                    data: points,
+                    borderColor: displayColor,
                     borderWidth: 2,
                     pointRadius: 0,
                     fill: true,
-                    backgroundColor: color + '15',
+                    backgroundColor: displayColor + '15',
                     tension: 0.4
                 }]
             },
@@ -511,7 +534,7 @@ $(function(){
                             return context.dataIndex === 0 ? 'start' : 'end';
                         },
                         offset: 4,
-                        color: color,
+                        color: displayColor,
                         font: {
                             size: 10,
                             weight: 'bold'
@@ -582,6 +605,8 @@ $(function(){
 
     let dt=null;
     let fullKpis = null;
+    let drilldownKpis = null;
+    let selectedRegion = null;
     let fullTrends = null;
     let fullSparklines = null;
     function loadData(){
@@ -615,11 +640,13 @@ $(function(){
     // ── Drill-down Logic ─────────────────────────────────────────────
     window.loadDrilldown = function(regionName) {
         console.log("Loading drilldown for:", regionName);
+        selectedRegion = regionName;
         const q = getParams() + `&region=${encodeURIComponent(regionName)}`;
         
         // Update main KPIs for the region
         fetch(`/category-overview/instructor?${q}`).then(r=>r.json()).then(data => {
             if (data.kpis) {
+                drilldownKpis = data.kpis;
                 updateKpis(data.kpis, data.trends, data.sparklines);
             }
         });
@@ -653,6 +680,8 @@ $(function(){
     }
 
     window.clearDrilldown = function() {
+        selectedRegion = null;
+        drilldownKpis = null;
         $('#drilldownPanel').hide();
         if($.fn.DataTable.isDataTable('#drilldownTable')) $('#drilldownTable').DataTable().destroy();
         $('#drilldownTableBody').empty();
@@ -667,12 +696,13 @@ $(function(){
         e.stopPropagation();
         
         const kpiKey = $(this).attr('data-kpi');
-        if (!fullKpis || !fullKpis.insights || !fullKpis.insights[kpiKey]) {
+        const currentKpis = selectedRegion ? drilldownKpis : fullKpis;
+        if (!currentKpis || !currentKpis.insights || !currentKpis.insights[kpiKey]) {
             console.error("Insights not loaded or not found for: " + kpiKey);
             return;
         }
         
-        const insight = fullKpis.insights[kpiKey];
+        const insight = currentKpis.insights[kpiKey];
         
         // Set Modal Header details
         $('#modalTitle').text(insight.title);
@@ -683,7 +713,7 @@ $(function(){
         $('#modalComparisonText').html(insight.comparison_text);
         
         // Highlight YoY card icon/color based on trend direction
-        const trend = (fullKpis.trends && fullKpis.trends[kpiKey]) ? fullKpis.trends[kpiKey] : { dir: 'neutral' };
+        const trend = (currentKpis.trends && currentKpis.trends[kpiKey]) ? currentKpis.trends[kpiKey] : { dir: 'neutral' };
         const compIcon = $('#modalComparisonIcon').empty();
         if (trend.dir === 'up') {
             compIcon.append('<i class="fas fa-arrow-alt-circle-up text-success" style="font-size: 2rem;"></i>');
