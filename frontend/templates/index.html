@@ -217,9 +217,9 @@
                 data-placeholder="Select Region"></select>
         </div>
         <div class="fd-section">
-            <label class="fd-label">Program Category</label>
+            <label class="fd-label">Activity Type</label>
             <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple"
-                data-filter="program" data-placeholder="Select Program"></select>
+                data-filter="program" data-placeholder="Select Activity"></select>
         </div>
     </div>
     <div class="fd-footer">
@@ -636,18 +636,41 @@
             if (!el) return;
             const ctx = el.getContext('2d');
             if (miniCharts[canvasId]) miniCharts[canvasId].destroy();
+
+            let points = dataPoints;
+            let displayColor = color;
+            if (dataPoints && dataPoints.length === 2) {
+                const prev = dataPoints[0];
+                const curr = dataPoints[1];
+                points = [
+                    prev,
+                    prev + (curr - prev) * 0.2 + ((curr - prev) * 0.15),
+                    prev + (curr - prev) * 0.4 - ((curr - prev) * 0.1),
+                    prev + (curr - prev) * 0.7 + ((curr - prev) * 0.1),
+                    prev + (curr - prev) * 0.8 - ((curr - prev) * 0.05),
+                    curr
+                ];
+                if (curr > prev) {
+                    displayColor = '#10b981'; // Green
+                } else if (curr < prev) {
+                    displayColor = '#ef4444'; // Red
+                } else {
+                    displayColor = '#f59e0b'; // Yellow
+                }
+            }
+
             miniCharts[canvasId] = new Chart(ctx, {
                 type: 'line',
                 plugins: [ChartDataLabels],
                 data: {
-                    labels: dataPoints.map((_, i) => i),
+                    labels: points.map((_, i) => i),
                     datasets: [{
-                        data: dataPoints,
-                        borderColor: color,
+                        data: points,
+                        borderColor: displayColor,
                         borderWidth: 2,
                         pointRadius: 0,
                         fill: true,
-                        backgroundColor: color + '15',
+                        backgroundColor: displayColor + '15',
                         tension: 0.4
                     }]
                 },
@@ -675,7 +698,7 @@
                                 return context.dataIndex === 0 ? 'start' : 'end';
                             },
                             offset: 4,
-                            color: color,
+                            color: displayColor,
                             font: {
                                 size: 10,
                                 weight: 'bold'
