@@ -77,6 +77,9 @@
             Chart.register(ChartDataLabels);
         }
 
+        // Dynamically standardize filter labels and placeholders globally
+        standardizeFilters();
+
         // Dynamically inject Group By filter into the filter drawer
         injectGroupByFilter();
 
@@ -159,18 +162,12 @@
     }
 
     function injectSubtleExportOptions() {
-        const $launcher = $('#filterLauncher');
-        if (!$launcher.length) return;
-
-        // Prevent double injection
         if ($('#exportDropdownContainer').length) return;
 
-        // Wrap the filter launcher in a flex container if not already wrapped
-        if (!$launcher.parent().hasClass('launcher-wrapper')) {
-            $launcher.wrap('<div class="launcher-wrapper d-flex align-items-center" style="gap: 12px; margin-left: auto;"></div>');
-        }
+        // Hide the original export button if it exists
+        $('#exportXlsx').hide();
 
-        const exportDropdownHtml = `
+        const getDropdownHtml = () => `
             <div class="dropdown d-inline-block" id="exportDropdownContainer">
                 <button class="btn btn-outline-secondary dropdown-toggle subtle-export-btn" type="button" id="subtleExportBtn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 16px; background: #fff; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
                     <i class="fas fa-file-export" style="color: #3b82f6;"></i>
@@ -184,7 +181,41 @@
             </div>
         `;
 
-        $launcher.parent().prepend(exportDropdownHtml);
+        const $launcher = $('#filterLauncher');
+        if ($launcher.length) {
+            // Wrap the filter launcher in a flex container if not already wrapped
+            if (!$launcher.parent().hasClass('launcher-wrapper')) {
+                $launcher.wrap('<div class="launcher-wrapper d-flex align-items-center" style="gap: 12px; margin-left: auto;"></div>');
+            }
+            $launcher.parent().prepend(getDropdownHtml());
+            return;
+        }
+
+        // For pages with a persistent left sidebar (where .content-header contains the title and is visible)
+        const $headerRow = $('.content-header .row');
+        if ($headerRow.length) {
+            $headerRow.find('.col-sm-6').first().removeClass('col-sm-6').addClass('col-sm-8');
+            $headerRow.append(`
+                <div class="col-sm-4 text-right d-flex justify-content-end align-items-center" style="gap: 12px; margin-left: auto;">
+                    ${getDropdownHtml()}
+                </div>
+            `);
+        }
+    }
+
+    function standardizeFilters() {
+        $('.fd-label, .filter-label, label').each(function() {
+            const $label = $(this);
+            const text = $label.text().trim();
+            if (text === 'Program' || text === 'Programs' || text === 'Program Type' || text === 'Program Types') {
+                $label.text('Activity Type');
+            }
+        });
+
+        $('#programFilter, #program_filter, #programTypeFilter, #program_type_filter').each(function() {
+            $(this).attr('data-placeholder', 'Select Activity');
+            $(this).attr('placeholder', 'Select Activity');
+        });
     }
 
     function getPage() {
