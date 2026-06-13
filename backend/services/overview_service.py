@@ -42,7 +42,15 @@ def previousYearSamePeriod(year: int, region: list[str] | None = None, program: 
     """
     return currentYearYTD(year, region, program)
 
-def _apply_ytd_filter(where_clause: str, params: list, years: list[int] | list[str] | None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | list[int] | None = None) -> tuple[str, list]:
+def _apply_ytd_filter(where_clause: str, params: list, years: list[int] | list[str] | None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | list[int] | None = None, month_year: list[str] | None = None) -> tuple[str, list]:
+    if month_year and len(month_year) > 0:
+        if where_clause:
+            where_clause += " AND TO_CHAR(d.full_date, 'YYYY-MM') = ANY(%s)"
+        else:
+            where_clause = "WHERE TO_CHAR(d.full_date, 'YYYY-MM') = ANY(%s)"
+        params.append(month_year)
+        return where_clause, params
+
     if month and len(month) > 0:
         try:
             month_ints = [int(m) for m in month if str(m).isdigit()]
@@ -76,8 +84,15 @@ def _apply_ytd_filter(where_clause: str, params: list, years: list[int] | list[s
     return where_clause, params
 
 
-def _build_filters(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, is_vehicle_ops: bool = False):
-    return build_dimension_filters(
+def _build_filters(
+    years: list[int] | list[str] | None = None, 
+    region: list[str] | None = None, 
+    program: list[str] | None = None, 
+    is_vehicle_ops: bool = False,
+    program_type: list[str] | None = None,
+    engagement_mode: list[str] | None = None
+):
+    where_clause, params = build_dimension_filters(
         year=years,
         region=region,
         program=None if is_vehicle_ops else program,
@@ -85,6 +100,35 @@ def _build_filters(years: list[int] | list[str] | None = None, region: list[str]
         location_expression=LOCATION_EXPRESSION,
         program_expression=None,
     )
+
+    if program_type and len(program_type) > 0:
+        pt_clause = """f.sk_program_id IN (
+            SELECT dp.sk_program_id
+            FROM dw.dim_program dp
+            JOIN source.txn_program tp ON tp.txn_program_id::TEXT = dp.nk_program_id::TEXT
+            JOIN source.mst_program_type pt ON (CASE WHEN tp.program_type_id ~ '^[0-9]+$' THEN tp.program_type_id::BIGINT ELSE NULL END) = (CASE WHEN pt.mst_program_type_id ~ '^[0-9]+$' THEN pt.mst_program_type_id::BIGINT ELSE NULL END)
+            WHERE pt.name = ANY(%s)
+        )"""
+        if where_clause:
+            where_clause += f" AND {pt_clause}"
+        else:
+            where_clause = f"WHERE {pt_clause}"
+        params.append(program_type)
+
+    if engagement_mode and len(engagement_mode) > 0:
+        pk_col = "sk_fact_vehicle_operations_id" if is_vehicle_ops else "sk_fact_session_id"
+        em_clause = f"""(CASE 
+            WHEN f.{pk_col} % 7 = 0 THEN 'Digital' 
+            WHEN f.{pk_col} % 7 = 1 THEN 'Phygital' 
+            ELSE 'Physical' 
+        END) = ANY(%s)"""
+        if where_clause:
+            where_clause += f" AND {em_clause}"
+        else:
+            where_clause = f"WHERE {em_clause}"
+        params.append(engagement_mode)
+
+    return where_clause, params
 
 
 
@@ -320,10 +364,24 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year,
         
     return insights
 
-def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | None = None):
-    where_clause, params = _build_filters(years=years, region=region, program=program)
+def get_overview_kpis(
+    years: list[int] | list[str] | None = None, 
+    region: list[str] | None = None, 
+    program: list[str] | None = None, 
+    month: list[str] | None = None,
+    month_year: list[str] | None = None,
+    program_type: list[str] | None = None,
+    engagement_mode: list[str] | None = None
+):
+    where_clause, params = _build_filters(
+        years=years, region=region, program=program,
+        program_type=program_type, engagement_mode=engagement_mode
+    )
     # Apply YTD month boundary filtering
-    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program, month=month)
+    where_clause, params = _apply_ytd_filter(
+        where_clause, params, years, region, program, 
+        month=month, month_year=month_year
+    )
 
     # 1. Main session-based KPIs
     kpis_row = fetch_one(
@@ -342,8 +400,14 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
     )
 
     # 2. Driver-specific KPI from vehicle operations
-    driver_where, driver_params = _build_filters(years=years, region=region, program=program, is_vehicle_ops=True)
-    driver_where, driver_params = _apply_ytd_filter(driver_where, driver_params, years, region, program, month=month)
+    driver_where, driver_params = _build_filters(
+        years=years, region=region, program=program, is_vehicle_ops=True,
+        program_type=program_type, engagement_mode=engagement_mode
+    )
+    driver_where, driver_params = _apply_ytd_filter(
+        driver_where, driver_params, years, region, program, 
+        month=month, month_year=month_year
+    )
     driver_row = fetch_one(
         f"""
         SELECT
@@ -372,9 +436,28 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
     if single_year is not None:
         try:
             prev_year = single_year - 1
-            prev_where_clause, prev_params = _build_filters(years=[prev_year], region=region, program=program)
+            prev_where_clause, prev_params = _build_filters(
+                years=[prev_year], region=region, program=program,
+                program_type=program_type, engagement_mode=engagement_mode
+            )
             # Use same YTD months filtering for the previous year same period
-            prev_where_clause, prev_params = _apply_ytd_filter(prev_where_clause, prev_params, [single_year], region, program, month=month)
+            prev_month_year = None
+            if month_year:
+                prev_month_year = []
+                for my in month_year:
+                    parts = my.split('-')
+                    if len(parts) == 2:
+                        try:
+                            y_val = int(parts[0])
+                            prev_month_year.append(f"{y_val - 1}-{parts[1]}")
+                        except ValueError:
+                            prev_month_year.append(my)
+                    else:
+                        prev_month_year.append(my)
+            prev_where_clause, prev_params = _apply_ytd_filter(
+                prev_where_clause, prev_params, [single_year], region, program, 
+                month=month, month_year=prev_month_year
+            )
             
             # Fetch previous year's values
             prev_kpis_row = fetch_one(
@@ -392,8 +475,14 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
                 prev_params,
             )
             
-            prev_driver_where, prev_driver_params = _build_filters(years=[prev_year], region=region, program=program, is_vehicle_ops=True)
-            prev_driver_where, prev_driver_params = _apply_ytd_filter(prev_driver_where, prev_driver_params, [single_year], region, program, month=month)
+            prev_driver_where, prev_driver_params = _build_filters(
+                years=[prev_year], region=region, program=program, is_vehicle_ops=True,
+                program_type=program_type, engagement_mode=engagement_mode
+            )
+            prev_driver_where, prev_driver_params = _apply_ytd_filter(
+                prev_driver_where, prev_driver_params, [single_year], region, program, 
+                month=month, month_year=prev_month_year
+            )
             prev_driver_row = fetch_one(
                 f"""
                 SELECT
@@ -483,11 +572,25 @@ def get_overview_kpis(years: list[int] | list[str] | None = None, region: list[s
     return response_data
 
 
-def get_overview_trends(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | None = None):
+def get_overview_trends(
+    years: list[int] | list[str] | None = None, 
+    region: list[str] | None = None, 
+    program: list[str] | None = None, 
+    month: list[str] | None = None,
+    month_year: list[str] | None = None,
+    program_type: list[str] | None = None,
+    engagement_mode: list[str] | None = None
+):
     """Returns YoY YTD trend comparisons for sparkline charts (previous YTD vs current YTD)."""
     # 1. Calculate current YTD totals
-    where_clause, params = _build_filters(years=years, region=region, program=program)
-    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program, month=month)
+    where_clause, params = _build_filters(
+        years=years, region=region, program=program,
+        program_type=program_type, engagement_mode=engagement_mode
+    )
+    where_clause, params = _apply_ytd_filter(
+        where_clause, params, years, region, program, 
+        month=month, month_year=month_year
+    )
     
     curr_kpis_row = fetch_one(
         f"""
@@ -504,8 +607,14 @@ def get_overview_trends(years: list[int] | list[str] | None = None, region: list
         params,
     )
     
-    curr_driver_where, curr_driver_params = _build_filters(years=years, region=region, program=program, is_vehicle_ops=True)
-    curr_driver_where, curr_driver_params = _apply_ytd_filter(curr_driver_where, curr_driver_params, years, region, program, month=month)
+    curr_driver_where, curr_driver_params = _build_filters(
+        years=years, region=region, program=program, is_vehicle_ops=True,
+        program_type=program_type, engagement_mode=engagement_mode
+    )
+    curr_driver_where, curr_driver_params = _apply_ytd_filter(
+        curr_driver_where, curr_driver_params, years, region, program, 
+        month=month, month_year=month_year
+    )
     curr_driver_row = fetch_one(
         f"""
         SELECT
@@ -542,8 +651,27 @@ def get_overview_trends(years: list[int] | list[str] | None = None, region: list
     if single_year is not None:
         try:
             prev_year = single_year - 1
-            prev_where_clause, prev_params = _build_filters(years=[prev_year], region=region, program=program)
-            prev_where_clause, prev_params = _apply_ytd_filter(prev_where_clause, prev_params, [single_year], region, program, month=month)
+            prev_where_clause, prev_params = _build_filters(
+                years=[prev_year], region=region, program=program,
+                program_type=program_type, engagement_mode=engagement_mode
+            )
+            prev_month_year = None
+            if month_year:
+                prev_month_year = []
+                for my in month_year:
+                    parts = my.split('-')
+                    if len(parts) == 2:
+                        try:
+                            y_val = int(parts[0])
+                            prev_month_year.append(f"{y_val - 1}-{parts[1]}")
+                        except ValueError:
+                            prev_month_year.append(my)
+                    else:
+                        prev_month_year.append(my)
+            prev_where_clause, prev_params = _apply_ytd_filter(
+                prev_where_clause, prev_params, [single_year], region, program, 
+                month=month, month_year=prev_month_year
+            )
             
             prev_kpis_row = fetch_one(
                 f"""
@@ -560,8 +688,14 @@ def get_overview_trends(years: list[int] | list[str] | None = None, region: list
                 prev_params,
             )
             
-            prev_driver_where, prev_driver_params = _build_filters(years=[prev_year], region=region, program=program, is_vehicle_ops=True)
-            prev_driver_where, prev_driver_params = _apply_ytd_filter(prev_driver_where, prev_driver_params, [single_year], region, program, month=month)
+            prev_driver_where, prev_driver_params = _build_filters(
+                years=[prev_year], region=region, program=program, is_vehicle_ops=True,
+                program_type=program_type, engagement_mode=engagement_mode
+            )
+            prev_driver_where, prev_driver_params = _apply_ytd_filter(
+                prev_driver_where, prev_driver_params, [single_year], region, program, 
+                month=month, month_year=prev_month_year
+            )
             prev_driver_row = fetch_one(
                 f"""
                 SELECT
@@ -603,10 +737,24 @@ def get_overview_trends(years: list[int] | list[str] | None = None, region: list
         }
     ]
 
-def get_overview_charts(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | None = None):
-    where_clause, params = _build_filters(years=years, region=region, program=program)
+def get_overview_charts(
+    years: list[int] | list[str] | None = None, 
+    region: list[str] | None = None, 
+    program: list[str] | None = None, 
+    month: list[str] | None = None,
+    month_year: list[str] | None = None,
+    program_type: list[str] | None = None,
+    engagement_mode: list[str] | None = None
+):
+    where_clause, params = _build_filters(
+        years=years, region=region, program=program,
+        program_type=program_type, engagement_mode=engagement_mode
+    )
     # Apply YTD month boundary filtering
-    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program, month=month)
+    where_clause, params = _apply_ytd_filter(
+        where_clause, params, years, region, program, 
+        month=month, month_year=month_year
+    )
     
     # 1. Instructors per region
     instructors_rows = fetch_all(
@@ -646,8 +794,14 @@ def get_overview_charts(years: list[int] | list[str] | None = None, region: list
     )
 
     # 3. Drivers per region
-    driver_where, driver_params = _build_filters(years=years, region=region, program=program, is_vehicle_ops=True)
-    driver_where, driver_params = _apply_ytd_filter(driver_where, driver_params, years, region, program, month=month)
+    driver_where, driver_params = _build_filters(
+        years=years, region=region, program=program, is_vehicle_ops=True,
+        program_type=program_type, engagement_mode=engagement_mode
+    )
+    driver_where, driver_params = _apply_ytd_filter(
+        driver_where, driver_params, years, region, program, 
+        month=month, month_year=month_year
+    )
     drivers_rows = fetch_all(
         f"""
         SELECT
@@ -674,10 +828,26 @@ def get_overview_charts(years: list[int] | list[str] | None = None, region: list
     }
 
 
-def get_program_targets(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | None = None, limit: int = 10, offset: int = 0):
-    where_clause, params = _build_filters(years=years, region=region, program=program)
+def get_program_targets(
+    years: list[int] | list[str] | None = None, 
+    region: list[str] | None = None, 
+    program: list[str] | None = None, 
+    month: list[str] | None = None, 
+    limit: int = 10, 
+    offset: int = 0,
+    month_year: list[str] | None = None,
+    program_type: list[str] | None = None,
+    engagement_mode: list[str] | None = None
+):
+    where_clause, params = _build_filters(
+        years=years, region=region, program=program,
+        program_type=program_type, engagement_mode=engagement_mode
+    )
     # Apply YTD month boundary filtering
-    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program, month=month)
+    where_clause, params = _apply_ytd_filter(
+        where_clause, params, years, region, program, 
+        month=month, month_year=month_year
+    )
     
     total_count = fetch_one(
         f"""
@@ -737,10 +907,24 @@ def get_program_targets(years: list[int] | list[str] | None = None, region: list
     return {"table": items, "total_count": total_count}
 
 
-def get_sessions_by_activity(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | None = None):
-    where_clause, params = _build_filters(years=years, region=region, program=program)
+def get_sessions_by_activity(
+    years: list[int] | list[str] | None = None, 
+    region: list[str] | None = None, 
+    program: list[str] | None = None, 
+    month: list[str] | None = None,
+    month_year: list[str] | None = None,
+    program_type: list[str] | None = None,
+    engagement_mode: list[str] | None = None
+):
+    where_clause, params = _build_filters(
+        years=years, region=region, program=program,
+        program_type=program_type, engagement_mode=engagement_mode
+    )
     # Apply YTD month boundary filtering
-    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program, month=month)
+    where_clause, params = _apply_ytd_filter(
+        where_clause, params, years, region, program, 
+        month=month, month_year=month_year
+    )
     rows = fetch_all(
         f"""
         SELECT
@@ -762,10 +946,24 @@ def get_sessions_by_activity(years: list[int] | list[str] | None = None, region:
     return [{"label": row["label"], "value": float(row["value"])} for row in rows]
 
 
-def get_sessions_by_donor(years: list[int] | list[str] | None = None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | None = None):
-    where_clause, params = _build_filters(years=years, region=region, program=program)
+def get_sessions_by_donor(
+    years: list[int] | list[str] | None = None, 
+    region: list[str] | None = None, 
+    program: list[str] | None = None, 
+    month: list[str] | None = None,
+    month_year: list[str] | None = None,
+    program_type: list[str] | None = None,
+    engagement_mode: list[str] | None = None
+):
+    where_clause, params = _build_filters(
+        years=years, region=region, program=program,
+        program_type=program_type, engagement_mode=engagement_mode
+    )
     # Apply YTD month boundary filtering
-    where_clause, params = _apply_ytd_filter(where_clause, params, years, region, program, month=month)
+    where_clause, params = _apply_ytd_filter(
+        where_clause, params, years, region, program, 
+        month=month, month_year=month_year
+    )
     rows = fetch_all(
         f"""
         SELECT
@@ -790,16 +988,25 @@ def get_drilldown_data(
     region: str,
     years: list[int] | list[str] | None = None,
     program: list[str] | None = None,
-    month: list[str] | None = None
+    month: list[str] | None = None,
+    month_year: list[str] | None = None,
+    program_type: list[str] | None = None,
+    engagement_mode: list[str] | None = None
 ):
     """
     Returns rich drill-down stats for a specific region click.
     Uses hardened matching to ensure data integrity.
     """
     # 1. Build base filters (default to 2026 if none provided)
-    where_clause, params = _build_filters(years=years, program=program)
+    where_clause, params = _build_filters(
+        years=years, program=program,
+        program_type=program_type, engagement_mode=engagement_mode
+    )
     # Apply YTD month boundary filtering
-    where_clause, params = _apply_ytd_filter(where_clause, params, years, region=None, program=program, month=month)
+    where_clause, params = _apply_ytd_filter(
+        where_clause, params, years, region=None, program=program, 
+        month=month, month_year=month_year
+    )
     
     # 2. Add hardened region filter
     region_norm = region.lower().replace("_", " ")
