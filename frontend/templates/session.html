@@ -1,156 +1,168 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-    <!-- Left Column: Filter Slicers -->
-    <div class="col-md-2 mb-3">
-        <div class="card filter-card shadow-lg">
-            <div class="card-header">
-                <h3 class="card-title text-bold"><i class="fas fa-filter mr-2"></i>Filters</h3>
+<style>
+    .content-header { display: none !important; }
+</style>
+
+<div class="col-md-12">
+    <!-- Premium Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="m-0 font-weight-bold" style="font-size:1.5rem;color:#1e293b; font-family: Arial, sans-serif !important;">Sessions</h1>
+            <p class="text-muted small mb-0">Detailed sessions analysis and performance tracking</p>
+        </div>
+        <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
+            <div class="fl-content">
+                <div class="fl-icon"><i class="fas fa-sliders-h"></i></div>
+                <div class="fl-text">
+                    <span class="fl-label">Data Filters</span>
+                    <span class="fl-value" id="activeFilterCount">All Data</span>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="form-group mb-4">
-                    <label class="filter-label">Fiscal Year</label>
-                    <select id="yearFilter" class="form-control select2 filter-multi" data-filter="years" multiple="multiple" data-placeholder="Select Year">
-                    </select>
+            <div class="fl-chevron"><i class="fas fa-chevron-right"></i></div>
+        </div>
+    </div>
+
+    <!-- KPI Grid -->
+    <div class="row mb-4" id="kpiRow">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardSessions">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Total Sessions</span>
+                        <span class="kpi-bitcoin-sublabel">Delivered</span>
+                    </div>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Region</label>
-                    <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region">
-                    </select>
+                <div class="kpi-bitcoin-value" id="sessionTotalSessions">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartSessions"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardInstructors">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Active Instructors</span>
+                        <span class="kpi-bitcoin-sublabel">Total Active</span>
+                    </div>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Program</label>
-                    <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program" data-placeholder="Select Program">
-                    </select>
+                <div class="kpi-bitcoin-value" id="sessionTotalInstructors">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartInstructors"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardRegions">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Active Regions</span>
+                        <span class="kpi-bitcoin-sublabel">Hubs Reached</span>
+                    </div>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Month</label>
-                    <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month">
-                    </select>
+                <div class="kpi-bitcoin-value" id="sessionActiveRegions">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartRegions"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardPrograms">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Total Programs</span>
+                        <span class="kpi-bitcoin-sublabel">Active Programs</span>
+                    </div>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="filter-label">Quarter</label>
-                    <select id="quarterFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="quarter" data-placeholder="Select Quarter">
-                        <option value="1">Q1 (Apr-Jun)</option>
-                        <option value="2">Q2 (Jul-Sep)</option>
-                        <option value="3">Q3 (Oct-Dec)</option>
-                        <option value="4">Q4 (Jan-Mar)</option>
-                    </select>
-                </div>
-                
-                <div class="mt-5">
-                    <button id="seeReport" class="btn btn-primary btn-block btn-premium mb-3">
-                        <i class="fas fa-sync-alt mr-2"></i>See Report
-                    </button>
-                    <button id="exportXlsx" class="btn btn-success btn-block btn-premium mb-3">
-                        <i class="fas fa-file-excel mr-2"></i>Export XLSX
-                    </button>
-                </div>
+                <div class="kpi-bitcoin-value" id="sessionPrograms">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartPrograms"></canvas></div>
             </div>
         </div>
     </div>
 
-    <!-- Right Column: Content -->
-    <div class="col-md-10">
-        <!-- KPI Grid -->
-        <div class="row mb-4" id="kpiRow">
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="kpi-card-bitcoin" id="kpiCardSessions">
-                    <div class="kpi-bitcoin-header">
-                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
-                            <i class="fas fa-chalkboard-teacher"></i>
-                        </div>
-                        <div class="kpi-bitcoin-title-box">
-                            <span class="kpi-bitcoin-label">Total Sessions</span>
-                            <span class="kpi-bitcoin-sublabel">Delivered</span>
-                        </div>
-                    </div>
-                    <div class="kpi-bitcoin-value" id="sessionTotalSessions">0</div>
-                    <div class="kpi-mini-chart"><canvas id="miniChartSessions"></canvas></div>
+    <!-- Charts Row -->
+    <div class="row mt-2">
+        <div class="col-lg-7 mb-3">
+            <section class="card h-100 white-chart-card">
+                <div class="card-header border-0">
+                    <h3 class="card-title text-sm uppercase font-weight-bold mb-0">Monthly Sessions</h3>
                 </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="kpi-card-bitcoin" id="kpiCardInstructors">
-                    <div class="kpi-bitcoin-header">
-                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="kpi-bitcoin-title-box">
-                            <span class="kpi-bitcoin-label">Active Instructors</span>
-                            <span class="kpi-bitcoin-sublabel">Total Active</span>
-                        </div>
+                <div class="card-body">
+                    <div style="height:350px;">
+                        <canvas id="sessionMonthlyChart"></canvas>
                     </div>
-                    <div class="kpi-bitcoin-value" id="sessionTotalInstructors">0</div>
-                    <div class="kpi-mini-chart"><canvas id="miniChartInstructors"></canvas></div>
                 </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="kpi-card-bitcoin" id="kpiCardRegions">
-                    <div class="kpi-bitcoin-header">
-                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
-                            <i class="fas fa-map-marked-alt"></i>
-                        </div>
-                        <div class="kpi-bitcoin-title-box">
-                            <span class="kpi-bitcoin-label">Active Regions</span>
-                            <span class="kpi-bitcoin-sublabel">Hubs Reached</span>
-                        </div>
-                    </div>
-                    <div class="kpi-bitcoin-value" id="sessionActiveRegions">0</div>
-                    <div class="kpi-mini-chart"><canvas id="miniChartRegions"></canvas></div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="kpi-card-bitcoin" id="kpiCardPrograms">
-                    <div class="kpi-bitcoin-header">
-                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
-                            <i class="fas fa-project-diagram"></i>
-                        </div>
-                        <div class="kpi-bitcoin-title-box">
-                            <span class="kpi-bitcoin-label">Total Programs</span>
-                            <span class="kpi-bitcoin-sublabel">Active Programs</span>
-                        </div>
-                    </div>
-                    <div class="kpi-bitcoin-value" id="sessionPrograms">0</div>
-                    <div class="kpi-mini-chart"><canvas id="miniChartPrograms"></canvas></div>
-                </div>
-            </div>
+            </section>
         </div>
+        <div class="col-lg-5 mb-3">
+            <section class="card h-100 white-chart-card">
+                <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                    <h3 class="card-title text-sm uppercase font-weight-bold mb-0">Sessions by Region</h3>
+                    <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
+                       style="cursor: pointer;"
+                       data-toggle="popover" 
+                       data-trigger="click" 
+                       data-html="true"
+                       tabindex="0"
+                       title="Region Code Legend" 
+                       data-content="Loading..."></i>
+                </div>
+                <div class="card-body">
+                    <div style="height:350px;">
+                        <canvas id="sessionRegionChart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
 
-        <div class="row mt-2">
-            <div class="col-lg-7 mb-3">
-                <section class="card h-100 white-chart-card">
-                    <div class="card-header border-0">
-                        <h3 class="card-title">Monthly sessions</h3>
-                    </div>
-                    <div class="card-body">
-                        <div style="height:250px;">
-                            <canvas id="sessionMonthlyChart"></canvas>
-                        </div>
-                    </div>
-                </section>
-            </div>
-            <div class="col-lg-5 mb-3">
-                <section class="card h-100 white-chart-card">
-                    <div class="card-header border-0 d-flex justify-content-between align-items-center">
-                        <h3 class="card-title">Sessions by region</h3>
-                        <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" 
-                           style="cursor: pointer;"
-                           data-toggle="popover" 
-                           data-trigger="click" 
-                           data-html="true"
-                           tabindex="0"
-                           title="Region Code Legend" 
-                           data-content="Loading..."></i>
-                    </div>
-                    <div class="card-body">
-                        <div style="height:250px;">
-                            <canvas id="sessionRegionChart"></canvas>
-                        </div>
-                    </div>
-                </section>
-            </div>
+<!-- Filter Drawer -->
+<div class="filter-drawer-overlay" id="filterDrawerOverlay"></div>
+<div class="filter-drawer shadow-lg" id="filterDrawer">
+    <div class="fd-header">
+        <h3 class="fd-title"><i class="fas fa-sliders-h mr-2" style="color: #3b82f6;"></i>Filters</h3>
+        <button type="button" class="fd-close" id="closeDrawer"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="fd-body">
+        <div class="fd-section">
+            <label class="fd-label">Fiscal Year</label>
+            <select id="yearFilter" class="form-control select2 filter-multi" data-filter="years" multiple="multiple" data-placeholder="Select Year"></select>
         </div>
+        <div class="fd-section">
+            <label class="fd-label">Region</label>
+            <select id="regionFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="region" data-placeholder="Select Region"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Activity Type</label>
+            <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program" data-placeholder="Select Activity"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Month</label>
+            <select id="monthFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month" data-placeholder="Select Month"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Quarter</label>
+            <select id="quarterFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="quarter" data-placeholder="Select Quarter">
+                <option value="1">Q1 (Apr-Jun)</option>
+                <option value="2">Q2 (Jul-Sep)</option>
+                <option value="3">Q3 (Oct-Dec)</option>
+                <option value="4">Q4 (Jan-Mar)</option>
+            </select>
+        </div>
+    </div>
+    <div class="fd-footer">
+        <button class="btn btn-outline-secondary btn-block shadow-sm" id="resetFilters" style="border-radius: 10px;">
+            <i class="fas fa-undo mr-2"></i>Reset All
+        </button>
     </div>
 </div>
 {% endblock %}
@@ -161,6 +173,15 @@
         let regionMapping = {};
         if ($.fn.select2) {
             window.PramanaDashboard.initMultiFilters();
+            // Dropdown parent fix for filter drawer
+            $('.select2').each(function() {
+                $(this).select2({
+                    theme: 'bootstrap4',
+                    dropdownParent: $('#filterDrawer'),
+                    width: '100%',
+                    allowClear: true
+                });
+            });
         }
 
         // Initialize Popovers
@@ -169,6 +190,14 @@
             sanitize: false,
             trigger: 'click',
             placement: 'bottom'
+        });
+
+        // ── Drawer Logic ──
+        $('#filterLauncher').click(() => {
+            $('#filterDrawerOverlay, #filterDrawer').addClass('open');
+        });
+        $('#closeDrawer, #filterDrawerOverlay').click(() => {
+            $('#filterDrawerOverlay, #filterDrawer').removeClass('open');
         });
 
         function getAcronym(str) {
@@ -202,9 +231,16 @@
             });
         }
 
+        function updateFilterSummary() {
+            const r = $('#regionFilter').val() || [], p = $('#programFilter').val() || [], y = $('#yearFilter').val() || [], m = $('#monthFilter').val() || [], q = $('#quarterFilter').val() || [];
+            const total = r.length + p.length + y.length + m.length + q.length;
+            $('#activeFilterCount').text(total ? total + ' Filter' + (total>1?'s':'') + ' Applied' : 'All Data');
+        }
+
         const rf = $('#regionFilter');
         const pf = $('#programFilter');
         const mf = $('#monthFilter');
+        const yf = $('#yearFilter');
 
         // Initially disable programs
         pf.prop('disabled', true);
@@ -212,7 +248,6 @@
         fetch('/session/filters')
             .then(res => res.json())
             .then(data => {
-                const yf = $('#yearFilter');
                 data.years.forEach(y => {
                     yf.append(new Option(y, y));
                 });
@@ -226,6 +261,7 @@
                     yf.val([currentYear]);
                 }
                 $('.select2').trigger('change.select2', { internal: true });
+                updateFilterSummary();
                 loadData();
             });
 
@@ -349,14 +385,16 @@
                 });
         }
 
-        $('#seeReport').click(function () {
+        $('.select2').on('change', function(e, opts) {
+            if (opts && opts.internal) return;
+            updateFilterSummary();
             loadData();
         });
 
-        $('#exportXlsx').click(function () {
-            const filters = window.PramanaDashboard.collectFilters();
-            const query = $.param(filters, true);
-            window.exportToXLSX(`/session/export?${query}`, 'session_report.xlsx');
+        $('#resetFilters').click(function() {
+            $('.select2').val(null).trigger('change');
+            updateFilterSummary();
+            loadData();
         });
     });
 </script>
