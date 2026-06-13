@@ -221,6 +221,21 @@
             <select id="programFilter" class="form-control select2 filter-multi" multiple="multiple"
                 data-filter="program" data-placeholder="Select Activity"></select>
         </div>
+        <div class="fd-section">
+            <label class="fd-label">Month Year</label>
+            <select id="monthYearFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="month_year"
+                data-placeholder="Select Month Year"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Program Type</label>
+            <select id="programTypeFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="program_type"
+                data-placeholder="Select Program Type"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Mode of Engagement</label>
+            <select id="engagementModeFilter" class="form-control select2 filter-multi" multiple="multiple" data-filter="engagement_mode"
+                data-placeholder="Select Mode of Engagement"></select>
+        </div>
     </div>
     <div class="fd-footer">
         <button id="resetFilters" class="btn btn-outline-secondary btn-block" style="border-radius:10px;">
@@ -396,7 +411,8 @@
         }
 
         // ── Filters ─────────────────────────────────────────────────────
-        const rf = $('#regionFilter'), pf = $('#programFilter'), yf = $('#yearFilter'), mf = $('#monthFilter');
+        const rf = $('#regionFilter'), pf = $('#programFilter'), yf = $('#yearFilter'), mf = $('#monthFilter'),
+              myf = $('#monthYearFilter'), ptf = $('#programTypeFilter'), emf = $('#engagementModeFilter');
 
         if ($.fn.select2) {
             $('.select2').select2({
@@ -433,7 +449,10 @@
             const programs = $('#programFilter').val() || [];
             const years = $('#yearFilter').val() || [];
             const months = $('#monthFilter').val() || [];
-            const total = (regions ? regions.length : 0) + (programs ? programs.length : 0) + (years ? years.length : 0) + (months ? months.length : 0);
+            const month_years = $('#monthYearFilter').val() || [];
+            const program_types = $('#programTypeFilter').val() || [];
+            const engagement_modes = $('#engagementModeFilter').val() || [];
+            const total = (regions ? regions.length : 0) + (programs ? programs.length : 0) + (years ? years.length : 0) + (months ? months.length : 0) + (month_years ? month_years.length : 0) + (program_types ? program_types.length : 0) + (engagement_modes ? engagement_modes.length : 0);
 
             if (total === 0) {
                 $('#activeFilterCount').text('All Data');
@@ -565,11 +584,29 @@
                             data.months.forEach(m => mf.append(new Option(m.name, m.id)));
                         }
 
+                        myf.empty();
+                        if (data.month_years) {
+                            data.month_years.forEach(my => myf.append(new Option(my.name, my.id)));
+                        }
+
+                        ptf.empty();
+                        if (data.program_types) {
+                            data.program_types.forEach(pt => ptf.append(new Option(pt, pt)));
+                        }
+
+                        emf.empty();
+                        if (data.engagement_modes) {
+                            data.engagement_modes.forEach(em => emf.append(new Option(em, em)));
+                        }
+
                         // Notify Select2
                         yf.trigger('change.select2', { internal: true });
                         rf.trigger('change.select2', { internal: true });
                         pf.trigger('change.select2', { internal: true });
                         mf.trigger('change.select2', { internal: true });
+                        myf.trigger('change.select2', { internal: true });
+                        ptf.trigger('change.select2', { internal: true });
+                        emf.trigger('change.select2', { internal: true });
                     } else if (target === 'regions') {
                         const currentSel = rf.val() || [];
                         rf.empty();
@@ -612,6 +649,21 @@
         });
 
         mf.on('change', function (e, data) {
+            if (data && data.internal) return;
+            loadData();
+        });
+
+        myf.on('change', function (e, data) {
+            if (data && data.internal) return;
+            loadData();
+        });
+
+        ptf.on('change', function (e, data) {
+            if (data && data.internal) return;
+            loadData();
+        });
+
+        emf.on('change', function (e, data) {
             if (data && data.internal) return;
             loadData();
         });
@@ -1052,6 +1104,9 @@
             rf.val(null).trigger('change', { internal: true });
             pf.val(null).trigger('change', { internal: true });
             mf.val(null).trigger('change', { internal: true });
+            myf.val(null).trigger('change', { internal: true });
+            ptf.val(null).trigger('change', { internal: true });
+            emf.val(null).trigger('change', { internal: true });
             fetchFilters('all').then(() => {
                 loadData();
                 updateFilterSummary();
