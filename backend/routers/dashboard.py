@@ -74,13 +74,39 @@ def get_filters(
     """
     months_data = [{"id": r["month_actual"], "name": r["month_name"].strip()} for r in fetch_all(months_query)]
     
+    # 5. Fetch Month Year combinations
+    month_years_query = f"""
+        SELECT DISTINCT d.year_actual, d.month_actual, 
+               TO_CHAR(d.full_date, 'Mon YYYY') as month_year_name
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
+        WHERE d.year_actual IS NOT NULL AND d.month_actual IS NOT NULL
+        ORDER BY d.year_actual DESC, d.month_actual DESC
+    """
+    month_years_data = [{"id": f"{r['year_actual']}-{r['month_actual']:02d}", "name": r["month_year_name"]} for r in fetch_all(month_years_query)]
+    
+    # 6. Fetch Program Types
+    program_types_query = f"""
+        SELECT DISTINCT pt.name as program_type_name
+        FROM source.txn_program tp
+        JOIN source.mst_program_type pt ON (CASE WHEN tp.program_type_id ~ '^[0-9]+$' THEN tp.program_type_id::BIGINT ELSE NULL END) = (CASE WHEN pt.mst_program_type_id ~ '^[0-9]+$' THEN pt.mst_program_type_id::BIGINT ELSE NULL END)
+        WHERE pt.name IS NOT NULL
+        ORDER BY pt.name
+    """
+    program_types_data = [r["program_type_name"] for r in fetch_all(program_types_query)]
+    
+    # 7. Fetch Engagement Modes
+    engagement_modes_data = ["Physical", "Phygital", "Digital"]
+    
     return {
         "years": years_data,
         "regions": regions_data,
         "programs": programs_data,
-        "months": months_data
+        "months": months_data,
+        "month_years": month_years_data,
+        "program_types": program_types_data,
+        "engagement_modes": engagement_modes_data
     }
-
 
 
 @router.get("/data")
@@ -88,10 +114,19 @@ def get_data(
     years: list[str] | None = Query(None),
     region: list[str] | None = Query(None),
     program: list[str] | None = Query(None),
-    month: list[str] | None = Query(None)
+    month: list[str] | None = Query(None),
+    month_year: list[str] | None = Query(None),
+    program_type: list[str] | None = Query(None),
+    engagement_mode: list[str] | None = Query(None)
 ):
-    kpis = overview_service.get_overview_kpis(years, region, program, month=month)
-    charts = overview_service.get_overview_charts(years, region, program, month=month)
+    kpis = overview_service.get_overview_kpis(
+        years, region, program, month=month, 
+        month_year=month_year, program_type=program_type, engagement_mode=engagement_mode
+    )
+    charts = overview_service.get_overview_charts(
+        years, region, program, month=month, 
+        month_year=month_year, program_type=program_type, engagement_mode=engagement_mode
+    )
 
     formatted_charts = {
         "instructors_by_region": {
@@ -120,7 +155,10 @@ def get_data(
         }
     }
 
-    trends = overview_service.get_overview_trends(years, region, program, month=month)
+    trends = overview_service.get_overview_trends(
+        years, region, program, month=month, 
+        month_year=month_year, program_type=program_type, engagement_mode=engagement_mode
+    )
 
     sparklines = {}
     if trends and len(trends) >= 2:
@@ -143,19 +181,32 @@ def get_drilldown(
     region: str = Query(...),
     years: list[str] | None = Query(None),
     program: list[str] | None = Query(None),
-    month: list[str] | None = Query(None)
+    month: list[str] | None = Query(None),
+    month_year: list[str] | None = Query(None),
+    program_type: list[str] | None = Query(None),
+    engagement_mode: list[str] | None = Query(None)
 ):
-    return overview_service.get_drilldown_data(region=region, years=years, program=program, month=month)
+    return overview_service.get_drilldown_data(
+        region=region, years=years, program=program, month=month, 
+        month_year=month_year, program_type=program_type, engagement_mode=engagement_mode
+    )
 
 @router.get("/export")
 def export_data(
     years: list[str] | None = Query(None),
     region: list[str] | None = Query(None),
     program: list[str] | None = Query(None),
-    month: list[str] | None = Query(None)
+    month: list[str] | None = Query(None),
+    month_year: list[str] | None = Query(None),
+    program_type: list[str] | None = Query(None),
+    engagement_mode: list[str] | None = Query(None)
 ):
     from backend.services.export_utils import json_to_excel_streaming_response
-    targets = overview_service.get_program_targets(years, region, program, month=month, limit=100000, offset=0)
+    targets = overview_service.get_program_targets(
+        years, region, program, month=month, 
+        month_year=month_year, program_type=program_type, engagement_mode=engagement_mode, 
+        limit=100000, offset=0
+    )
     
     formatted_table = []
     for row in targets["table"]:
