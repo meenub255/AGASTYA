@@ -3183,3 +3183,7 @@ table.dataTable thead th {
     box-shadow: 0 4px 12px rgba(127, 29, 29, 0.3) !important;
 }
 
+#exportXlsx {
+    display: none !important;
+}
+
