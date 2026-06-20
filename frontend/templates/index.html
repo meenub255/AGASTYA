@@ -569,7 +569,7 @@
 
                         // Default to current year if available and nothing is selected
                         const currentYear = String(new Date().getFullYear());
-                        if (!currentYears.length && data.years.includes(currentYear)) {
+                        if (!currentYears.length && data.years.some(y => String(y).startsWith(String(currentYear)))) {
                             yf.val([currentYear]);
                         }
 

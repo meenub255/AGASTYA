@@ -50,6 +50,17 @@ print("STATIC:", STATIC_DIR)
 
 app = FastAPI(title="Pramana Analytics Dashboard")
 
+@app.middleware("http")
+async def add_export_format_middleware(request: Request, call_next):
+    from backend.services.export_utils import export_format_var
+    fmt = request.query_params.get("format", "excel")
+    token = export_format_var.set(fmt)
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        export_format_var.reset(token)
+
 
 templates = Jinja2Templates(
     directory=str(TEMPLATES_DIR.resolve())
@@ -280,3 +291,8 @@ def program_impact_overview_page(request: Request):
 @app.get("/operations-overview", response_class=HTMLResponse)
 def operations_overview_page(request: Request):
     return render_page(request, "operations_overview.html", "Operations Overview", "operations-overview")
+
+
+@app.get("/pramana-intelligence", response_class=HTMLResponse)
+def pramana_intelligence_page(request: Request):
+    return render_page(request, "pramana_intelligence.html", "Pramana Intelligence", "pramana-intelligence")

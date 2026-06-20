@@ -131,7 +131,7 @@ def get_sessions_by_region(
     return [{"label": row["label"], "value": float(row["value"])} for row in rows]
 
 
-def get_available_years() -> list[int]:
+def get_available_years() -> list[str]:
     rows = fetch_all(
         f"""
         SELECT DISTINCT d.year_actual AS year
@@ -141,7 +141,7 @@ def get_available_years() -> list[int]:
         ORDER BY d.year_actual
         """
     )
-    return [int(row["year"]) for row in rows if row.get("year") is not None]
+    return [f"{int(row['year'])}-{str(int(row['year'])+1)[2:]}" for row in rows if row.get("year") is not None]
 
 
 def get_unified_session_data(

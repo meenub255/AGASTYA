@@ -239,7 +239,7 @@ $(function () {
             
             // Set dynamic defaults
             const currentYear = new Date().getFullYear().toString();
-            if (data.years.includes(parseInt(currentYear))) {
+            if (data.years.some(y => String(y).startsWith(String(currentYear)))) {
                 yf.val([currentYear]);
             }
             $('.select2').trigger('change.select2', { internal: true });

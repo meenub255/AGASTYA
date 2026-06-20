@@ -67,7 +67,7 @@ def _apply_ytd_filter(where_clause: str, params: list, years: list[int] | list[s
     single_year = None
     if years and len(years) == 1:
         try:
-            single_year = int(years[0])
+            single_year = int(str(years[0])[:4])
         except (ValueError, TypeError):
             pass
     elif years is None or len(years) == 0:
@@ -132,33 +132,40 @@ def _build_filters(
 
 
 
-def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year, month=None):
+def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year, month=None, region=None):
     insights = {}
     
+    region_text = ""
+    if region:
+        if isinstance(region, list):
+            region_text = " for " + ", ".join(region)
+        else:
+            region_text = f" for {region}"
+            
     meta = {
         "total_instructors": {
-            "title": "Instructors Performance Insights",
+            "title": f"Instructors Performance Insights{region_text}",
             "icon": "fas fa-chalkboard-teacher",
             "color": "linear-gradient(135deg, #f39c12 0%, #e67e22 100%)",
-            "name": "Instructors"
+            "name": f"Instructors{region_text}"
         },
         "total_drivers": {
-            "title": "Drivers Logistics Insights",
+            "title": f"Drivers Logistics Insights{region_text}",
             "icon": "fas fa-truck",
             "color": "linear-gradient(135deg, #3498db 0%, #2980b9 100%)",
-            "name": "Drivers"
+            "name": f"Drivers{region_text}"
         },
         "total_states": {
-            "title": "Coverage & Reach Insights",
+            "title": f"Coverage & Reach Insights{region_text}",
             "icon": "fas fa-map-marked-alt",
             "color": "linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)",
-            "name": "States Coverage"
+            "name": f"States Coverage{region_text}"
         },
         "total_programs": {
-            "title": "Programs & Initiatives Insights",
+            "title": f"Programs & Initiatives Insights{region_text}",
             "icon": "fas fa-project-diagram",
             "color": "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)",
-            "name": "Programs"
+            "name": f"Programs{region_text}"
         }
     }
     
@@ -195,13 +202,15 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year,
             else:
                 change_desc = "remaining unchanged compared to last year"
 
+            base_name = info['name'].split(" for ")[0].lower()
             comparison_text = (
-                f"In the current year-to-date period ({month_range_str}) of <strong>{single_year}</strong>, the total active {info['name'].lower()} is <strong>{fmt(curr_val)}</strong> "
+                f"In the current year-to-date period ({month_range_str}) of <strong>{single_year}</strong>, the total active {base_name}{region_text} is <strong>{fmt(curr_val)}</strong> "
                 f"while the previous year-to-date period ({month_range_str}) of <strong>{prev_year}</strong> was <strong>{fmt(prev_val)}</strong> ({change_desc})."
             )
         else:
+            base_name = info['name'].split(" for ")[0].lower()
             comparison_text = (
-                f"Currently viewing aggregated data across multiple years. Total active {info['name'].lower()} is <strong>{fmt(curr_val)}</strong>."
+                f"Currently viewing aggregated data across multiple years. Total active {base_name}{region_text} is <strong>{fmt(curr_val)}</strong>."
             )
             
         rationale = ""
@@ -425,7 +434,7 @@ def get_overview_kpis(
     single_year = None
     if years and len(years) == 1:
         try:
-            single_year = int(years[0])
+            single_year = int(str(years[0])[:4])
         except (ValueError, TypeError):
             pass
     elif years is None or len(years) == 0:
@@ -567,7 +576,7 @@ def get_overview_kpis(
         "total_programs_avg": response_data["total_programs"],
     }
     prev_year = single_year - 1 if single_year is not None else None
-    response_data["insights"] = generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year, month=month)
+    response_data["insights"] = generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year, month=month, region=region)
     
     return response_data
 
@@ -637,7 +646,7 @@ def get_overview_trends(
     single_year = None
     if years and len(years) == 1:
         try:
-            single_year = int(years[0])
+            single_year = int(str(years[0])[:4])
         except (ValueError, TypeError):
             pass
     elif years is None or len(years) == 0:

@@ -425,7 +425,7 @@
                         
                         // Default to current year if available and nothing is selected
                         const currentYearDefault = new Date().getFullYear();
-                        if (!$('#yearFilter').val()?.length && data.years.includes(currentYearDefault)) {
+                        if (!$('#yearFilter').val()?.length && data.years.some(y => String(y).startsWith(String(currentYearDefault)))) {
                             $('#yearFilter').val([currentYearDefault]);
                         } else if (currentYear) {
                             $('#yearFilter').val(currentYear);

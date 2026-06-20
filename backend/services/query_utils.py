@@ -29,7 +29,7 @@ def apply_ytd_filter(where_clause: str, params: list, years: list | None, date_a
         single_year = None
         if years and len(years) == 1:
             try:
-                single_year = int(years[0])
+                single_year = int(str(years[0])[:4])
             except (ValueError, TypeError):
                 pass
         elif years is None or len(years) == 0:
@@ -138,7 +138,7 @@ def build_standard_filters(
             single_year = None
             if effective_years and len(effective_years) == 1:
                 try:
-                    single_year = int(effective_years[0])
+                    single_year = int(str(effective_years[0])[:4])
                 except (ValueError, TypeError):
                     pass
             elif effective_years is None or len(effective_years) == 0:
@@ -536,7 +536,7 @@ def calculate_ytd_kpis(
     prev_row = fetch_one(prev_sql, prev_params)
     
     # 4. Resolve year context for insights
-    single_year = effective_years[0] if len(effective_years) == 1 else None
+    single_year = int(str(effective_years[0])[:4]) if len(effective_years) == 1 else None
     prev_year = single_year - 1 if single_year is not None else None
     
     kpis = []

@@ -89,7 +89,7 @@ def get_vehicle_report_data(region=None, area=None, years=None, month=None, quar
         
         single_year = None
         if len(effective_years) == 1:
-            try: single_year = int(effective_years[0])
+            try: single_year = int(str(effective_years[0])[:4])
             except (ValueError, TypeError): pass
         prev_year = single_year - 1 if single_year is not None else None
         

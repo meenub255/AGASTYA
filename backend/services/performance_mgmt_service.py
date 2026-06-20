@@ -38,7 +38,7 @@ def _apply_ytd_filter(clauses: list[str], params: list, years: list[int] | list[
     single_year = None
     if years and len(years) == 1:
         try:
-            single_year = int(years[0])
+            single_year = int(str(years[0])[:4])
         except (ValueError, TypeError):
             pass
     elif years is None or len(years) == 0:
@@ -260,7 +260,7 @@ def get_performance_mgmt_data(region=None, years=None, month=None, quarter=None,
         is_filtered = True if (years and len(years) > 0) or (month and len(month) > 0) or (region and len(region) > 0) or (quarter and len(quarter) > 0) else False
 
         # Build dynamic insights
-        single_year = effective_year[0] if len(effective_year) == 1 else None
+        single_year = int(str(effective_year[0])[:4]) if len(effective_year) == 1 else None
         prev_year = single_year - 1 if single_year is not None else None
         
         months_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]

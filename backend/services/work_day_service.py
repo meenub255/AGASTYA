@@ -54,7 +54,7 @@ def get_work_day_data(region=None, area=None, years=None, month=None, quarter=No
         effective_years = [DEFAULT_YEAR]
     single_year = None
     if len(effective_years) == 1:
-        try: single_year = int(effective_years[0])
+        try: single_year = int(str(effective_years[0])[:4])
         except (ValueError, TypeError): pass
     prev_year = single_year - 1 if single_year is not None else None
     

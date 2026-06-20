@@ -27,7 +27,7 @@ def _get_filter_options():
         WHERE d.year_actual IS NOT NULL 
         ORDER BY d.year_actual DESC
     """
-    years = [row["year_actual"] for row in fetch_all(years_query)]
+    years = [f"{int(row['year_actual'])}-{str(int(row['year_actual'])+1)[2:]}" for row in fetch_all(years_query) if row.get("year_actual")]
 
     months = [{"id": row["month_actual"], "name": row["month_name"].strip()} for row in fetch_all(f"""
         SELECT DISTINCT d.month_actual, TO_CHAR(TO_DATE(d.month_actual::text, 'MM'), 'Month') as month_name 

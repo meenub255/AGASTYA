@@ -225,7 +225,7 @@ def get_instructor_overview(region=None, years=None, program=None, limit=15, off
         single_year = None
         if years and len(years) == 1:
             try:
-                single_year = int(years[0])
+                single_year = int(str(years[0])[:4])
             except (ValueError, TypeError):
                 pass
         elif not years:
@@ -633,7 +633,7 @@ def get_program_impact_overview(region=None, years=None, program=None, limit=15,
         single_year = None
         if years and len(years) == 1:
             try:
-                single_year = int(years[0])
+                single_year = int(str(years[0])[:4])
             except (ValueError, TypeError):
                 pass
         elif not years:
@@ -1001,7 +1001,7 @@ def get_operations_overview(region=None, years=None, program=None, limit=15, off
         single_year = None
         if years and len(years) == 1:
             try:
-                single_year = int(years[0])
+                single_year = int(str(years[0])[:4])
             except (ValueError, TypeError):
                 pass
         elif not years:

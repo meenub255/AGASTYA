@@ -24,13 +24,13 @@ def get_filters(
         WHERE d.year_actual IS NOT NULL
         ORDER BY d.year_actual DESC
     """
-    years_data = [str(r["year_actual"]) for r in fetch_all(years_query)]
+    years_data = [f"{int(r['year_actual'])}-{str(int(r['year_actual'])+1)[2:]}" for r in fetch_all(years_query) if r.get("year_actual")]
     
     # 2. Fetch Regions (filtered by years)
     where_clauses = []
     params = []
     if years:
-        sql, p = get_list_filter_clause("d.year_actual", [int(y) for y in years])
+        sql, p = get_list_filter_clause("d.year_actual", [int(str(y)[:4]) for y in years])
         where_clauses.append(sql)
         params.extend(p)
     
