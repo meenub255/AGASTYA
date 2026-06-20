@@ -6,8 +6,8 @@
     <!-- Premium Header -->
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-            <h1 class="m-0 font-weight-bold" style="font-size:1.5rem;color:#1e293b; font-family: Arial, sans-serif !important;">Instructor Management</h1>
-            <p class="text-muted small mb-0">Track active instructors, training levels, and session counts</p>
+            <h1 class="m-0 font-weight-bold" style="font-size:1.5rem;color:#1e293b; font-family: Arial, sans-serif !important;">Ignator Management</h1>
+            <p class="text-muted small mb-0">Track active ignators and session counts</p>
         </div>
         <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
             <div class="fl-content">
@@ -30,7 +30,7 @@
                         <i class="fas fa-chalkboard-teacher"></i>
                     </div>
                     <div class="kpi-bitcoin-title-box">
-                        <span class="kpi-bitcoin-label">Active Instructors</span>
+                        <span class="kpi-bitcoin-label">Active Ignators</span>
                         <span class="kpi-bitcoin-sublabel">Total Active</span>
                     </div>
                 </div>
@@ -46,7 +46,7 @@
                     </div>
                     <div class="kpi-bitcoin-title-box">
                         <span class="kpi-bitcoin-label">Avg Sessions/Mo</span>
-                        <span class="kpi-bitcoin-sublabel">Per Active Instructor</span>
+                        <span class="kpi-bitcoin-sublabel">Per Active Ignator</span>
                     </div>
                 </div>
                 <div class="kpi-bitcoin-value" id="instructorAverageSessions">0</div>
@@ -89,7 +89,7 @@
     <div class="card premium-card white-chart-card shadow-sm mt-2">
         <div class="card-header card-header-premium d-flex align-items-center">
             <i class="fas fa-table mr-2" style="color: #3b82f6;"></i>
-            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Instructor session log</h3>
+            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Ignator session log</h3>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -97,7 +97,6 @@
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Type</th>
                             <th>Region</th>
                             <th class="text-center">Sessions</th>
                             <th>Activity</th>
@@ -115,7 +114,7 @@
     <div class="row mt-4">
         <div class="col-lg-12 mb-3">
             <section class="card premium-card white-chart-card shadow-sm">
-                <div class="card-header border-0"><h3 class="card-title text-sm uppercase">Monthly Instructor Activity</h3></div>
+                <div class="card-header border-0"><h3 class="card-title text-sm uppercase">Monthly Ignator Activity</h3></div>
                 <div class="card-body">
                     <div style="height:300px;">
                         <canvas id="monthlyActivityChart"></canvas>
@@ -126,19 +125,9 @@
     </div>
 
     <div class="row">
-        <div class="col-lg-5 mb-3">
+        <div class="col-lg-12 mb-3">
             <section class="card h-100 premium-card white-chart-card shadow-sm">
-                <div class="card-header border-0"><h3 class="card-title text-sm uppercase">Sessions by instructor type</h3></div>
-                <div class="card-body">
-                    <div style="height:220px;">
-                        <canvas id="instructorTypeChart"></canvas>
-                    </div>
-                </div>
-            </section>
-        </div>
-        <div class="col-lg-7 mb-3">
-            <section class="card h-100 premium-card white-chart-card shadow-sm">
-                <div class="card-header border-0"><h3 class="card-title text-sm uppercase">Multi-program instructors</h3></div>
+                <div class="card-header border-0"><h3 class="card-title text-sm uppercase">Multi-program ignators</h3></div>
                 <div class="card-body" id="multiProgramList">
                     <div class="text-center py-4">Select filters...</div>
                 </div>
@@ -285,14 +274,14 @@ $(function () {
                     });
 
                 // Update Charts
-                fetch(`/instructor/type-breakdown?${query}`)
-                    .then(res => res.json())
-                    .then(d => {
-                        window.PramanaDashboard.renderChart('instructorTypeChart', 'pie', d.data || [], 'Instructor Type', {
-                            showLegend: true,
-                            legendPosition: 'bottom'
-                        });
-                    });
+                // fetch(`/instructor/type-breakdown?${query}`)
+                //     .then(res => res.json())
+                //     .then(d => {
+                //         window.PramanaDashboard.renderChart('instructorTypeChart', 'pie', d.data || [], 'Instructor Type', {
+                //             showLegend: true,
+                //             legendPosition: 'bottom'
+                //         });
+                //     });
 
                 fetch(`/instructor/monthly?${query}`)
                     .then(res => res.json())
@@ -329,9 +318,6 @@ $(function () {
             },
             columns: [
                 { data: 'name', className: 'font-weight-bold' },
-                { data: 'type', render: function(data) {
-                    return `<span class="badge badge-info">${data}</span>`;
-                }},
                 { data: 'region' },
                 { data: 'sessions', className: 'text-center font-weight-bold' },
                 { data: 'activity_types', className: 'small text-muted' },
