@@ -36,18 +36,18 @@
         <!-- INSIGHTS & TRACKING -->
         <div class="ps-section-label">Insights &amp; Tracking</div>
 
-        <!-- Instructor Performance Group -->
-        {% set instructor_active = page_id in ['instructor-overview', 'performance-management-dashboard',
+        <!-- Ignator Performance Group -->
+        {% set ignator_active = page_id in ['instructor-overview', 'performance-management-dashboard',
         'instructor-summary',
         'instructor-detail', 'instructor-feedback', 'attendance'] %}
-        <div class="ps-group {% if instructor_active %}ps-group-open{% endif %}">
-            <button class="ps-group-trigger {% if instructor_active %}ps-active{% endif %}" data-group="instructor"
-                data-tip="Instructor Performance">
+        <div class="ps-group {% if ignator_active %}ps-group-open{% endif %}">
+            <button class="ps-group-trigger {% if ignator_active %}ps-active{% endif %}" data-group="ignator"
+                data-tip="Ignator Performance">
                 <span class="ps-icon"><i class="fas fa-chalkboard-teacher"></i></span>
-                <span class="ps-label">Instructor Performance</span>
+                <span class="ps-label">Ignator Performance</span>
                 <span class="ps-chevron"><i class="fas fa-chevron-right"></i></span>
             </button>
-            <div class="ps-group-items" id="grp-instructor">
+            <div class="ps-group-items" id="grp-ignator">
                 <a href="/instructor-overview"
                     class="ps-sub-item {% if page_id == 'instructor-overview' %}ps-active{% endif %}">
                     <span class="ps-sub-dot"></span>
@@ -61,7 +61,7 @@
                 <a href="/instructor-summary"
                     class="ps-sub-item {% if page_id == 'instructor-summary' %}ps-active{% endif %}">
                     <span class="ps-sub-dot"></span>
-                    <span class="ps-label">Instructor Summary</span>
+                    <span class="ps-label">Ignator Summary</span>
                 </a>
                 <a href="/instructor-detail"
                     class="ps-sub-item {% if page_id == 'instructor-detail' %}ps-active{% endif %}">
