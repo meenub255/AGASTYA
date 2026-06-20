@@ -6,7 +6,7 @@
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
             <h1 class="m-0 font-weight-bold" style="font-size:1.5rem;color:#1e293b; font-family: Arial, sans-serif !important;">Performance Management</h1>
-            <p class="text-muted small mb-0">Session targets, actuals &amp; regional instructor analysis</p>
+            <p class="text-muted small mb-0">Session targets, actuals &amp; regional ignator analysis</p>
         </div>
         <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
             <div class="fl-content">
@@ -25,7 +25,7 @@
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="kpi-bitcoin-title-box">
-                        <span class="kpi-bitcoin-label">Instructors</span>
+                        <span class="kpi-bitcoin-label">Ignators</span>
                         <span class="kpi-bitcoin-sublabel">Total Active</span>
                     </div>
                     <div class="ml-auto" style="z-index: 10;">
@@ -50,7 +50,7 @@
                     </div>
                     <div class="kpi-bitcoin-title-box">
                         <span class="kpi-bitcoin-label">Avg Sessions</span>
-                        <span class="kpi-bitcoin-sublabel">Per Instructor</span>
+                        <span class="kpi-bitcoin-sublabel">Per Ignator</span>
                     </div>
                     <div class="ml-auto" style="z-index: 10;">
                         <div class="kpi-insight-trigger" id="tooltipAvgSessions" tabindex="0" style="width: 24px; height: 24px; border-radius: 50%; background: #cbd5e1; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
@@ -123,7 +123,7 @@
                     <div>
                         <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;"><i
                                 class="fas fa-chart-line mr-2" style="color:#3b82f6;"></i>Session Target vs Actual</h3>
-                        <small class="text-muted">Click a point to drill into instructor breakdown</small>
+                        <small class="text-muted">Click a point to drill into ignator breakdown</small>
                     </div>
                 </div>
                 <div class="card-body" style="padding:16px;">
@@ -161,7 +161,7 @@
             <div class="card-header d-flex align-items-center"
                 style="background:#f1f5f9;border-bottom:1px solid #e2e8f0 !important;">
                 <i class="fas fa-table mr-2" style="color:#3b82f6;"></i>
-                <h3 class="card-title text-sm uppercase font-weight-bold" style="color:#334155;">Instructor Breakdown —
+                <h3 class="card-title text-sm uppercase font-weight-bold" style="color:#334155;">Ignator Breakdown —
                     <span id="ddTableLabel" style="color:#3b82f6;"></span></h3>
                 <span id="ddRecordCount" class="badge badge-pill ml-2"
                     style="background:#ede9fe;color:#6366f1;font-size:11px;"></span>
@@ -171,8 +171,7 @@
                     <table id="drilldownTable" class="table table-hover mb-0" style="width:100%">
                         <thead>
                             <tr>
-                                <th>Instructor</th>
-                                <th>Role</th>
+                                <th>Ignator</th>
                                 <th>Region</th>
                                 <th class="text-right">Programs</th>
                                 <th class="text-right">Sessions</th>
@@ -766,7 +765,7 @@
 
                     $('.kpi-insight-trigger').popover('dispose');
                     
-                    bindModal('#tooltipInstructors', 'Instructors', '#kpiCardInstructors', data.kpis[0]);
+                    bindModal('#tooltipInstructors', 'Ignators', '#kpiCardInstructors', data.kpis[0]);
                     bindModal('#tooltipAvgSessions', 'Avg Sessions', '#kpiCardAvgSessions', data.kpis[1]);
                     bindModal('#tooltipSessions', 'Sessions', '#kpiCardSessions', data.kpis[2]);
                     bindModal('#tooltipStudents', 'Students', '#kpiCardStudents', data.kpis[3]);
@@ -811,10 +810,10 @@
                     $('#ddRecordCount').text(rows.length + ' record' + (rows.length !== 1 ? 's' : ''));
                     const tbody = $('#drilldownBody').empty();
                     rows.forEach(r => {
-                        tbody.append('<tr><td class="font-weight-600">' + r.instructor_name + '</td><td><span class="badge badge-secondary">' + r.role + '</span></td><td>' + r.region_name + '</td><td class="text-right">' + (r.programs || 0).toLocaleString() + '</td><td class="text-right">' + (r.sessions || 0).toLocaleString() + '</td><td class="text-right">' + (r.schools || 0).toLocaleString() + '</td><td class="text-right">' + (r.students_impacted || 0).toLocaleString() + '</td><td class="text-right">' + (r.avg_duration_min || 0) + '</td></tr>');
+                        tbody.append('<tr><td class="font-weight-600">' + r.instructor_name + '</td><td>' + r.region_name + '</td><td class="text-right">' + (r.programs || 0).toLocaleString() + '</td><td class="text-right">' + (r.sessions || 0).toLocaleString() + '</td><td class="text-right">' + (r.schools || 0).toLocaleString() + '</td><td class="text-right">' + (r.students_impacted || 0).toLocaleString() + '</td><td class="text-right">' + (r.avg_duration_min || 0) + '</td></tr>');
                     });
 
-                    PramanaDashboard.initDataTable('#drilldownTable', { paging: true, searching: true, pageLength: 15, order: [[4, 'desc']] });
+                    PramanaDashboard.initDataTable('#drilldownTable', { paging: true, searching: true, pageLength: 15, order: [[3, 'desc']] });
                     $('#drilldownPanel').show();
                     $('html,body').animate({ scrollTop: $('#drilldownPanel').offset().top - 20 }, 400);
                 }).catch(e => console.error('Drilldown error', e));
