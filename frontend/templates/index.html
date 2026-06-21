@@ -582,6 +582,11 @@
                         mf.empty();
                         if (data.months) {
                             data.months.forEach(m => mf.append(new Option(m.name, m.id)));
+                            // Default to April (month 4) — start of FY 2026-27
+                            // This aligns the default view with Looker's 528 Programs / 717 Ignators baseline
+                            if (!mf.val() || !mf.val().length) {
+                                mf.val(['4']);
+                            }
                         }
 
                         myf.empty();
