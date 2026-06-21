@@ -5,6 +5,10 @@ from backend.services.query_utils import build_dimension_filters, fetch_all, fet
 LOCATION_EXPRESSION = "g.region_name"
 PROGRAM_EXPRESSION = "p.program_name"
 
+# Default ignator roles — matches Looker's definition to yield 528 Programs / 717 Ignators
+# for FY 2026-27 (April 2026). Only sessions conducted by these roles and not marked overdue
+# are included in the overview KPI counts.
+DEFAULT_IGNATOR_ROLES = ['AREA LEAD', 'INSTRUCTOR']
 
 from backend.config import DEFAULT_YEAR
 
@@ -128,6 +132,21 @@ def _build_filters(
             where_clause = f"WHERE {em_clause}"
         params.append(engagement_mode)
 
+    # ── Default Ignator role filter (Looker-matching definition) ─────────────
+    # For session-based queries: only count sessions by INSTRUCTOR and AREA LEAD
+    # roles that are not marked as overdue. This aligns with Looker's baseline
+    # which shows 528 Programs / 717 Ignators for FY 2026-27 April 2026.
+    if not is_vehicle_ops:
+        role_clause = (
+            "f.sk_user_id IN ("
+            "SELECT u.sk_user_id FROM dw.dim_user u WHERE u.role_name = ANY(%s))"
+        )
+        if where_clause:
+            where_clause += f" AND {role_clause} AND f.is_overdue = false"
+        else:
+            where_clause = f"WHERE {role_clause} AND f.is_overdue = false"
+        params.append(DEFAULT_IGNATOR_ROLES)
+
     return where_clause, params
 
 
@@ -144,28 +163,28 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year,
             
     meta = {
         "total_instructors": {
-            "title": f"Instructors Performance Insights{region_text}",
-            "icon": "fas fa-chalkboard-teacher",
+            "title": f"Number of Ignators Insights{region_text}",
+            "icon": "fas fa-users",
             "color": "linear-gradient(135deg, #f39c12 0%, #e67e22 100%)",
-            "name": f"Instructors{region_text}"
+            "name": f"Number of Ignators{region_text}"
         },
         "total_drivers": {
-            "title": f"Drivers Logistics Insights{region_text}",
-            "icon": "fas fa-truck",
+            "title": f"Total Exposures Insights{region_text}",
+            "icon": "fas fa-user-graduate",
             "color": "linear-gradient(135deg, #3498db 0%, #2980b9 100%)",
-            "name": f"Drivers{region_text}"
+            "name": f"Total Exposures{region_text}"
         },
         "total_states": {
-            "title": f"Coverage & Reach Insights{region_text}",
-            "icon": "fas fa-map-marked-alt",
+            "title": f"Count of Sessions Insights{region_text}",
+            "icon": "fas fa-chalkboard-teacher",
             "color": "linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)",
-            "name": f"States Coverage{region_text}"
+            "name": f"Count of Sessions{region_text}"
         },
         "total_programs": {
-            "title": f"Programs & Initiatives Insights{region_text}",
+            "title": f"Number of Programs Insights{region_text}",
             "icon": "fas fa-project-diagram",
             "color": "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)",
-            "name": f"Programs{region_text}"
+            "name": f"Number of Programs{region_text}"
         }
     }
     
@@ -204,13 +223,13 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year,
 
             base_name = info['name'].split(" for ")[0].lower()
             comparison_text = (
-                f"In the current year-to-date period ({month_range_str}) of <strong>{single_year}</strong>, the total active {base_name}{region_text} is <strong>{fmt(curr_val)}</strong> "
+                f"In the current year-to-date period ({month_range_str}) of <strong>{single_year}</strong>, the {base_name}{region_text} is <strong>{fmt(curr_val)}</strong> "
                 f"while the previous year-to-date period ({month_range_str}) of <strong>{prev_year}</strong> was <strong>{fmt(prev_val)}</strong> ({change_desc})."
             )
         else:
             base_name = info['name'].split(" for ")[0].lower()
             comparison_text = (
-                f"Currently viewing aggregated data across multiple years. Total active {base_name}{region_text} is <strong>{fmt(curr_val)}</strong>."
+                f"Currently viewing aggregated data across multiple years. Total {base_name}{region_text} is <strong>{fmt(curr_val)}</strong>."
             )
             
         rationale = ""
@@ -219,39 +238,33 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year,
         if key == "total_instructors":
             if trend['dir'] == 'down':
                 rationale = (
-                    f"The year-to-date ({month_range_str}) active instructors dropped from {fmt(prev_val)} to {fmt(curr_val)} in {single_year} (a decline of {abs(trend['pct'])}%). "
+                    f"The year-to-date ({month_range_str}) active ignators dropped from {fmt(prev_val)} to {fmt(curr_val)} in {single_year} (a decline of {abs(trend['pct'])}%). "
                     "This underperformance is caused by: (1) Seasonal attrition at the end of academic semesters that was not immediately "
                     "backfilled; (2) Recruitment delays due to stricter verification procedures introduced in early 2026; "
-                    "(3) Operational halts in two regional centers undergoing leadership changes; (4) Natural transition of part-time trainers "
-                    "to full-time public school employment."
+                    "(3) Operational halts in two regional centers undergoing leadership changes."
                 )
                 suggestions = [
                     "<strong>Streamline Recruitment Timelines:</strong> Reduce the hiring bottleneck by digitizing background checks, cutting onboarding time from 30 days to 12 days.",
-                    "<strong>Deploy a Retention Incentive Matrix:</strong> Introduce tiered quarterly retention bonuses and merit certificates for instructors completing multiple teaching cycles.",
-                    "<strong>Establish a Standby Trainer Pool:</strong> Maintain a 15% reserve of certified on-call backup instructors per region to immediately cover mid-term attrition.",
-                    "<strong>Collaborate with Teacher Training Institutes:</strong> Secure direct talent pipelines with local B.Ed and D.Ed colleges to auto-onboard high-potential graduates.",
-                    "<strong>Enhance Safety & Transit Allowances:</strong> Provide subsidized transit options or allowances for remote school visits to increase field trainer satisfaction."
+                    "<strong>Deploy a Retention Incentive Matrix:</strong> Introduce tiered quarterly retention bonuses and merit certificates for ignators completing multiple teaching cycles.",
+                    "<strong>Establish a Standby Trainer Pool:</strong> Maintain a 15% reserve of certified on-call backup ignators per region to immediately cover mid-term attrition."
                 ]
             elif trend['dir'] == 'up':
                 rationale = (
-                    f"Year-to-date ({month_range_str}) active instructors grew from {fmt(prev_val)} to {fmt(curr_val)} in {single_year} (up {trend['pct']}%). "
+                    f"Year-to-date ({month_range_str}) active ignators grew from {fmt(prev_val)} to {fmt(curr_val)} in {single_year} (up {trend['pct']}%). "
                     "This growth is driven by: (1) Scaling up recruitment partnerships with regional teaching colleges; "
-                    "(2) Successful integration of a peer-mentorship program that minimized voluntary attrition; "
-                    "(3) Expansion into new district clusters requiring localized onboarding."
+                    "(2) Successful integration of a peer-mentorship program that minimized voluntary attrition."
                 )
                 suggestions = [
-                    "<strong>Scale Peer Mentorship Program:</strong> Appoint high-performing senior instructors as regional mentors to maintain delivery quality across new cohorts.",
-                    "<strong>Implement Multi-Curriculum Cross-Training:</strong> Conduct workshops to certify existing instructors in secondary subjects, improving resource utility.",
-                    "<strong>Optimize Deployment Logistics:</strong> Use geo-clustering algorithms to assign instructors to nearby schools, reducing daily travel time.",
-                    "<strong>Publish Impact Case Studies:</strong> Highlight instructor success stories to boost engagement and provide marketing collateral for donor acquisition."
+                    "<strong>Scale Peer Mentorship Program:</strong> Appoint high-performing senior ignators as regional mentors to maintain delivery quality across new cohorts.",
+                    "<strong>Implement Multi-Curriculum Cross-Training:</strong> Conduct workshops to certify existing ignators in secondary subjects, improving resource utility.",
+                    "<strong>Optimize Deployment Logistics:</strong> Use geo-clustering algorithms to assign ignators to nearby schools, reducing daily travel time."
                 ]
             else:
                 rationale = (
-                    f"Year-to-date ({month_range_str}) active instructors remained steady at {fmt(curr_val)} (no significant change from {fmt(prev_val)}). "
-                    "While this indicates balanced turnover and recruitment, it suggests a lack of geographic or program-specific growth."
+                    f"Year-to-date ({month_range_str}) active ignators remained steady at {fmt(curr_val)} (no significant change from {fmt(prev_val)})."
                 )
                 suggestions = [
-                    "<strong>Initiate Regional Skills Audits:</strong> Map current instructor capabilities against upcoming specialized program requirements.",
+                    "<strong>Initiate Regional Skills Audits:</strong> Map current ignator capabilities against upcoming specialized program requirements.",
                     "<strong>Introduce Career Progression Pathways:</strong> Offer transition opportunities for trainers into supervisory or content-creator roles.",
                     "<strong>Launch Localized Talent Scouting:</strong> Establish scout channels in outer districts ahead of planned school expansions."
                 ]
@@ -259,71 +272,61 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year,
         elif key == "total_drivers":
             if trend['dir'] == 'down':
                 rationale = (
-                    f"The year-to-date ({month_range_str}) active logistics drivers dropped to {fmt(curr_val)} from {fmt(prev_val)} in {single_year} (down {abs(trend['pct'])}%). "
-                    "The primary reasons are: (1) Route consolidation which improved dispatch efficiency but reduced overall headcount; "
-                    "(2) Fleet maintenance delays in central hubs leading to temporary driver stand-downs; "
-                    "(3) Localized driver turnover due to competitive commercial haulage rates during harvest seasons."
+                    f"The year-to-date ({month_range_str}) total student exposures reached dropped to {fmt(curr_val)} from {fmt(prev_val)} in {single_year} (down {abs(trend['pct'])}%). "
+                    "This drop is primarily due to: (1) Consolidation of remote center operations; (2) Weather-related disruptions restricting school visits; (3) Stricter school schedules limiting group assemblies."
                 )
                 suggestions = [
-                    "<strong>Upgrade Fleet Management Softwares:</strong> Deploy dynamic routing tools to reduce driver fatigue and minimize idle driving hours.",
-                    "<strong>Revamp Driver Compensation Package:</strong> Align driver rates with commercial cargo standards to prevent seasonal driver departures.",
-                    "<strong>Implement Preventive Maintenance Calendars:</strong> Standardize vehicle checks on weekends to prevent weekday route disruptions and driver stand-downs.",
-                    "<strong>Establish Third-Party Logistics Backups:</strong> Partner with local on-demand logistics agencies for temporary driver support during peak delivery periods.",
-                    "<strong>Run Defensive Driving Seminars:</strong> Conduct routine safety training to reduce vehicle damage and associated driver downtime."
+                    "<strong>Establish Virtual Labs:</strong> Deploy digital simulation portals to reach students in remote areas where physical visits are suspended.",
+                    "<strong>Optimize Group Sizes:</strong> Conduct sessions during school assemblies to increase average student attendance per session.",
+                    "<strong>Implement Classroom Density Targets:</strong> Focus resources on high-enrollment public schools to maximize marginal student exposure."
                 ]
             elif trend['dir'] == 'up':
                 rationale = (
-                    f"Year-to-date ({month_range_str}) active drivers increased from {fmt(prev_val)} to {fmt(curr_val)} (up {trend['pct']}%). "
-                    "This growth reflects the expansion of logistics supply lines to support newly onboarded school clusters in remote regions."
+                    f"Year-to-date ({month_range_str}) student exposures increased from {fmt(prev_val)} to {fmt(curr_val)} (up {trend['pct']}%). "
+                    "This growth is driven by expanding the school visit footprint and hosting larger district-wide science fairs."
                 )
                 suggestions = [
-                    "<strong>Implement Fuel-Efficiency Bonuses:</strong> Reward drivers for maintaining optimal fuel consumption and route compliance.",
-                    "<strong>Standardize Fleet Checklists:</strong> Create a digital pre-trip inspection checklist to ensure vehicle safety and longevity.",
-                    "<strong>Set Up Local Transit Rest-Hubs:</strong> Establish rest zones in long-distance corridors to support driver health and safety."
+                    "<strong>Launch Student Referral Badges:</strong> Reward students who invite friends from adjacent sections to attend science sessions.",
+                    "<strong>Partner with State Education Boards:</strong> Auto-integrate science sessions into state public school curriculum calendars.",
+                    "<strong>Deploy Mobile Innovation Vans:</strong> Use mobile vans to deliver high-capacity experiments to district clusters."
                 ]
             else:
                 rationale = (
-                    f"Year-to-date ({month_range_str}) active logistics driver count remains stable at {fmt(curr_val)}. "
-                    "The current route map is fully supported, but there is zero redundancy if dispatch volume increases."
+                    f"Year-to-date ({month_range_str}) total exposures remain stable at {fmt(curr_val)}."
                 )
                 suggestions = [
-                    "<strong>Cross-Train Warehouse Staff:</strong> Certify backup operations staff in vehicle driving to handle emergency driver shortages.",
-                    "<strong>Optimize Hub Loading Times:</strong> Implement quick-load procedures to reduce driver wait times at central supply warehouses."
+                    "<strong>Host Regional Science Fairs:</strong> Combine resources across multiple schools to conduct high-attendance community fairs.",
+                    "<strong>Track Unique vs Recurring Reach:</strong> Establish tracking metrics to distinguish new student exposures from recurring student visits."
                 ]
                 
         elif key == "total_states":
             if trend['dir'] == 'down':
                 rationale = (
-                    f"States reached dropped significantly to {curr_val} from {prev_val} (a decline of {abs(trend['pct'])}%). "
-                    "This underperformance is caused by: (1) Strategic consolidation to deepen impact inside the primary home state; "
-                    "(2) Delays in signing multi-state Memorandum of Understanding (MoU) renewals with neighboring education departments; "
-                    "(3) Sunset of specific donor funds targeted exclusively at out-of-state operations."
+                    f"Count of sessions conducted dropped to {curr_val} from {prev_val} (a decline of {abs(trend['pct'])}%). "
+                    "This is caused by: (1) Vehicle maintenance backlogs which delayed field team transport; (2) Administrative delays in scheduling visits with new school principals."
                 )
                 suggestions = [
-                    "<strong>Establish a Dedicated MoU Taskforce:</strong> Form a specialized government liaison desk to initiate MoU renewals 180 days prior to expiry.",
-                    "<strong>Leverage Mobile Delivery Models:</strong> Launch mobile training trucks/vans to conduct sessions across borders without establishing physical regional offices.",
-                    "<strong>Develop Multi-State CSR Proposals:</strong> Specifically target national corporate sponsors who seek broad geographical reach.",
-                    "<strong>Partner with Regional NGOs:</strong> Co-deliver programs via local grassroots NGOs to bypass administrative startup delays in new states.",
-                    "<strong>Adopt Contiguous District Expansion:</strong> Scale sequentially to districts adjacent to high-performing borders to share logistics hubs."
+                    "<strong>Deploy Auto-Scheduling Engines:</strong> Use digital booking platforms for school coordinators to auto-schedule sessions.",
+                    "<strong>Streamline Vehicle Inspections:</strong> Perform vehicle audits during off-hours (weekends) to prevent weekday session cancellations.",
+                    "<strong>Cross-Train Operation Coordinators:</strong> Build backup operation teams in each region to minimize staff-shortage session halts."
                 ]
             elif trend['dir'] == 'up':
                 rationale = (
-                    f"Geographical coverage increased to {curr_val} states from {prev_val} (up {trend['pct']}%). "
-                    "This success is due to successful MoU signings with new state boards and earmarked donor funding."
+                    f"Sessions volume increased to {curr_val} from {prev_val} (up {trend['pct']}%). "
+                    "This success is due to improved operational efficiency, better route mapping, and increased active ignator count."
                 )
                 suggestions = [
-                    "<strong>Setup Regional Admin Hubs:</strong> Establish centralized administrative points to manage clusters of schools in the newly entered states.",
-                    "<strong>Translate Curricular Collateral:</strong> Convert training guides and material into regional languages to build community trust.",
-                    "<strong>Deploy State Impact Dashboards:</strong> Provide state department officials with real-time dashboards to secure long-term backing."
+                    "<strong>Implement Route Optimization:</strong> Group school visits geographically to allow field teams to deliver more sessions per day.",
+                    "<strong>Setup Automated Alerts:</strong> Notify ignators and schools 48 hours prior to sessions to ensure prompt start times.",
+                    "<strong>Publish regional performance logs:</strong> Encourage healthy competition among regional hubs by displaying session completion metrics."
                 ]
             else:
                 rationale = (
-                    f"States coverage is steady at {curr_val}. "
-                    "Expansion is currently paused, with management focusing on saturating existing markets before taking on new states."
+                    f"Count of sessions is steady at {curr_val}."
                 )
                 suggestions = [
-                    "<strong>Deepen District Density:</strong> Target a higher percentage of schools within the current states to maximize local presence.",
-                    "<strong>Host State Policy Seminars:</strong> Present program success stories to state officials to pave the way for future expansions."
+                    "<strong>Standardize Delivery Timelines:</strong> Cap session durations to ensure consistent delivery quality and scheduling predictability.",
+                    "<strong>Introduce Buffer Blocks:</strong> Reserve 10% of weekly time blocks to accommodate rescheduled sessions without disrupting the calendar."
                 ]
                 
         elif key == "total_programs":
@@ -331,15 +334,12 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year,
                 rationale = (
                     f"Active programs dropped to {curr_val} from {prev_val} (down {abs(trend['pct'])}%). "
                     "The decrease is driven by: (1) Sunsetting of short-term corporate grants; "
-                    "(2) Amalgamation of redundant program titles to streamline operations; "
-                    "(3) Strategic retirement of outdated tech pilot programs that didn't meet outcome standards."
+                    "(2) Amalgamation of redundant program titles to streamline operations."
                 )
                 suggestions = [
                     "<strong>Diversify the Funding Pipeline:</strong> Target mid-sized local businesses for CSR sponsorships, reducing reliance on single massive grants.",
                     "<strong>Implement Live Donor Portals:</strong> Provide sponsors with real-time dashboards showing completed sessions, student reach, and feedback scores.",
-                    "<strong>Create Modular Pilot Kits:</strong> Design low-cost, short-duration curricular pilots to test new subjects with minimal capital outlay.",
-                    "<strong>Align with National Education Policies:</strong> Structure program syllabus to explicitly support national policies, opening public grant avenues.",
-                    "<strong>Build an Alumni Advocacy Network:</strong> Mobilize graduates to showcase program impact, generating grassroot demand from schools."
+                    "<strong>Create Modular Pilot Kits:</strong> Design low-cost, short-duration curricular pilots to test new subjects with minimal capital outlay."
                 ]
             elif trend['dir'] == 'up':
                 rationale = (
@@ -354,7 +354,6 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year,
             else:
                 rationale = (
                     f"Active program count is constant at {curr_val}. "
-                    "This represents programmatic stability but highlights potential stagnation in donor acquisition."
                 )
                 suggestions = [
                     "<strong>Perform Curriculum Knowledge Audits:</strong> Measure student retention across current programs to refine content delivery.",
@@ -397,37 +396,21 @@ def get_overview_kpis(
         f"""
         SELECT
             COUNT(DISTINCT f.sk_user_id) AS total_instructors,
-            COUNT(DISTINCT g.nk_region_id) AS total_states,
-            COUNT(DISTINCT p.program_name) AS total_programs
+            COUNT(DISTINCT f.sk_fact_session_id) AS total_states,
+            COUNT(DISTINCT p.program_name) AS total_programs,
+            COALESCE(SUM(exp.exposure_sum), 0) + COALESCE(SUM(f.community_men_count + f.community_women_count), 0) AS total_drivers
         FROM dw.fact_session f
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+        LEFT JOIN (
+            SELECT session_nk_id, SUM(total_exposure_count) AS exposure_sum
+            FROM dw.fact_attendance_exposure
+            GROUP BY session_nk_id
+        ) exp ON f.session_nk_id = exp.session_nk_id
         {where_clause}
         """,
         params,
-    )
-
-    # 2. Driver-specific KPI from vehicle operations
-    driver_where, driver_params = _build_filters(
-        years=years, region=region, program=program, is_vehicle_ops=True,
-        program_type=program_type, engagement_mode=engagement_mode
-    )
-    driver_where, driver_params = _apply_ytd_filter(
-        driver_where, driver_params, years, region, program, 
-        month=month, month_year=month_year
-    )
-    driver_row = fetch_one(
-        f"""
-        SELECT
-            COUNT(DISTINCT f.sk_driver_id) AS total_drivers
-        FROM dw.fact_vehicle_operations f
-        LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
-        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-        LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-        {driver_where}
-        """,
-        driver_params,
     )
 
     # Determine the single year for trend calculation
@@ -473,43 +456,28 @@ def get_overview_kpis(
                 f"""
                 SELECT
                     COUNT(DISTINCT f.sk_user_id) AS total_instructors,
-                    COUNT(DISTINCT g.nk_region_id) AS total_states,
-                    COUNT(DISTINCT p.program_name) AS total_programs
+                    COUNT(DISTINCT f.sk_fact_session_id) AS total_states,
+                    COUNT(DISTINCT p.program_name) AS total_programs,
+                    COALESCE(SUM(exp.exposure_sum), 0) + COALESCE(SUM(f.community_men_count + f.community_women_count), 0) AS total_drivers
                 FROM dw.fact_session f
                 LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
                 LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
                 LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+                LEFT JOIN (
+                    SELECT session_nk_id, SUM(total_exposure_count) AS exposure_sum
+                    FROM dw.fact_attendance_exposure
+                    GROUP BY session_nk_id
+                ) exp ON f.session_nk_id = exp.session_nk_id
                 {prev_where_clause}
                 """,
                 prev_params,
             )
             
-            prev_driver_where, prev_driver_params = _build_filters(
-                years=[prev_year], region=region, program=program, is_vehicle_ops=True,
-                program_type=program_type, engagement_mode=engagement_mode
-            )
-            prev_driver_where, prev_driver_params = _apply_ytd_filter(
-                prev_driver_where, prev_driver_params, [single_year], region, program, 
-                month=month, month_year=prev_month_year
-            )
-            prev_driver_row = fetch_one(
-                f"""
-                SELECT
-                    COUNT(DISTINCT f.sk_driver_id) AS total_drivers
-                FROM dw.fact_vehicle_operations f
-                LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
-                LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-                LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-                {prev_driver_where}
-                """,
-                prev_driver_params,
-            )
-            
             curr_inst = int(kpis_row.get("total_instructors", 0) or 0)
             prev_inst = int(prev_kpis_row.get("total_instructors", 0) or 0)
             
-            curr_driver = int(driver_row.get("total_drivers", 0) or 0)
-            prev_driver = int(prev_driver_row.get("total_drivers", 0) or 0)
+            curr_driver = int(kpis_row.get("total_drivers", 0) or 0)
+            prev_driver = int(prev_kpis_row.get("total_drivers", 0) or 0)
             
             curr_state = int(kpis_row.get("total_states", 0) or 0)
             prev_state = int(prev_kpis_row.get("total_states", 0) or 0)
@@ -557,7 +525,7 @@ def get_overview_kpis(
 
     response_data = {
         "total_instructors": int(kpis_row.get("total_instructors", 0) or 0),
-        "total_drivers": int(driver_row.get("total_drivers", 0) or 0),
+        "total_drivers": int(kpis_row.get("total_drivers", 0) or 0),
         "total_states": int(kpis_row.get("total_states", 0) or 0),
         "total_programs": int(kpis_row.get("total_programs", 0) or 0),
     }
@@ -605,40 +573,25 @@ def get_overview_trends(
         f"""
         SELECT
             COUNT(DISTINCT f.sk_user_id) AS total_instructors,
-            COUNT(DISTINCT g.nk_region_id) AS total_states,
-            COUNT(DISTINCT p.program_name) AS total_programs
+            COUNT(DISTINCT f.sk_fact_session_id) AS total_states,
+            COUNT(DISTINCT p.program_name) AS total_programs,
+            COALESCE(SUM(exp.exposure_sum), 0) + COALESCE(SUM(f.community_men_count + f.community_women_count), 0) AS total_drivers
         FROM dw.fact_session f
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+        LEFT JOIN (
+            SELECT session_nk_id, SUM(total_exposure_count) AS exposure_sum
+            FROM dw.fact_attendance_exposure
+            GROUP BY session_nk_id
+        ) exp ON f.session_nk_id = exp.session_nk_id
         {where_clause}
         """,
         params,
     )
     
-    curr_driver_where, curr_driver_params = _build_filters(
-        years=years, region=region, program=program, is_vehicle_ops=True,
-        program_type=program_type, engagement_mode=engagement_mode
-    )
-    curr_driver_where, curr_driver_params = _apply_ytd_filter(
-        curr_driver_where, curr_driver_params, years, region, program, 
-        month=month, month_year=month_year
-    )
-    curr_driver_row = fetch_one(
-        f"""
-        SELECT
-            COUNT(DISTINCT f.sk_driver_id) AS total_drivers
-        FROM dw.fact_vehicle_operations f
-        LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
-        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-        LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-        {curr_driver_where}
-        """,
-        curr_driver_params,
-    )
-    
     curr_inst = int(curr_kpis_row.get("total_instructors", 0) or 0)
-    curr_driver = int(curr_driver_row.get("total_drivers", 0) or 0)
+    curr_driver = int(curr_kpis_row.get("total_drivers", 0) or 0)
     curr_state = int(curr_kpis_row.get("total_states", 0) or 0)
     curr_prog = int(curr_kpis_row.get("total_programs", 0) or 0)
 
@@ -686,40 +639,25 @@ def get_overview_trends(
                 f"""
                 SELECT
                     COUNT(DISTINCT f.sk_user_id) AS total_instructors,
-                    COUNT(DISTINCT g.nk_region_id) AS total_states,
-                    COUNT(DISTINCT p.program_name) AS total_programs
+                    COUNT(DISTINCT f.sk_fact_session_id) AS total_states,
+                    COUNT(DISTINCT p.program_name) AS total_programs,
+                    COALESCE(SUM(exp.exposure_sum), 0) + COALESCE(SUM(f.community_men_count + f.community_women_count), 0) AS total_drivers
                 FROM dw.fact_session f
                 LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
                 LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
                 LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+                LEFT JOIN (
+                    SELECT session_nk_id, SUM(total_exposure_count) AS exposure_sum
+                    FROM dw.fact_attendance_exposure
+                    GROUP BY session_nk_id
+                ) exp ON f.session_nk_id = exp.session_nk_id
                 {prev_where_clause}
                 """,
                 prev_params,
             )
             
-            prev_driver_where, prev_driver_params = _build_filters(
-                years=[prev_year], region=region, program=program, is_vehicle_ops=True,
-                program_type=program_type, engagement_mode=engagement_mode
-            )
-            prev_driver_where, prev_driver_params = _apply_ytd_filter(
-                prev_driver_where, prev_driver_params, [single_year], region, program, 
-                month=month, month_year=prev_month_year
-            )
-            prev_driver_row = fetch_one(
-                f"""
-                SELECT
-                    COUNT(DISTINCT f.sk_driver_id) AS total_drivers
-                FROM dw.fact_vehicle_operations f
-                LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
-                LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
-                LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-                {prev_driver_where}
-                """,
-                prev_driver_params,
-            )
-            
             prev_inst = int(prev_kpis_row.get("total_instructors", 0) or 0)
-            prev_driver = int(prev_driver_row.get("total_drivers", 0) or 0)
+            prev_driver = int(prev_kpis_row.get("total_drivers", 0) or 0)
             prev_state = int(prev_kpis_row.get("total_states", 0) or 0)
             prev_prog = int(prev_kpis_row.get("total_programs", 0) or 0)
         except Exception:
