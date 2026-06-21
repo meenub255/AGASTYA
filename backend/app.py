@@ -62,6 +62,57 @@ async def add_export_format_middleware(request: Request, call_next):
         export_format_var.reset(token)
 
 
+def map_ui_values(data):
+    if isinstance(data, dict):
+        return {k: map_ui_values(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [map_ui_values(x) for x in data]
+    elif isinstance(data, str):
+        import re
+        # Replace plurals
+        val = re.sub(r'\b(instructors|catalysers|catalyzers|ovvs)\b', 'ignators', data, flags=re.IGNORECASE)
+        val = re.sub(r'\b(Instructors|Catalysers|Catalyzers|Ovvs)\b', 'Ignators', val)
+        val = re.sub(r'\b(INSTRUCTORS|CATALYSERS|CATALYZERS|OVVS)\b', 'IGNATORS', val)
+        # Replace singulars
+        val = re.sub(r'\b(instructor|catalyser|catalyzer|ovv)\b', 'ignator', val, flags=re.IGNORECASE)
+        val = re.sub(r'\b(Instructor|Catalyser|Catalyzer|Ovv)\b', 'Ignator', val)
+        val = re.sub(r'\b(INSTRUCTOR|CATALYSER|CATALYZER|OVV)\b', 'IGNATOR', val)
+        return val
+    return data
+
+
+@app.middleware("http")
+async def translate_ui_middleware(request: Request, call_next):
+    response = await call_next(request)
+    content_type = response.headers.get("content-type", "")
+    if "application/json" in content_type:
+        import json
+        from fastapi.responses import Response
+        body = b""
+        async for chunk in response.body_iterator:
+            body += chunk
+        try:
+            data = json.loads(body.decode("utf-8"))
+            mapped_data = map_ui_values(data)
+            new_body = json.dumps(mapped_data).encode("utf-8")
+            # Update Content-Length header as size might change
+            headers = dict(response.headers)
+            headers["content-length"] = str(len(new_body))
+            return Response(
+                content=new_body,
+                status_code=response.status_code,
+                headers=headers,
+                media_type="application/json"
+            )
+        except Exception:
+            async def re_iterator():
+                yield body
+            response.body_iterator = re_iterator()
+            return response
+    return response
+
+
+
 templates = Jinja2Templates(
     directory=str(TEMPLATES_DIR.resolve())
 )
@@ -184,7 +235,7 @@ def instructor_page(request: Request):
     return render_page(
         request,
         "instructor.html",
-        "Instructor Performance",
+        "Ignator Performance",
         "instructor",
     )
 
@@ -219,7 +270,7 @@ def program_visits_page(request: Request):
 @app.get("/instructor-summary", response_class=HTMLResponse)
 def instructor_summary_page(request: Request):
     return render_page(
-        request, "instructor_summary.html", "Instructor Summary", "instructor-summary"
+        request, "instructor_summary.html", "Ignator Summary", "instructor-summary"
     )
 
 @app.get("/region-summary", response_class=HTMLResponse)
@@ -229,7 +280,7 @@ def region_summary_page(request: Request):
 @app.get("/instructor-detail", response_class=HTMLResponse)
 def instructor_detail_page(request: Request):
     return render_page(
-        request, "instructor_detail.html", "Instructor Detail", "instructor-detail"
+        request, "instructor_detail.html", "Ignator Detail", "instructor-detail"
     )
 
 @app.get("/vehicle-report", response_class=HTMLResponse)
@@ -278,11 +329,11 @@ def manpower_vehicle_dashboard_page(request: Request):
 
 @app.get("/instructor-feedback", response_class=HTMLResponse)
 def instructor_feedback_page(request: Request):
-    return render_page(request, "instructor_feedback.html", "Instructor Feedback", "instructor-feedback")
+    return render_page(request, "instructor_feedback.html", "Ignator Feedback", "instructor-feedback")
 
 @app.get("/instructor-overview", response_class=HTMLResponse)
 def instructor_overview_page(request: Request):
-    return render_page(request, "instructor_overview.html", "Instructor Performance Overview", "instructor-overview")
+    return render_page(request, "instructor_overview.html", "Ignator Performance Overview", "instructor-overview")
 
 @app.get("/program-impact-overview", response_class=HTMLResponse)
 def program_impact_overview_page(request: Request):
