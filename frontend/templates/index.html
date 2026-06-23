@@ -47,7 +47,7 @@
     <!-- Charts Row -->
     <section class="overview-content-stack mt-2">
         <div class="row">
-            <div class="col-md-6 mb-2">
+            <div class="col-md-4 mb-2">
                 <div class="card h-100 white-chart-card">
                     <div class="card-header border-0 pb-1 d-flex align-items-center"
                         style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
@@ -70,7 +70,7 @@
                 </div>
             </div>
 
-            <div class="col-md-6 mb-2">
+            <div class="col-md-4 mb-2">
                 <div class="card h-100 white-chart-card">
                     <div class="card-header border-0 pb-1 d-flex align-items-center"
                         style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
@@ -83,6 +83,24 @@
                     <div class="card-body">
                         <div style="height:380px;">
                             <canvas id="instructorRegionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <div class="card h-100 white-chart-card">
+                    <div class="card-header border-0 pb-1 d-flex align-items-center"
+                        style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
+                        <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Number of
+                            Sessions per Region</h3>
+                        <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" style="cursor: pointer;"
+                            data-toggle="popover" data-trigger="click" data-html="true" tabindex="0"
+                            title="Region Code Legend" data-content="Loading..."></i>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:380px;">
+                            <canvas id="sessionsRegionChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -567,10 +585,15 @@
                         yf.empty();
                         data.years.forEach(y => yf.append(new Option(y, y)));
 
-                        // Default to current year if available and nothing is selected
-                        const currentYear = String(new Date().getFullYear());
-                        if (!currentYears.length && data.years.some(y => String(y).startsWith(String(currentYear)))) {
-                            yf.val([currentYear]);
+                        // Default to current Financial Year if nothing is selected
+                        // FY starts in April: if month >= 4, FY = year-(year+1), else FY = (year-1)-year
+                        const now = new Date();
+                        const fyStart = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+                        const fyLabel = `${fyStart}-${String(fyStart + 1).slice(-2)}`;
+                        if (!currentYears.length && data.years.includes(fyLabel)) {
+                            yf.val([fyLabel]);
+                        } else if (!currentYears.length && data.years.length > 0) {
+                            yf.val([data.years[0]]);  // fallback to most recent FY
                         }
 
                         rf.empty();
@@ -582,10 +605,8 @@
                         mf.empty();
                         if (data.months) {
                             data.months.forEach(m => mf.append(new Option(m.name, m.id)));
-                            // Default to April (month 4) — start of FY 2026-27
-                            // This aligns the default view with Looker's 528 Programs / 717 Ignators baseline
                             if (!mf.val() || !mf.val().length) {
-                                mf.val(['4']);
+                                mf.val([String(new Date().getMonth() + 1)]);
                             }
                         }
 
@@ -993,6 +1014,99 @@
             });
         }
 
+        // ── Doughnut Chart (Sessions per Region) ─────────────────────────
+        function renderSessionsDoughnutChart(chartData) {
+            const el = document.getElementById('sessionsRegionChart');
+            if (!el) return;
+
+            const labels = chartData.labels.map(l => {
+                const code = getAcronym(l);
+                regionMapping[code] = l;
+                return code;
+            });
+            const data = chartData.datasets[0].data;
+
+            if (window.sessionsChartInst) window.sessionsChartInst.destroy();
+
+            const palette = [
+                '#f97316', // Orange
+                '#ec4899', // Pink
+                '#f59e0b', // Amber
+                '#d97757', // Light Brown
+                '#e11d48', // Rose
+                '#8b4513', // SaddleBrown
+                '#fb923c', // Orange light
+                '#0ea5e9', // Sky blue
+                '#6366f1', // Indigo
+                '#14b8a6', // Teal
+                '#4b5563', // Gray
+            ];
+
+            window.sessionsChartInst = new Chart(el.getContext('2d'), {
+                type: 'doughnut',
+                plugins: [ChartDataLabels],
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: labels.map((_, i) => palette[i % palette.length]),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    cutout: '50%',
+                    onClick: (evt, elements) => {
+                        if (elements.length > 0) {
+                            const idx = elements[0].index;
+                            const acronym = labels[idx];
+                            const fullName = regionMapping[acronym] || acronym;
+                            loadDrilldown(fullName);
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right',
+                            labels: {
+                                font: { size: 10, family: 'Inter, sans-serif' },
+                                boxWidth: 10,
+                                color: '#475569'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleFont: { size: 13 },
+                            bodyFont: { size: 12 },
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                title: items => regionMapping[items[0].label] || items[0].label,
+                                label: item => ` Sessions: ${item.raw.toLocaleString()}`
+                            }
+                        },
+                        datalabels: {
+                            display: true,
+                            color: '#ffffff',
+                            font: { weight: 'bold', size: 11 },
+                            formatter: (value, ctx) => {
+                                let sum = 0;
+                                let dataArr = ctx.chart.data.datasets[0].data;
+                                dataArr.map(data => {
+                                    sum += Number(data);
+                                });
+                                let percentage = (value*100 / sum).toFixed(1)+"%";
+                                return percentage;
+                            },
+                            textShadowColor: 'rgba(0,0,0,0.6)',
+                            textShadowBlur: 4
+                        }
+                    }
+                }
+            });
+        }
+
         // ── Load main data ───────────────────────────────────────────────
         function loadData() {
             clearDrilldown(false);  // reset without re-fetching
@@ -1008,6 +1122,7 @@
                     updateKpis(data.kpis, data.trends, data.sparklines);
                     regionMapping = {};
                     renderPolarAreaChart(data.charts.instructors_by_region);
+                    renderSessionsDoughnutChart(data.charts.sessions_by_region);
                     renderBarChart(data.charts.programs_by_region);
                     updateLegendPopover();
                     updateReportPeriodText();
