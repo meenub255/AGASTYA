@@ -46,46 +46,87 @@ def previousYearSamePeriod(year: int, region: list[str] | None = None, program: 
     """
     return currentYearYTD(year, region, program)
 
-def _apply_ytd_filter(where_clause: str, params: list, years: list[int] | list[str] | None, region: list[str] | None = None, program: list[str] | None = None, month: list[str] | list[int] | None = None, month_year: list[str] | None = None) -> tuple[str, list]:
+def _apply_ytd_filter(
+    where_clause: str,
+    params: list,
+    years: list[int] | list[str] | None,
+    region: list[str] | None = None,
+    program: list[str] | None = None,
+    month: list[str] | list[int] | None = None,
+    month_year: list[str] | None = None
+) -> tuple[str, list]:
+    """
+    Applies YTD (Year-To-Date) month capping and future-session exclusion.
+    
+    Key behaviours:
+    - If a specific month filter is selected, honour it directly.
+    - For FY year strings like '2026-27', the FY clause in _build_filters already
+      restricts to months 4-12 of start year AND months 1-3 of end year.
+      Here we additionally cap at current month IF we are currently inside that FY.
+    - Always excludes sessions with d.full_date > CURRENT_DATE (future sessions).
+    """
+    from backend.services.query_utils import parse_fy_string, get_current_fy
+
+    # ── Always exclude future sessions ───────────────────────────────────────
+    future_clause = "d.full_date <= CURRENT_DATE"
+    if where_clause:
+        where_clause += f" AND {future_clause}"
+    else:
+        where_clause = f"WHERE {future_clause}"
+
+    # ── Specific month-year filter takes priority ─────────────────────────────
     if month_year and len(month_year) > 0:
-        if where_clause:
-            where_clause += " AND TO_CHAR(d.full_date, 'YYYY-MM') = ANY(%s)"
-        else:
-            where_clause = "WHERE TO_CHAR(d.full_date, 'YYYY-MM') = ANY(%s)"
+        where_clause += " AND TO_CHAR(d.full_date, 'YYYY-MM') = ANY(%s)"
         params.append(month_year)
         return where_clause, params
 
+    # ── Specific month filter takes priority ─────────────────────────────────
     if month and len(month) > 0:
         try:
             month_ints = [int(m) for m in month if str(m).isdigit()]
             if month_ints:
-                if where_clause:
-                    where_clause += " AND d.month_actual = ANY(%s)"
-                else:
-                    where_clause = "WHERE d.month_actual = ANY(%s)"
+                where_clause += " AND d.month_actual = ANY(%s)"
                 params.append(month_ints)
                 return where_clause, params
         except Exception:
             pass
 
-    single_year = None
+    # ── YTD month cap ─────────────────────────────────────────────────────────
+    # Determine if we are looking at the current FY or a historical one.
+    # For the current FY, cap at current calendar month to avoid showing
+    # pre-scheduled future months. For past FYs, no cap needed (all 12 months).
+    current_fy = get_current_fy()
+    
+    single_fy = None
     if years and len(years) == 1:
-        try:
-            single_year = int(str(years[0])[:4])
-        except (ValueError, TypeError):
-            pass
+        single_fy = str(years[0])
     elif years is None or len(years) == 0:
-        single_year = DEFAULT_YEAR
+        single_fy = current_fy
 
-    if single_year is not None:
-        max_month = currentYearYTD(single_year, region, program)
-        if where_clause:
-            where_clause += " AND d.month_actual <= %s"
+    if single_fy is not None:
+        parsed = parse_fy_string(single_fy)
+        if parsed:
+            fy_start, fy_end = parsed
+            if single_fy == current_fy:
+                # Current FY: cap at current calendar month
+                import datetime
+                current_mo = datetime.datetime.now().month
+                # The FY filter in _build_filters already handles the year boundary.
+                # We only need to cap the month within the current calendar year.
+                where_clause += " AND d.month_actual <= %s"
+                params.append(current_mo)
         else:
-            where_clause = "WHERE d.month_actual <= %s"
-        params.append(max_month)
-        
+            # Plain calendar year fallback
+            try:
+                single_year = int(str(single_fy)[:4])
+                max_month = currentYearYTD(single_year, region, program)
+                where_clause += " AND d.month_actual <= %s"
+                params.append(max_month)
+            except (ValueError, TypeError):
+                pass
+
     return where_clause, params
+
 
 
 def _build_filters(
@@ -767,11 +808,30 @@ def get_overview_charts(
         driver_params,
     )
 
+    # 4. Sessions per region
+    sessions_rows = fetch_all(
+        f"""
+        SELECT
+            COALESCE(g.region_name, 'Unknown') AS label,
+            COUNT(DISTINCT f.sk_fact_session_id) AS value
+        FROM dw.fact_session f
+        LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
+        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+        LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+        {where_clause} AND g.region_name IS NOT NULL
+        GROUP BY g.region_name
+        ORDER BY value DESC
+        LIMIT 10
+        """,
+        params,
+    )
+
 
     return {
         "instructors_by_region": [{"label": r["label"], "value": float(r["value"])} for r in instructors_rows],
         "drivers_by_region": [{"label": r["label"], "value": float(r["value"])} for r in drivers_rows],
-        "programs_by_region": [{"label": r["label"], "value": float(r["value"])} for r in programs_rows]
+        "programs_by_region": [{"label": r["label"], "value": float(r["value"])} for r in programs_rows],
+        "sessions_by_region": [{"label": r["label"], "value": float(r["value"])} for r in sessions_rows]
     }
 
 
