@@ -16,15 +16,22 @@ def get_filters(
     if years is None or not isinstance(years, list): years = []
     if regions is None or not isinstance(regions, list): regions = []
     
-    # 1. Fetch Years (only those with data)
+    # 1. Fetch Financial Years (only those with PAST sessions — no future dates)
+    # FY YYYY-YY: April of YYYY to March of (YYYY+1).
+    # Sessions in months 1-3 belong to the PREVIOUS fiscal year.
     years_query = f"""
-        SELECT DISTINCT d.year_actual 
+        SELECT DISTINCT
+            CASE WHEN d.month_actual >= 4 THEN d.year_actual ELSE d.year_actual - 1 END AS fy_start
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON d.date_id = f.date_id
         WHERE d.year_actual IS NOT NULL
-        ORDER BY d.year_actual DESC
+          AND d.full_date <= CURRENT_DATE
+        ORDER BY fy_start DESC
     """
-    years_data = [f"{int(r['year_actual'])}-{str(int(r['year_actual'])+1)[2:]}" for r in fetch_all(years_query) if r.get("year_actual")]
+    years_data = [
+        f"{int(r['fy_start'])}-{str(int(r['fy_start'])+1)[2:]}"
+        for r in fetch_all(years_query) if r.get("fy_start")
+    ]
     
     # 2. Fetch Regions (filtered by years)
     where_clauses = []
@@ -151,6 +158,14 @@ def get_data(
                 "label": "Programs",
                 "data": [item["value"] for item in charts["programs_by_region"]],
                 "backgroundColor": "#f59e0b"
+            }]
+        },
+        "sessions_by_region": {
+            "labels": [item["label"] for item in charts["sessions_by_region"]],
+            "datasets": [{
+                "label": "Sessions",
+                "data": [item["value"] for item in charts["sessions_by_region"]],
+                "backgroundColor": "#ec4899"
             }]
         }
     }
