@@ -7,17 +7,97 @@ logger = logging.getLogger(__name__)
 from backend.config import DEFAULT_YEAR
 from backend.db import get_datamart_conn
 
+
+def parse_fy_string(fy_str: str) -> tuple[int, int] | None:
+    """
+    Parses a Financial Year string like '2026-27' or '2025-26' into a
+    (fy_start_year, fy_end_year) tuple, e.g. (2026, 2027).
+    Returns None if the string is not a valid FY format.
+    FY runs April (month 4) of fy_start_year to March (month 3) of fy_end_year.
+    """
+    if not isinstance(fy_str, str) or '-' not in fy_str:
+        return None
+    parts = fy_str.split('-')
+    if len(parts) != 2:
+        return None
+    try:
+        start = int(parts[0])
+        # End year suffix can be 2-digit or 4-digit
+        suffix = parts[1]
+        if len(suffix) == 2:
+            end = int(str(start)[:2] + suffix)
+        elif len(suffix) == 4:
+            end = int(suffix)
+        else:
+            return None
+        if end != start + 1:
+            return None
+        return (start, end)
+    except (ValueError, TypeError):
+        return None
+
+
+def fy_to_date_clause(fy_years: list[str], date_alias: str = "d") -> tuple[str, list]:
+    """
+    Converts a list of FY year strings like ['2026-27', '2025-26'] into a
+    SQL WHERE clause fragment that correctly filters across the two calendar
+    years each FY spans.
+
+    FY XXXX-YY = months 4-12 of XXXX UNION months 1-3 of YY.
+    Returns (sql_clause, params) suitable for AND-ing into a WHERE clause.
+    """
+    if not fy_years:
+        return "TRUE", []
+
+    conditions = []
+    params = []
+    for fy_str in fy_years:
+        parsed = parse_fy_string(fy_str)
+        if parsed:
+            start_yr, end_yr = parsed
+            # FY = (year=start_yr AND month>=4) OR (year=end_yr AND month<=3)
+            cond = (
+                f"(({date_alias}.year_actual = %s AND {date_alias}.month_actual >= 4) "
+                f"OR ({date_alias}.year_actual = %s AND {date_alias}.month_actual <= 3))"
+            )
+            conditions.append(cond)
+            params.extend([start_yr, end_yr])
+        else:
+            # Treat as plain calendar year
+            try:
+                cal_yr = int(str(fy_str)[:4])
+                conditions.append(f"{date_alias}.year_actual = %s")
+                params.append(cal_yr)
+            except (ValueError, TypeError):
+                pass
+
+    if not conditions:
+        return "TRUE", []
+    return "(" + " OR ".join(conditions) + ")", params
+
+
+def get_current_fy() -> str:
+    """
+    Returns the current Financial Year label string, e.g. '2026-27'.
+    FY starts in April. If current month < April, we are in FY (year-1)-year.
+    """
+    now = datetime.datetime.now()
+    if now.month >= 4:
+        return f"{now.year}-{str(now.year + 1)[2:]}"
+    else:
+        return f"{now.year - 1}-{str(now.year)[2:]}"
+
+
 def get_ytd_max_month(year: int) -> int:
     """
     Returns the maximum month (1-12) to include in the YTD calculations for the given year.
     If the year is 2026, it returns 5.
     If it is the current calendar year, it caps at current calendar month.
+    Always caps at the current calendar month to exclude future sessions.
     """
-    if year == 2026:
-        return 5
     current_yr = datetime.datetime.now().year
     current_mo = datetime.datetime.now().month
-    if year == current_yr:
+    if year >= current_yr:
         return current_mo
     return 12
 
@@ -107,15 +187,27 @@ def build_standard_filters(
                 clauses.append("f.sk_activity_type_id IN (SELECT sk_activity_type_id FROM dw.dim_activity_type WHERE activity_name = %s)")
                 params.append(program)
             
-    # 4. Years
+    # 4. Years — support both FY strings ('2026-27') and plain calendar years
     effective_years = years
     if effective_years is None or (isinstance(effective_years, list) and len(effective_years) == 0):
-        effective_years = [DEFAULT_YEAR]
-        
-    c, p = get_list_filter_clause(f"{date_alias}.year_actual", effective_years, cast_type="int")
-    if c != "TRUE":
-        clauses.append(c); params.extend(p)
-        
+        effective_years = [get_current_fy()]
+
+    if effective_years:
+        year_list = effective_years if isinstance(effective_years, list) else [effective_years]
+        fy_strings = [v for v in year_list if parse_fy_string(str(v)) is not None]
+        cal_years  = [v for v in year_list if parse_fy_string(str(v)) is None]
+
+        if fy_strings:
+            fy_sql, fy_params = fy_to_date_clause(fy_strings, date_alias=date_alias)
+            if fy_sql != "TRUE":
+                clauses.append(fy_sql)
+                params.extend(fy_params)
+
+        if cal_years:
+            c, p = get_list_filter_clause(f"{date_alias}.year_actual", cal_years, cast_type="int")
+            if c != "TRUE":
+                clauses.append(c); params.extend(p)
+
     # 5. Quarter
     if quarter is not None:
         fiscal_q_expr = f"CASE WHEN {date_alias}.month_actual IN (4,5,6) THEN 1 WHEN {date_alias}.month_actual IN (7,8,9) THEN 2 WHEN {date_alias}.month_actual IN (10,11,12) THEN 3 ELSE 4 END"
@@ -129,23 +221,36 @@ def build_standard_filters(
         if c != "TRUE":
             clauses.append(c); params.extend(p)
             
-    # 7. Apply YTD capping if month and quarter are not specified
+    # 7. Apply YTD capping and future-session exclusion
+    # Always exclude future sessions
+    clauses.append(f"{date_alias}.full_date <= CURRENT_DATE")
+
     max_month = None
     if not month and not quarter:
         if force_max_month is not None:
             max_month = force_max_month
         else:
-            single_year = None
+            # Determine current FY context for YTD capping
+            current_fy = get_current_fy()
+            single_fy = None
             if effective_years and len(effective_years) == 1:
-                try:
-                    single_year = int(str(effective_years[0])[:4])
-                except (ValueError, TypeError):
-                    pass
-            elif effective_years is None or len(effective_years) == 0:
-                single_year = DEFAULT_YEAR
-                
-            if single_year is not None:
-                max_month = get_ytd_max_month(single_year)
+                single_fy = str(effective_years[0])
+            elif not effective_years:
+                single_fy = current_fy
+
+            if single_fy is not None:
+                parsed = parse_fy_string(single_fy)
+                if parsed:
+                    if single_fy == current_fy:
+                        import datetime as _dt
+                        max_month = _dt.datetime.now().month
+                else:
+                    # Plain calendar year
+                    try:
+                        single_year = int(str(single_fy)[:4])
+                        max_month = get_ytd_max_month(single_year)
+                    except (ValueError, TypeError):
+                        pass
                 
         if max_month is not None:
             clauses.append(f"{date_alias}.month_actual <= %s")
@@ -200,8 +305,13 @@ def build_dimension_filters(
     program_expression: str | None = None,
     instructor: str | list[str] | None = None,
     instructor_expression: str | None = None,
-    use_default_year: bool = True, # Default to True for dashboard performance
+    use_default_year: bool = True,
 ) -> tuple[str, list[object]]:
+    """
+    Build a WHERE clause and params list from dimension filters.
+    Supports FY strings like '2026-27' (April-March financial year) which
+    are correctly expanded to cover two calendar years.
+    """
     clauses: list[str] = []
     params: list[object] = []
 
@@ -210,10 +320,12 @@ def build_dimension_filters(
             return
         if isinstance(val, list):
             clean = [v for v in val if v and v != ""]
-            if not clean: return
+            if not clean:
+                return
             if cast_type == "int":
                 clean = [int(v) for v in clean if str(v).isdigit()]
-                if not clean: return
+                if not clean:
+                    return
             clauses.append(f"{col} = ANY(%s)")
             params.append(clean)
         else:
@@ -222,32 +334,52 @@ def build_dimension_filters(
             clauses.append(f"{col} = %s")
             params.append(val)
 
-    # Support 'year' as an alternative to start/end if multi-select is used
+    # ── Year / Financial Year handling ────────────────────────────────────────
+    # Values may be FY strings like '2026-27' or plain calendar years like 2026.
+    # FY '2026-27' spans April 2026 - March 2027 (two calendar years).
     effective_year = year
     if effective_year is None and use_default_year:
-        effective_year = [DEFAULT_YEAR]
+        effective_year = [get_current_fy()]   # default to current financial year
 
     if effective_year is not None:
-        add_list_filter(year_expression or f"EXTRACT(YEAR FROM {date_expression})", effective_year, cast_type="int")
+        year_list = effective_year if isinstance(effective_year, list) else [effective_year]
+        year_list = [v for v in year_list if v is not None and v != ""]
+
+        # Split into FY strings vs plain calendar years
+        fy_strings = [v for v in year_list if parse_fy_string(str(v)) is not None]
+        cal_years  = [v for v in year_list if parse_fy_string(str(v)) is None]
+
+        if fy_strings:
+            date_alias = (year_expression or "d.year_actual").split(".")[0]
+            fy_sql, fy_params = fy_to_date_clause(fy_strings, date_alias=date_alias)
+            if fy_sql != "TRUE":
+                clauses.append(fy_sql)
+                params.extend(fy_params)
+
+        if cal_years:
+            add_list_filter(
+                year_expression or f"EXTRACT(YEAR FROM {date_expression})",
+                cal_years,
+                cast_type="int"
+            )
 
     if start is not None:
         if isinstance(start, list):
-            add_list_filter(year_expression or f"EXTRACT(YEAR FROM {date_expression})", start, cast_type="int")
+            add_list_filter(
+                year_expression or f"EXTRACT(YEAR FROM {date_expression})",
+                start, cast_type="int"
+            )
         else:
-            if year_expression:
-                clauses.append(f"{year_expression} >= %s")
-                params.append(int(start) if str(start).isdigit() else start)
-            elif date_expression:
-                clauses.append(f"EXTRACT(YEAR FROM {date_expression}) >= %s")
+            col = year_expression or (f"EXTRACT(YEAR FROM {date_expression})" if date_expression else None)
+            if col:
+                clauses.append(f"{col} >= %s")
                 params.append(int(start) if str(start).isdigit() else start)
 
     if end is not None:
         if not isinstance(end, list):
-            if year_expression:
-                clauses.append(f"{year_expression} <= %s")
-                params.append(int(end) if str(end).isdigit() else end)
-            elif date_expression:
-                clauses.append(f"EXTRACT(YEAR FROM {date_expression}) <= %s")
+            col = year_expression or (f"EXTRACT(YEAR FROM {date_expression})" if date_expression else None)
+            if col:
+                clauses.append(f"{col} <= %s")
                 params.append(int(end) if str(end).isdigit() else end)
 
     if location_expression:
@@ -257,11 +389,17 @@ def build_dimension_filters(
         if isinstance(program, list):
             clean_programs = [pr for pr in program if pr and pr != ""]
             if clean_programs:
-                clauses.append("f.sk_activity_type_id IN (SELECT sk_activity_type_id FROM dw.dim_activity_type WHERE activity_name = ANY(%s))")
+                clauses.append(
+                    "f.sk_activity_type_id IN "
+                    "(SELECT sk_activity_type_id FROM dw.dim_activity_type WHERE activity_name = ANY(%s))"
+                )
                 params.append(clean_programs)
         else:
             if program and program != "":
-                clauses.append("f.sk_activity_type_id IN (SELECT sk_activity_type_id FROM dw.dim_activity_type WHERE activity_name = %s)")
+                clauses.append(
+                    "f.sk_activity_type_id IN "
+                    "(SELECT sk_activity_type_id FROM dw.dim_activity_type WHERE activity_name = %s)"
+                )
                 params.append(program)
 
     if instructor_expression:
@@ -271,6 +409,7 @@ def build_dimension_filters(
         return "", params
 
     return "WHERE " + " AND ".join(clauses), params
+
 
 
 def fetch_one(query: str, params: Sequence[object] | None = None) -> dict:
