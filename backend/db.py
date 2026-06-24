@@ -41,6 +41,13 @@ def get_datamart_conn():
     return conn
 
 
+def get_data_ops_conn():
+    from backend.config import DATA_OPS_SCHEMA_NAME
+    conn = _connect(ADMIN_DB_NAME)
+    with conn.cursor() as cur:
+        cur.execute(f"SET search_path TO {DATA_OPS_SCHEMA_NAME}, public")
+    return conn
+
 
 def get_conn():
     return get_datamart_conn()
