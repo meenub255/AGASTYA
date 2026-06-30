@@ -393,7 +393,7 @@ $(function(){
         if(!rows.length)return;
         var ctx=document.getElementById('chartProductivity').getContext('2d');
         charts.productivity=new Chart(ctx,{type:'scatter',
-            data:{datasets:[{label:'Staff',data:rows.map(function(r){return{x:r.days_present,y:r.sessions,r:Math.max(4,Math.min(16,r.avg_per_day*2||4));};}),backgroundColor:'rgba(99,102,241,0.5)',borderColor:'#6366f1',borderWidth:1}]},
+            data:{datasets:[{label:'Staff',data:rows.map(function(r){return{x:r.days_present,y:r.sessions,r:Math.max(4,Math.min(16,r.avg_per_day*2||4))};}),backgroundColor:'rgba(99,102,241,0.5)',borderColor:'#6366f1',borderWidth:1}]},
             options:{responsive:true,maintainAspectRatio:false,
                 plugins:{legend:{display:false},
                     tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8,callbacks:{label:function(ctx){var r=rows[ctx.dataIndex];return r.name+': '+r.days_present+' days, '+r.sessions+' sessions';}}}},
