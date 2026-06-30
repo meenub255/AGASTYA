@@ -253,6 +253,8 @@ def get_instructor_feedback_insights(instructor_name=None, years=None, month=Non
                 COALESCE(u.user_name, 'Unknown') AS name,
                 COUNT(DISTINCT f.sk_fact_session_id) AS sessions,
                 COUNT(DISTINCT f.sk_school_id) AS schools,
+                SUM(COALESCE(f.demo_session_count, 0)) AS demo,
+                SUM(COALESCE(f.hands_on_session_count, 0)) AS hands_on,
                 ROUND(AVG(NULLIF(COALESCE(f.session_duration_minutes, 0), 0)), 0) AS avg_duration,
                 SUM(COALESCE(f.no_of_teachers_participated, 0)) AS teachers,
                 SUM(COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0)) AS community
