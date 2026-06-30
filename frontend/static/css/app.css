@@ -3473,13 +3473,14 @@ table.dataTable thead th {
     align-items: center !important;
 }
 #overviewTable_wrapper .row > div {
-    flex-basis: auto !important;
-    flex-grow: 0 !important;
-    flex-shrink: 0 !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
     max-width: none !important;
 }
 #overviewTable_wrapper .row > div:last-child {
-    flex-grow: 1 !important;
+    flex: 1 1 0% !important;
+    max-width: 100% !important;
+    width: 100% !important;
     text-align: right !important;
 }
 #overviewTable_wrapper .row > div:last-child .dataTables_filter {
