@@ -1301,7 +1301,7 @@
                 searching: true,
                 ordering: true,
                 info: true,
-                responsive: true,
+                responsive: false,
                 autoWidth: false, // Prevent DataTables from guessing widths, which causes misalignment
                 pageLength: 15,
                 lengthMenu: [10, 15, 25, 50, 100],
