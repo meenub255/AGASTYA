@@ -3466,23 +3466,4 @@ table.dataTable thead th {
 .dataTables_wrapper .dataTables_filter input {
     margin-left: 0.5rem;
 }
-/* Instructor overview: force filter to extreme right */
-#overviewTable_wrapper > .row {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-}
-#overviewTable_wrapper > .row > .col-sm-12:first-child,
-#overviewTable_wrapper > .row > [class*="col"]:first-child {
-    flex: 0 0 auto !important;
-    width: auto !important;
-    max-width: none !important;
-}
-#overviewTable_wrapper > .row > .col-sm-12:last-child,
-#overviewTable_wrapper > .row > [class*="col"]:last-child {
-    flex: 1 1 auto !important;
-    width: auto !important;
-    max-width: none !important;
-    text-align: right !important;
-}
 
