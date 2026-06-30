@@ -1,20 +1,22 @@
-<div class="pagination-container">
-    <div class="pagination-info text-muted">
-        Showing <span class="page-count-start">0</span> to <span class="page-count-end">0</span> of <span class="page-count-total">0</span> entries
+<div class="dt-top-bar" style="display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;justify-content:space-between !important;align-items:center !important;width:100% !important;box-sizing:border-box !important;">
+    <div class="length-wrapper" style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <span>Show</span>
+        <select class="page-size-select" style="width:auto;display:inline-flex !important;">
+            <option value="10">10</option>
+            <option value="15" selected>15</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="-1">All</option>
+        </select>
+        <span>entries</span>
     </div>
+    <input type="search" class="dt-search-input" placeholder="Filter records..." style="margin-left:auto !important;flex-shrink:0;">
+</div>
+<div class="dt-bottom-bar">
+    <div class="pagination-info">Showing 0 to 0 of 0 entries</div>
     <div class="pagination-controls-wrapper">
-        <button class="pagination-btn prev-page" title="Previous Page" disabled>
-            <i class="fas fa-chevron-left mr-1"></i> Previous
-        </button>
-        
-        <div class="pagination-page-selector">
-            <span>Page</span>
-            <input type="number" class="page-input" value="1" min="1">
-            <span>of <span class="total-pages">1</span></span>
-        </div>
-
-        <button class="pagination-btn next-page" title="Next Page" disabled>
-            Next <i class="fas fa-chevron-right ml-1"></i>
-        </button>
+        <button class="pagination-btn prev-page" disabled><i class="fas fa-chevron-left mr-1"></i> Previous</button>
+        <span class="page-indicator">Page 1 of 1</span>
+        <button class="pagination-btn next-page" disabled>Next <i class="fas fa-chevron-right ml-1"></i></button>
     </div>
 </div>

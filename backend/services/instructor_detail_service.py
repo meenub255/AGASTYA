@@ -107,12 +107,12 @@ def get_instructor_detail_data(instructor_name=None, years=None, month=None, qua
         # 4. Get paginated granular data (10 Columns)
         sql = f"""
             SELECT 
-                COALESCE(p.program_name, 'N/A') as program_name,
+                COALESCE(p.program_name, '') as program_name,
                 d.full_date as date,
-                COALESCE(a.activity_name, 'N/A') as activity_name,
-                COALESCE(s.school_name, 'N/A') as school_name,
+                COALESCE(a.activity_name, '') as activity_name,
+                COALESCE(s.school_name, '') as school_name,
                 COALESCE(e.class_name, 'Adhoc') as class_name,
-                COALESCE(st.topic_description, ra.details, 'N/A') as topic_name,
+                COALESCE(st.topic_description, ra.details, '') as topic_name,
                 COALESCE(e.boys_count, 0) as boys,
                 COALESCE(e.girls_count, 0) as girls,
                 COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0) as community,

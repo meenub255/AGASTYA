@@ -37,9 +37,7 @@
         <div class="ps-section-label">Insights &amp; Tracking</div>
 
         <!-- Ignator Performance Group -->
-        {% set ignator_active = page_id in ['instructor-overview', 'performance-management-dashboard',
-        'instructor-summary',
-        'instructor-detail', 'instructor-feedback', 'attendance'] %}
+        {% set ignator_active = page_id in ['instructor-overview', 'instructor-summary', 'instructor-feedback', 'attendance'] %}
         <div class="ps-group {% if ignator_active %}ps-group-open{% endif %}">
             <button class="ps-group-trigger {% if ignator_active %}ps-active{% endif %}" data-group="ignator"
                 data-tip="Ignator Performance">
@@ -53,20 +51,10 @@
                     <span class="ps-sub-dot"></span>
                     <span class="ps-label">Overview</span>
                 </a>
-                <a href="/performance-management-dashboard"
-                    class="ps-sub-item {% if page_id == 'performance-management-dashboard' %}ps-active{% endif %}">
-                    <span class="ps-sub-dot"></span>
-                    <span class="ps-label">Performance Mgmt</span>
-                </a>
                 <a href="/instructor-summary"
                     class="ps-sub-item {% if page_id == 'instructor-summary' %}ps-active{% endif %}">
                     <span class="ps-sub-dot"></span>
                     <span class="ps-label">Ignator Summary</span>
-                </a>
-                <a href="/instructor-detail"
-                    class="ps-sub-item {% if page_id == 'instructor-detail' %}ps-active{% endif %}">
-                    <span class="ps-sub-dot"></span>
-                    <span class="ps-label">Detailed View</span>
                 </a>
                 <a href="/instructor-feedback"
                     class="ps-sub-item {% if page_id == 'instructor-feedback' %}ps-active{% endif %}">
@@ -81,9 +69,7 @@
         </div>
 
         <!-- Program Impact Group -->
-        {% set reach_active = page_id in ['program-impact-overview', 'nationwide-dashboard', 'regionwise-dashboard',
-        'program-visits',
-        'programwise-report', 'exposure-session-dashboard'] %}
+        {% set reach_active = page_id in ['program-impact-overview', 'regionwise-dashboard', 'programwise-report'] %}
         <div class="ps-group {% if reach_active %}ps-group-open{% endif %}">
             <button class="ps-group-trigger {% if reach_active %}ps-active{% endif %}" data-group="program"
                 data-tip="Program Impact">
@@ -97,37 +83,21 @@
                     <span class="ps-sub-dot"></span>
                     <span class="ps-label">Overview</span>
                 </a>
-                <a href="/nationwide-dashboard"
-                    class="ps-sub-item {% if page_id == 'nationwide-dashboard' %}ps-active{% endif %}">
-                    <span class="ps-sub-dot"></span>
-                    <span class="ps-label">Nationwide Data</span>
-                </a>
                 <a href="/regionwise-dashboard"
                     class="ps-sub-item {% if page_id == 'regionwise-dashboard' %}ps-active{% endif %}">
                     <span class="ps-sub-dot"></span>
                     <span class="ps-label">Regional Insights</span>
-                </a>
-                <a href="/program-visits" class="ps-sub-item {% if page_id == 'program-visits' %}ps-active{% endif %}">
-                    <span class="ps-sub-dot"></span>
-                    <span class="ps-label">Site Visits</span>
                 </a>
                 <a href="/programwise-report"
                     class="ps-sub-item {% if page_id == 'programwise-report' %}ps-active{% endif %}">
                     <span class="ps-sub-dot"></span>
                     <span class="ps-label">Program Reports</span>
                 </a>
-                <a href="/exposure-session-dashboard"
-                    class="ps-sub-item {% if page_id == 'exposure-session-dashboard' %}ps-active{% endif %}">
-                    <span class="ps-sub-dot"></span>
-                    <span class="ps-label">Session Metrics</span>
-                </a>
             </div>
         </div>
 
         <!-- Operations Group -->
-        {% set ops_active = page_id in ['operations-overview', 'manpower-vehicle-dashboard', 'vehicle-report',
-        'work-days-report',
-        'arealead-summary', 'region-summary'] %}
+        {% set ops_active = page_id in ['operations-overview', 'vehicle-ops', 'arealead-summary', 'region-summary'] %}
         <div class="ps-group {% if ops_active %}ps-group-open{% endif %}">
             <button class="ps-group-trigger {% if ops_active %}ps-active{% endif %}" data-group="ops"
                 data-tip="Operations">
@@ -141,19 +111,10 @@
                     <span class="ps-sub-dot"></span>
                     <span class="ps-label">Overview</span>
                 </a>
-                <a href="/manpower-vehicle-dashboard"
-                    class="ps-sub-item {% if page_id == 'manpower-vehicle-dashboard' %}ps-active{% endif %}">
+                <a href="/vehicle-ops"
+                    class="ps-sub-item {% if page_id == 'vehicle-ops' %}ps-active{% endif %}">
                     <span class="ps-sub-dot"></span>
-                    <span class="ps-label">Assets &amp; Teams</span>
-                </a>
-                <a href="/vehicle-report" class="ps-sub-item {% if page_id == 'vehicle-report' %}ps-active{% endif %}">
-                    <span class="ps-sub-dot"></span>
-                    <span class="ps-label">Vehicle Logs</span>
-                </a>
-                <a href="/work-days-report"
-                    class="ps-sub-item {% if page_id == 'work-days-report' %}ps-active{% endif %}">
-                    <span class="ps-sub-dot"></span>
-                    <span class="ps-label">Workforce Days</span>
+                    <span class="ps-label">Vehicle Ops</span>
                 </a>
                 <a href="/arealead-summary"
                     class="ps-sub-item {% if page_id == 'arealead-summary' %}ps-active{% endif %}">

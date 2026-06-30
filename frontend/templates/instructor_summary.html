@@ -2,51 +2,28 @@
 
 {% block content %}
 <style>
-    /* ── Table & Cards ── */
     .content-header { display: none !important; }
-    #instructorTable th {
-        background: #f1f5f9 !important;
-        color: #475569 !important;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        padding: 15px;
+    #summaryTable th {
+        background: #f1f5f9 !important; color: #475569 !important; font-size: 11px;
+        font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 15px;
         border-bottom: 1px solid #e2e8f0 !important;
     }
-    #instructorTable td { 
-        padding: 12px 15px; 
-        vertical-align: middle; 
-        color: #1e293b !important;
+    #summaryTable td {
+        padding: 12px 15px; vertical-align: middle; color: #1e293b !important; font-size: 0.9rem;
     }
-    .card-header-premium {
-        background: #f1f5f9;
-        border-bottom: 1px solid #e2e8f0 !important;
-        padding: 15px 20px;
-    }
-    .premium-card {
-        border-radius: 15px;
-        border: none;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-        overflow: hidden;
-    }
-    .small-box {
-        border-radius: 12px;
-        transition: transform 0.2s;
-        overflow: hidden;
-    }
-    .small-box:hover { transform: translateY(-3px); }
+    .card-header-premium { background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important; padding: 15px 20px; }
+    .premium-card { border-radius: 15px; border: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); overflow: hidden; }
+    .nav-tabs-custom .nav-link { border: none; color: #64748b; font-weight: 600; font-size: 0.9rem; padding: 10px 20px; border-bottom: 3px solid transparent; transition: all 0.2s; }
+    .nav-tabs-custom .nav-link.active { color: #3b82f6; border-bottom-color: #3b82f6; background: transparent; }
+    .nav-tabs-custom .nav-link:hover { color: #1e293b; }
 </style>
 
 <div class="col-md-12">
-    <!-- Top Action Bar (Filters + Title) -->
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
             <h1 class="m-0 font-weight-bold" style="font-size: 1.8rem; color: #1e293b;">Ignator Summary</h1>
-            <p class="text-muted small mb-0">Detailed performance metrics per ignator</p>
+            <p class="text-muted small mb-0">Performance breakdown and exposure summary</p>
         </div>
-        
-        <!-- Filter Launcher -->
         <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
             <div class="fl-content">
                 <div class="fl-icon"><i class="fas fa-sliders-h"></i></div>
@@ -60,7 +37,7 @@
     </div>
 
     <!-- KPI Cards -->
-    <div class="row mb-4">
+    <div class="row mb-4" id="kpiContainer">
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardDaysWorked">
                 <div class="kpi-bitcoin-header">
@@ -123,33 +100,82 @@
         </div>
     </div>
 
+    <!-- Tabs -->
+    <ul class="nav nav-tabs-custom mb-3" id="summaryTabs">
+        <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#tabSummary" id="tabBtnSummary">
+                <i class="fas fa-table mr-1"></i> Performance Breakdown
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#tabExposure" id="tabBtnExposure">
+                <i class="fas fa-chart-bar mr-1"></i> Exposure Summary
+            </a>
+        </li>
+    </ul>
 
-    <!-- Main Table Card -->
-    <div class="card premium-card white-chart-card shadow-sm">
-        <div class="card-header card-header-premium d-flex align-items-center">
-            <i class="fas fa-table mr-2" style="color: #3b82f6;"></i>
-            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Ignator Performance Breakdown</h3>
+    <div class="tab-content">
+        <!-- Tab 1: Summary Table -->
+        <div class="tab-pane fade show active" id="tabSummary">
+            <div class="card premium-card white-chart-card shadow-sm">
+                <div class="card-header card-header-premium d-flex align-items-center">
+                    <i class="fas fa-table mr-2" style="color: #3b82f6;"></i>
+                    <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Ignator Performance Breakdown</h3>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table id="summaryTable" class="table table-hover mb-0" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Ignator</th>
+                                    <th class="text-center">Days Worked</th>
+                                    <th class="text-center">School Session</th>
+                                    <th class="text-center">Exposures</th>
+                                    <th class="text-center">Fairs</th>
+                                    <th class="text-center">Training</th>
+                                    <th class="text-center">SF Expo</th>
+                                    <th class="text-center">YIL Sess</th>
+                                    <th class="text-center">YIL Expo</th>
+                                    <th class="text-center">CV Visit</th>
+                                    <th class="text-center">CV Expo</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table id="instructorTable" class="table table-hover mb-0" style="width: 100%;">
-                    <thead>
-                        <tr>
-                            <th>Ignator</th>
-                            <th class="text-center">Days Worked</th>
-                            <th class="text-center">School Session</th>
-                            <th class="text-center">Exposures</th>
-                            <th class="text-center">Fairs</th>
-                            <th class="text-center">Training</th>
-                            <th class="text-center">SF Expo</th>
-                            <th class="text-center">YIL Sess</th>
-                            <th class="text-center">YIL Expo</th>
-                            <th class="text-center">CV Visit</th>
-                            <th class="text-center">CV Expo</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+
+        <!-- Tab 2: Exposure Summary Table -->
+        <div class="tab-pane fade" id="tabExposure">
+            <div class="card premium-card white-chart-card shadow-sm">
+                <div class="card-header card-header-premium d-flex align-items-center">
+                    <i class="fas fa-chart-bar mr-2" style="color: #3b82f6;"></i>
+                    <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Ignator Wise Exposures / Ignator &mdash; Exposures/Program</h3>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table id="exposureTable" class="table table-hover mb-0" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>EMP_ID_O</th>
+                                    <th>Ignator Name</th>
+                                    <th class="text-center">Total Exposures</th>
+                                    <th class="text-center">No of Session</th>
+                                    <th class="text-center">Exp/Pgm</th>
+                                    <th class="text-center">Expo/Ignator</th>
+                                    <th class="text-center">Expo/Session</th>
+                                    <th class="text-center">No of Pgm</th>
+                                    <th class="text-center">NO of Ign</th>
+                                    <th class="text-center">WD</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                            <tfoot id="exposureTableFooter"></tfoot>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -160,9 +186,7 @@
 <div class="filter-drawer shadow-lg" id="filterDrawer">
     <div class="fd-header">
         <h3 class="fd-title"><i class="fas fa-sliders-h mr-2" style="color: #3b82f6;"></i>Filters</h3>
-        <button type="button" class="fd-close" id="closeDrawer">
-            <i class="fas fa-times"></i>
-        </button>
+        <button type="button" class="fd-close" id="closeDrawer"><i class="fas fa-times"></i></button>
     </div>
     <div class="fd-body">
         <div class="fd-section">
@@ -200,95 +224,69 @@
         </button>
     </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
 <script>
 $(function() {
+    let activeTab = 'summary';
+    let summaryDt = null, exposureDt = null;
+
     // ── Select2 Init ──
     if ($.fn.select2) {
-        $('.select2').select2({ 
-            theme: 'bootstrap4', 
-            dropdownParent: $('#filterDrawer'), 
-            width: '100%', 
-            allowClear: true, 
-            multiple: true 
-        });
+        $('.select2').select2({ theme: 'bootstrap4', dropdownParent: $('#filterDrawer'), width: '100%', allowClear: true, multiple: true });
     }
 
     // ── Drawer Logic ──
-    $('#filterLauncher').click(() => {
-        $('#filterDrawerOverlay, #filterDrawer').addClass('open');
-    });
-    $('#closeDrawer, #filterDrawerOverlay').click(() => {
-        $('#filterDrawerOverlay, #filterDrawer').removeClass('open');
+    $('#filterLauncher').click(() => { $('#filterDrawerOverlay, #filterDrawer').addClass('open'); });
+    $('#closeDrawer, #filterDrawerOverlay').click(() => { $('#filterDrawerOverlay, #filterDrawer').removeClass('open'); });
+
+    // ── Tab Switching ──
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+        const id = $(e.target).attr('id');
+        if (id === 'tabBtnSummary') activeTab = 'summary';
+        else activeTab = 'exposure';
+        loadCurrentTab();
     });
 
-    // ── Filter Population ──
-    function loadFilters(selected = {}) {
+    function collectFilters() { return window.PramanaDashboard.collectFilters(); }
+
+    function updateFilterSummary() {
+        const y = $('#yearFilter').val() || [], r = $('#regionFilter').val() || [], a = $('#areaFilter').val() || [];
+        const m = $('#monthFilter').val() || [], q = $('#quarterFilter').val() || [];
+        const total = y.length + r.length + a.length + m.length + q.length;
+        $('#activeFilterCount').text(total ? total + ' Filter' + (total > 1 ? 's' : '') + ' Applied' : 'All Data');
+    }
+
+    // ── Summary Filters ──
+    function loadSummaryFilters() {
         const params = new URLSearchParams();
-        const y = $('#yearFilter').val() || [];
-        const r = $('#regionFilter').val() || [];
-        const a = $('#areaFilter').val() || [];
-        
+        const y = $('#yearFilter').val() || [], r = $('#regionFilter').val() || [], a = $('#areaFilter').val() || [];
         if (y.length) y.forEach(v => params.append('year', v));
         if (r.length) r.forEach(v => params.append('region', v));
         if (a.length) a.forEach(v => params.append('area', v));
-
         return fetch('/instructor-summary/filters?' + params.toString(), { cache: 'no-store' })
             .then(r => r.json())
             .then(data => {
-                // Year
                 if (!$('#yearFilter').val()?.length) {
-                    $('#yearFilter').empty();
-                    data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
-                    
-                    // Default to current year if available and nothing is selected
+                    $('#yearFilter').empty(); data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
                     const currentYear = new Date().getFullYear();
-                    if (data.years.some(y => String(y).startsWith(String(currentYear)))) {
-                        $('#yearFilter').val([currentYear]);
-                    }
+                    if (data.years.some(y => String(y).startsWith(String(currentYear)))) { $('#yearFilter').val([currentYear]); }
                 }
-                // Region
-                const curR = $('#regionFilter').val();
-                $('#regionFilter').empty();
-                data.regions.forEach(r => $('#regionFilter').append(new Option(r, r)));
+                const curR = $('#regionFilter').val(); $('#regionFilter').empty(); data.regions.forEach(r => $('#regionFilter').append(new Option(r, r)));
                 if (curR) $('#regionFilter').val(curR.filter(v => data.regions.includes(v)));
-
-                // Area
-                const curA = $('#areaFilter').val();
-                $('#areaFilter').empty();
-                data.areas.forEach(a => $('#areaFilter').append(new Option(a, a)));
+                const curA = $('#areaFilter').val(); $('#areaFilter').empty(); data.areas.forEach(a => $('#areaFilter').append(new Option(a, a)));
                 if (curA) $('#areaFilter').val(curA.filter(v => data.areas.includes(v)));
-
-                // Month
-                const curM = $('#monthFilter').val();
-                $('#monthFilter').empty();
-                data.months.forEach(m => $('#monthFilter').append(new Option(m.name, m.id)));
+                const curM = $('#monthFilter').val(); $('#monthFilter').empty(); data.months.forEach(m => $('#monthFilter').append(new Option(m.name, m.id)));
                 if (curM) $('#monthFilter').val(curM.filter(v => data.months.some(dm => dm.id == v)));
-
                 $('.select2').trigger('change.select2', { internal: true });
             });
     }
 
-    function updateFilterSummary() {
-        const y = $('#yearFilter').val() || [];
-        const r = $('#regionFilter').val() || [];
-        const a = $('#areaFilter').val() || [];
-        const m = $('#monthFilter').val() || [];
-        const q = $('#quarterFilter').val() || [];
-        const total = y.length + r.length + a.length + m.length + q.length;
-        $('#activeFilterCount').text(total ? total + ' Filter' + (total>1?'s':'') + ' Applied' : 'All Data');
-    }
-
-    function collectFilters() {
-        return window.PramanaDashboard.collectFilters();
-    }
-
-    // ── Table Logic ──
-    function loadTable() {
-        PramanaDashboard.initDataTable('#instructorTable', {
+    // ── Load Summary Table ──
+    function loadSummaryTable() {
+        if (summaryDt) { summaryDt.destroy(); summaryDt = null; }
+        summaryDt = PramanaDashboard.initDataTable('#summaryTable', {
             ajaxUrl: '/instructor-summary/data',
             getFilters: collectFilters,
             onDataLoad: (data) => {
@@ -318,31 +316,82 @@ $(function() {
         });
     }
 
+    // ── Load Exposure Summary Table ──
+    function loadExposureTable() {
+        if (exposureDt) { exposureDt.destroy(); exposureDt = null; }
+        exposureDt = PramanaDashboard.initDataTable('#exposureTable', {
+            ajaxUrl: '/instructor-summary/exposure-summary',
+            getFilters: collectFilters,
+            onDataLoad: function(data) {
+                if (data.table && data.table.length) {
+                    const totals = data.table.reduce((acc, row) => {
+                        acc.total_exposures += Number(row.total_exposures) || 0;
+                        acc.no_of_session += Number(row.no_of_session) || 0;
+                        acc.exp_pgm += Number(row.exp_pgm) || 0;
+                        acc.expo_ign += Number(row.expo_ign) || 0;
+                        acc.expo_session += Number(row.expo_session) || 0;
+                        acc.no_of_pgm += Number(row.no_of_pgm) || 0;
+                        acc.no_of_ign += Number(row.no_of_ign) || 0;
+                        acc.wd += Number(row.wd) || 0;
+                        return acc;
+                    }, { total_exposures: 0, no_of_session: 0, exp_pgm: 0, expo_ign: 0, expo_session: 0, no_of_pgm: 0, no_of_ign: 0, wd: 0 });
+                    
+                    const count = data.table.length;
+                    $('#exposureTableFooter').html(`
+                        <tr style="font-weight:bold; background:#f1f5f9;">
+                            <td colspan="2" class="text-right">Grand Total</td>
+                            <td class="text-center">${totals.total_exposures.toLocaleString()}</td>
+                            <td class="text-center">${totals.no_of_session.toLocaleString()}</td>
+                            <td class="text-center">${Math.round(totals.exp_pgm / count).toLocaleString()}</td>
+                            <td class="text-center">${Math.round(totals.expo_ign / count).toLocaleString()}</td>
+                            <td class="text-center">${Math.round(totals.expo_session / count).toLocaleString()}</td>
+                            <td class="text-center">${totals.no_of_pgm.toLocaleString()}</td>
+                            <td class="text-center">${totals.no_of_ign.toLocaleString()}</td>
+                            <td class="text-center">${totals.wd.toLocaleString()}</td>
+                        </tr>
+                    `);
+                }
+            },
+            columns: [
+                { data: 'emp_id', className: 'text-center small' },
+                { data: 'instructor_name', render: d => `<span class="font-weight-600 text-navy">${d}</span>` },
+                { data: 'total_exposures', className: 'text-center font-weight-bold', render: d => (d || 0).toLocaleString() },
+                { data: 'no_of_session', className: 'text-center', render: d => (d || 0).toLocaleString() },
+                { data: 'exp_pgm', className: 'text-center', render: d => (d || 0).toLocaleString() },
+                { data: 'expo_ign', className: 'text-center font-weight-bold text-success', render: d => (d || 0).toLocaleString() },
+                { data: 'expo_session', className: 'text-center', render: d => (d || 0).toLocaleString() },
+                { data: 'no_of_pgm', className: 'text-center', render: d => `<span class="badge badge-info">${d || 0}</span>` },
+                { data: 'no_of_ign', className: 'text-center', render: d => `<span class="badge badge-warning">${d || 0}</span>` },
+                { data: 'wd', className: 'text-center', render: d => (d || 0).toLocaleString() }
+            ]
+        });
+    }
+
+    function loadCurrentTab() {
+        if (activeTab === 'summary') loadSummaryTable();
+        else loadExposureTable();
+    }
+
     // ── Events ──
     $('.select2').on('change', function(e, opts) {
         if (opts && opts.internal) return;
-        if (this.id === 'yearFilter' || this.id === 'regionFilter' || this.id === 'areaFilter') {
-            loadFilters().then(() => {
-                updateFilterSummary();
-                loadTable();
-            });
-        } else {
-            updateFilterSummary();
-            loadTable();
-        }
+        updateFilterSummary();
+        loadCurrentTab();
     });
 
-    $('#resetFilters').click(() => {
-        $('.select2').val(null).trigger('change');
-    });
+    $('#resetFilters').click(() => { $('.select2').val(null).trigger('change'); });
 
     $('#exportXlsx').click(() => {
         const query = $.param(collectFilters(), true);
-        window.exportToXLSX(`/instructor-summary/export?${query}`, 'instructor_summary_report.xlsx');
+        if (activeTab === 'summary') {
+            window.exportToXLSX('/instructor-summary/export?' + query, 'instructor_summary_report.xlsx');
+        } else {
+            window.exportToXLSX('/instructor-summary/exposure-summary?' + query, 'instructor_exposure_summary.xlsx');
+        }
     });
 
     // Init
-    loadFilters().then(loadTable);
+    loadSummaryFilters().then(() => { loadCurrentTab(); });
 });
 </script>
 {% endblock %}

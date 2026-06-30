@@ -134,6 +134,26 @@ def get_data(
         years, region, program, month=month, 
         month_year=month_year, program_type=program_type, engagement_mode=engagement_mode
     )
+    programs_type_data = overview_service.get_programs_by_type(
+        years, region, program, month=month,
+        month_year=month_year, program_type=program_type, engagement_mode=engagement_mode
+    )
+    mode_data = overview_service.get_mode_of_engagement(
+        years, region, program, month=month,
+        month_year=month_year, program_type=program_type, engagement_mode=engagement_mode
+    )
+    activity_data = overview_service.get_exposure_by_activity(
+        years, region, program, month=month,
+        month_year=month_year, program_type=program_type, engagement_mode=engagement_mode
+    )
+    mode_summary = overview_service.get_mode_of_engagement_summary(
+        years, region, program, month=month,
+        month_year=month_year, program_type=program_type, engagement_mode=engagement_mode
+    )
+    activity_program_data = overview_service.get_exposure_by_activity_and_program(
+        years, region, program, month=month,
+        month_year=month_year, program_type=program_type, engagement_mode=engagement_mode
+    )
 
     formatted_charts = {
         "instructors_by_region": {
@@ -167,6 +187,27 @@ def get_data(
                 "data": [item["value"] for item in charts["sessions_by_region"]],
                 "backgroundColor": "#ec4899"
             }]
+        },
+        "programs_by_type": {
+            "labels": [item["label"] for item in programs_type_data],
+            "datasets": [{
+                "label": "Exposure",
+                "data": [item["value"] for item in programs_type_data]
+            }]
+        },
+        "mode_of_engagement": {
+            "labels": [item["label"] for item in mode_data],
+            "datasets": [{
+                "label": "Sessions",
+                "data": [item["value"] for item in mode_data]
+            }]
+        },
+        "exposure_by_activity": {
+            "labels": [item["label"] for item in activity_data],
+            "datasets": [{
+                "label": "Exposure",
+                "data": [item["value"] for item in activity_data]
+            }]
         }
     }
 
@@ -188,7 +229,9 @@ def get_data(
         "kpis": kpis,
         "charts": formatted_charts,
         "trends": trends,
-        "sparklines": sparklines
+        "sparklines": sparklines,
+        "mode_engagement_summary": mode_summary,
+        "exposure_by_activity_program": activity_program_data
     }
 
 @router.get("/drill-down")

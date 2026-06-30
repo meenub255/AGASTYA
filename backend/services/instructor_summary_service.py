@@ -176,6 +176,86 @@ def get_instructor_summary_data(region=None, area=None, years=None, month=None, 
     }
 
 
+def get_instructor_exposure_summary(region=None, area=None, years=None, month=None, quarter=None, dt_params=None):
+    from backend.services.query_utils import build_standard_filters, get_datatables_sql
+    
+    where_sql, params, max_month = build_standard_filters(
+        years=years,
+        region=region,
+        area=area,
+        month=month,
+        quarter=quarter
+    )
+    
+    # DataTable search/sort
+    search_sql = "TRUE"
+    search_params = []
+    sort_sql = "ORDER BY total_exposures DESC"
+    
+    if dt_params:
+        searchable_cols = ["u.user_name", "u.nk_user_id"]
+        sortable_cols = ["emp_id", "instructor_name", "total_exposures", "no_of_session", "exp_pgm", "expo_ign", "expo_session", "no_of_pgm", "no_of_ign", "wd"]
+        inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
+        search_sql = inner_search_sql
+        search_params = inner_search_params
+        if inner_sort_sql:
+            sort_sql = inner_sort_sql
+
+    # Count query
+    count_sql = f"""
+        SELECT COUNT(*) FROM (
+            SELECT u.sk_user_id
+            FROM {DATAMART_SCHEMA_NAME}.dim_user u
+            JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON u.sk_user_id = f.sk_user_id
+            JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+            WHERE {where_sql or 'TRUE'} AND {search_sql}
+            GROUP BY u.sk_user_id
+        ) as sub
+    """
+    total_count = fetch_one(count_sql, params + search_params).get("count", 0)
+
+    # Main query
+    main_sql = f"""
+        SELECT 
+            u.nk_user_id as emp_id,
+            u.user_name as instructor_name,
+            SUM(COALESCE(e.total_exposure_count, 0) + COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0)) as total_exposures,
+            COUNT(f.sk_fact_session_id) as no_of_session,
+            COUNT(DISTINCT p.sk_program_id) as no_of_pgm,
+            1 as no_of_ign,
+            COUNT(DISTINCT d.full_date) as wd
+        FROM {DATAMART_SCHEMA_NAME}.dim_user u
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_session f ON u.sk_user_id = f.sk_user_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+        WHERE {where_sql or 'TRUE'} AND {search_sql}
+        GROUP BY u.sk_user_id, u.nk_user_id, u.user_name
+        HAVING COUNT(f.sk_fact_session_id) > 0
+        {sort_sql}
+        LIMIT %s OFFSET %s
+    """
+    rows = fetch_all(main_sql, params + search_params + [100000, 0])
+    
+    # Calculate derived columns
+    for row in rows:
+        exp = row.get("total_exposures", 0) or 0
+        sessions = row.get("no_of_session", 0) or 0
+        pgm = row.get("no_of_pgm", 0) or 0
+        ign = row.get("no_of_ign", 0) or 0
+        row["exp_pgm"] = round(exp / pgm) if pgm > 0 else 0
+        row["expo_ign"] = round(exp / ign) if ign > 0 else 0
+        row["expo_session"] = round(exp / sessions) if sessions > 0 else 0
+    
+    return {
+        "table": rows,
+        "total_count": total_count
+    }
+
+
 def get_monthly_instructor_summary(region=None, area=None, years=None, month=None, quarter=None, group_by="month"):
     from backend.services.query_utils import build_standard_filters, get_time_grouping_expressions
     

@@ -1,128 +1,169 @@
-# Pramana Dashboard
+# Agastya Analytics Dashboard
 
-This project implements a Data Warehouse Analytics Dashboard built on top of a PostgreSQL star schema using FastAPI and AdminLTE.
+A Data Warehouse Analytics Dashboard built on PostgreSQL star schema using FastAPI, AdminLTE 3, and Chart.js.
 
-## Project Overview
+## Prerequisites
 
-The application provides a professional analytics interface for the `pramana` PostgreSQL data warehouse. It exposes read-only FastAPI endpoints over a star schema (`dw_data_schema`) and renders a modern AdminLTE user interface with Chart.js visualizations.
+- **Python 3.10+**
+- **PostgreSQL 14+** (running locally or accessible remotely)
+- **pip** (Python package manager)
 
-## Architecture
+## Quick Start
 
-The solution follows a layered architecture:
+### 1. Clone the Repository
 
-`PostgreSQL -> FastAPI API -> AdminLTE UI -> Chart.js`
+```bash
+git clone https://github.com/meenub255/AGASTYA.git
+cd AGASTYA
+```
 
-- PostgreSQL stores the star schema and serves as the source of truth.
-- FastAPI exposes read-only analytics endpoints.
-- Jinja templates render the AdminLTE 3 interface.
-- Vanilla JavaScript calls the API and updates KPI cards and charts dynamically.
+### 2. Create a Virtual Environment
 
-## Database Schema
+```bash
+python -m venv venv
+```
 
-The dashboard connects to the `pramanadb` database and assumes the presence of warehouse tables in a star schema layout within the `dw_data_schema` schema, including:
+Activate it:
 
-- `fact_session_event`
-- `fact_exposure`
-- `fact_monthly_region_impact`
-- `fact_instructor_productivity`
-- `dim_location`
-- `dim_program`
-- `dim_instructor`
+- **Windows:**
+  ```bash
+  venv\Scripts\activate
+  ```
+- **Mac/Linux:**
+  ```bash
+  source venv/bin/activate
+  ```
 
-The implementation does not create tables or modify the schema. All SQL is read-only and centralized in the backend service layer.
+### 3. Install Dependencies
 
-## Backend
+```bash
+pip install -r requirements.txt
+```
 
-The backend is built with FastAPI and `psycopg2`. It is organized into:
+### 4. Set Up the Database
 
-- `config.py` for application paths and database configuration
-- `db.py` for PostgreSQL connection management
-- `routers/` for HTTP endpoints
-- `services/` for read-only SQL query logic
-- `models/` for Pydantic response models
+#### a) Create the PostgreSQL Database
 
-## Frontend
+Open `psql` or pgAdmin and run:
 
-The frontend uses AdminLTE 3, Bootstrap, Jinja2 templates, Chart.js, and vanilla JavaScript.
+```sql
+CREATE DATABASE pramana;
+```
 
-The UI includes:
+#### b) Run the Source Schema (creates raw source tables)
 
-- A main dashboard page with KPI cards and four charts
-- Dedicated pages for sessions, region impact, instructor productivity, and program metrics
-- Shared filters for year range, region, and program
-- Live chart refresh when filter values change
+Connect to the `pramana` database and run the v5 source schema:
 
-## API Layer
+```bash
+psql -U postgres -d pramana -f sql/source_schema_change_v5.sql
+```
 
-Representative endpoints include:
+#### c) Run the Data Warehouse Schema (creates star schema in `dw` schema)
 
-- `GET /session/count`
-- `GET /session/kpis`
-- `GET /session/monthly`
-- `GET /region/impact`
-- `GET /region/monthly-impact`
-- `GET /instructor/productivity`
-- `GET /exposure/program-metrics`
+```bash
+psql -U postgres -d pramana -f sql/dw_schema_change_v5.sql
+```
 
-Query parameters support filtered analysis using:
+#### d) Load Data via the Web UI
 
-- `start`
-- `end`
-- `region`
-- `program`
+1. Start the app (step 5 below)
+2. Navigate to the **Upload** page
+3. Upload your Excel files (.xlsx) for each source table
+4. The app will auto-map columns and import data
 
-## How to Run
+Alternatively, if you have raw data loaded into the source tables, run the ELT pipeline:
 
-1. Create and activate a Python virtual environment.
-2. Install dependencies:
+```bash
+psql -U postgres -d pramana -f sql/elt_dim.sql
+psql -U postgres -d pramana -f sql/elt_fact.sql
+psql -U postgres -d pramana -f sql/elt_agg.sql
+```
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 5. Start the Application
 
-3. Start the application from the `pramana_dashboard` directory:
+```bash
+uvicorn backend.app:app --host 127.0.0.1 --port 8000 --reload
+```
 
-   ```bash
-   uvicorn backend.app:app --reload
-   ```
+### 6. Open in Browser
 
-4. Open the application in a browser:
+```
+http://127.0.0.1:8000
+```
 
-   `http://127.0.0.1:8000`
+## Configuration
 
-If your PostgreSQL credentials differ from the defaults (configured for localhost), set these environment variables:
+All database settings are configurable via environment variables. If your PostgreSQL setup differs from the defaults, set these before starting the app:
 
-- `PRAMANA_DB_USER`
-- `PRAMANA_DB_PASSWORD`
-- `PRAMANA_DB_HOST`
-- `PRAMANA_DB_PORT`
-- `PRAMANA_DB_SSL_MODE` (defaults to `require`)
-- `PRAMANA_ADMIN_DB_NAME`
-- `PRAMANA_SOURCE_DB_NAME`
-- `PRAMANA_DATAMART_DB_NAME`
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PRAMANA_DB_USER` | `postgres` | PostgreSQL username |
+| `PRAMANA_DB_PASSWORD` | `postgres` | PostgreSQL password |
+| `PRAMANA_DB_HOST` | `127.0.0.1` | PostgreSQL host |
+| `PRAMANA_DB_PORT` | `5432` | PostgreSQL port |
+| `PRAMANA_DB_SSL_MODE` | `disable` | SSL mode (`disable` / `require`) |
+| `PRAMANA_ADMIN_DB_NAME` | `pramana` | Database name |
+| `PRAMANA_SOURCE_DB_NAME` | `pramana` | Source schema database |
+| `PRAMANA_DATAMART_DB_NAME` | `pramana` | Data warehouse database |
 
-## Folder Structure
+Example (Windows):
 
-```text
-pramana_dashboard/
+```bash
+set PRAMANA_DB_PASSWORD=mypassword
+uvicorn backend.app:app --reload
+```
+
+Example (Mac/Linux):
+
+```bash
+export PRAMANA_DB_PASSWORD=mypassword
+uvicorn backend.app:app --reload
+```
+
+## SQL Files Reference
+
+| File | Purpose |
+|------|---------|
+| `sql/source_schema_change_v5.sql` | Source schema DDL (raw data tables) |
+| `sql/dw_schema_change_v5.sql` | Data warehouse star schema (dimensions + facts) |
+| `sql/elt_dim.sql` | Dimension loading (SCD Type 1) |
+| `sql/elt_fact.sql` | Fact table loading |
+| `sql/elt_agg.sql` | Precomputed aggregations |
+| `sql/elt_run.sql` | Master orchestration script (runs all ELT steps) |
+
+## Project Structure
+
+```
+AGASTYA/
 ├── backend/
-│   ├── app.py
-│   ├── config.py
-│   ├── db.py
-│   ├── models/
-│   ├── routers/
-│   └── services/
+│   ├── app.py                  # FastAPI main application
+│   ├── config.py               # Database & path configuration
+│   ├── db.py                   # PostgreSQL connection manager
+│   ├── upload.py               # Excel upload & import handler
+│   ├── elt_runner.py           # ELT script execution
+│   ├── reset_databases.py      # Database reset utility
+│   ├── models/                 # Pydantic response models
+│   ├── routers/                # API route handlers (25 routers)
+│   └── services/               # SQL query logic (27 services)
 ├── frontend/
 │   ├── static/
-│   └── templates/
-├── requirements.txt
+│   │   ├── css/app.css         # Custom dashboard styles
+│   │   ├── js/dashboard.js     # Charts, DataTables, filters
+│   │   └── images/             # Agastya branding assets
+│   └── templates/              # Jinja2 HTML templates (32 pages)
+│       └── partials/           # Reusable template components
+├── sql/                        # Database schema & ELT scripts
+├── requirements.txt            # Python dependencies
 └── README.md
 ```
 
-## Future Improvements
+## Tech Stack
 
-- Add authentication and role-based access control
-- Introduce caching for high-volume aggregation queries
-- Add automated tests for API and template rendering
-- Vendor AdminLTE assets locally for fully offline deployments
-- Expand the filter model to support district, school, and instructor drill-down
+- **Backend:** FastAPI, psycopg2, Pydantic
+- **Frontend:** AdminLTE 3, Bootstrap 4, Chart.js, jQuery DataTables, Select2
+- **Database:** PostgreSQL (star schema / Kimball methodology)
+- **Export:** openpyxl (Excel streaming)
+
+## License
+
+Internal project - not for redistribution.

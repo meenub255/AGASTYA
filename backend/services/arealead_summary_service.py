@@ -3,7 +3,6 @@ from backend.config import DATAMART_SCHEMA_NAME
 
 
 def get_arealead_summary_filters():
-    # Fetch from new dim_geography joined with fact_session to show only locations with data
     locations_query = f"""
         SELECT DISTINCT g.region_name, g.area_name AS area 
         FROM {DATAMART_SCHEMA_NAME}.dim_geography g
@@ -42,9 +41,9 @@ def get_arealead_summary_data(region=None, area=None, years=None, month=None, qu
     
     kpi_defs = [
         {"key": "total_leads", "label": "Area Leads", "sql": "COUNT(DISTINCT g.area_name)", "icon": "fas fa-user-tie", "color": "bg-info"},
-        {"key": "total_instructors", "label": "Instructors", "sql": "COUNT(DISTINCT u.sk_user_id)", "icon": "fas fa-chalkboard-teacher", "color": "bg-success"},
+        {"key": "total_instructors", "label": "Ignators", "sql": "COUNT(DISTINCT u.sk_user_id)", "icon": "fas fa-chalkboard-teacher", "color": "bg-success"},
         {"key": "total_sessions", "label": "Sessions", "sql": "COUNT(DISTINCT f.sk_fact_session_id)", "icon": "fas fa-layer-group", "color": "bg-navy-blue"},
-        {"key": "total_students", "label": "Students Impacted", "sql": "SUM(COALESCE(e.total_exposure_count, 0))", "icon": "fas fa-user-graduate", "color": "bg-danger"}
+        {"key": "total_students", "label": "Total Exposures", "sql": "SUM(COALESCE(e.total_exposure_count, 0))", "icon": "fas fa-user-graduate", "color": "bg-danger"}
     ]
     
     from_clause = f"""
@@ -52,6 +51,7 @@ def get_arealead_summary_data(region=None, area=None, years=None, month=None, qu
         JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
     """
     
@@ -73,14 +73,13 @@ def get_arealead_summary_data(region=None, area=None, years=None, month=None, qu
         quarter=quarter
     )
 
-    # 2. DataTable Logic
     search_sql = "TRUE"
     search_params = []
-    sort_sql = "ORDER BY g.region_name, g.area_name"
+    sort_sql = "ORDER BY total_exposures DESC"
     
     if dt_params:
         searchable_cols = ["g.area_name", "g.region_name"]
-        sortable_cols = ["area", "region", "total_instructors", "total_sessions", "total_students"]
+        sortable_cols = ["area", "region", "total_exposures", "total_sessions", "exp_per_pgm", "expo_per_ignator", "expo_per_session", "no_of_pgm", "no_of_ign", "work_days"]
         
         inner_search_sql, inner_search_params, inner_sort_sql = get_datatables_sql(dt_params, searchable_cols, sortable_cols)
         search_sql = inner_search_sql
@@ -88,7 +87,6 @@ def get_arealead_summary_data(region=None, area=None, years=None, month=None, qu
         if inner_sort_sql:
             sort_sql = inner_sort_sql
 
-    # Get total count (Filtered by sidebar AND table search)
     count_sql = f"""
         SELECT COUNT(*) FROM (
             SELECT g.area_name
@@ -96,6 +94,7 @@ def get_arealead_summary_data(region=None, area=None, years=None, month=None, qu
             JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
             JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
             WHERE {where_sql} AND {search_sql}
             GROUP BY g.area_name, g.region_name
         ) as sub
@@ -103,18 +102,29 @@ def get_arealead_summary_data(region=None, area=None, years=None, month=None, qu
     total_count_row = fetch_one(count_sql, params + search_params)
     total_count = total_count_row.get("count", 0) if total_count_row else 0
 
-    # Get paginated data
     sql = f"""
         SELECT 
             g.area_name as area,
             g.region_name as region,
-            COUNT(DISTINCT u.sk_user_id) as total_instructors,
+            SUM(COALESCE(e.total_exposure_count, 0)) as total_exposures,
             COUNT(DISTINCT f.sk_fact_session_id) as total_sessions,
-            SUM(COALESCE(e.total_exposure_count, 0)) as total_students
+            CASE WHEN COUNT(DISTINCT p.nk_program_id) = 0 THEN 0 
+                 ELSE ROUND(SUM(COALESCE(e.total_exposure_count, 0))::numeric / COUNT(DISTINCT p.nk_program_id), 0) 
+            END as exp_per_pgm,
+            CASE WHEN COUNT(DISTINCT u.sk_user_id) = 0 THEN 0 
+                 ELSE ROUND(SUM(COALESCE(e.total_exposure_count, 0))::numeric / COUNT(DISTINCT u.sk_user_id), 0) 
+            END as expo_per_ignator,
+            CASE WHEN COUNT(DISTINCT f.sk_fact_session_id) = 0 THEN 0 
+                 ELSE ROUND(SUM(COALESCE(e.total_exposure_count, 0))::numeric / COUNT(DISTINCT f.sk_fact_session_id), 0) 
+            END as expo_per_session,
+            COUNT(DISTINCT p.nk_program_id) as no_of_pgm,
+            COUNT(DISTINCT u.sk_user_id) as no_of_ign,
+            COUNT(DISTINCT d.date_id) as work_days
         FROM {DATAMART_SCHEMA_NAME}.fact_session f
         JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
         JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
         WHERE {where_sql} AND {search_sql}
         GROUP BY g.area_name, g.region_name

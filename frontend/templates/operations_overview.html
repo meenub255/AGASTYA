@@ -4,8 +4,8 @@
 <div class="col-md-12">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-            <h1 class="m-0 font-weight-bold" style="font-size: 1.5rem; color: #1e293b; font-family: Arial, sans-serif !important;">Operations</h1>
-            <p class="text-muted small mb-0">Workforce days, vehicle logistics & regional operations</p>
+            <h1 class="m-0 font-weight-bold" style="font-size: 1.5rem; color: #1e293b; font-family: Arial, sans-serif !important;">Operations Overview</h1>
+            <p class="text-muted small mb-0">Workforce utilization, vehicle logistics & regional operations</p>
         </div>
         <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
             <div class="fl-content">
@@ -18,103 +18,57 @@
 
     <!-- KPIs -->
     <div class="row mb-3">
-        <!-- Card 1: Total Working Days -->
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardWorkingDays">
-                <button type="button" class="kpi-info-btn" data-kpi="working_days" title="View Insights">
-                    <i class="fas fa-info-circle"></i>
-                </button>
+                <button type="button" class="kpi-info-btn" data-kpi="working_days" title="View Insights"><i class="fas fa-info-circle"></i></button>
                 <div class="kpi-bitcoin-header">
-                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <div class="kpi-bitcoin-title-box">
-                        <span class="kpi-bitcoin-label">Working Days</span>
-                        <span class="kpi-bitcoin-sublabel">Total Days</span>
-                    </div>
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);"><i class="fas fa-calendar-check"></i></div>
+                    <div class="kpi-bitcoin-title-box"><span class="kpi-bitcoin-label">Working Days</span><span class="kpi-bitcoin-sublabel">Total Days</span></div>
                 </div>
                 <div class="kpi-bitcoin-value" id="kpiWorkingDays">0</div>
-                <div class="d-flex align-items-center mb-2" id="trendWrapperWorkingDays" style="display: none !important;">
-                    <div id="trendWorkingDays"></div>
-                    <span class="kpi-bitcoin-footer">vs previous period</span>
-                </div>
+                <div class="d-flex align-items-center mb-2" id="trendWrapperWorkingDays" style="display: none !important;"><div id="trendWorkingDays"></div><span class="kpi-bitcoin-footer">vs previous period</span></div>
                 <div class="kpi-mini-chart"><canvas id="miniChartWorkingDays"></canvas></div>
             </div>
         </div>
-        
-        <!-- Card 2: Active Drivers -->
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardActiveDrivers">
-                <button type="button" class="kpi-info-btn" data-kpi="active_drivers" title="View Insights">
-                    <i class="fas fa-info-circle"></i>
-                </button>
+                <button type="button" class="kpi-info-btn" data-kpi="active_drivers" title="View Insights"><i class="fas fa-info-circle"></i></button>
                 <div class="kpi-bitcoin-header">
-                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%);">
-                        <i class="fas fa-truck"></i>
-                    </div>
-                    <div class="kpi-bitcoin-title-box">
-                        <span class="kpi-bitcoin-label">Active Drivers</span>
-                        <span class="kpi-bitcoin-sublabel">Total Drivers</span>
-                    </div>
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%);"><i class="fas fa-truck"></i></div>
+                    <div class="kpi-bitcoin-title-box"><span class="kpi-bitcoin-label">Active Drivers</span><span class="kpi-bitcoin-sublabel">Total Drivers</span></div>
                 </div>
                 <div class="kpi-bitcoin-value" id="kpiActiveDrivers">0</div>
-                <div class="d-flex align-items-center mb-2" id="trendWrapperActiveDrivers" style="display: none !important;">
-                    <div id="trendActiveDrivers"></div>
-                    <span class="kpi-bitcoin-footer">vs previous period</span>
-                </div>
+                <div class="d-flex align-items-center mb-2" id="trendWrapperActiveDrivers" style="display: none !important;"><div id="trendActiveDrivers"></div><span class="kpi-bitcoin-footer">vs previous period</span></div>
                 <div class="kpi-mini-chart"><canvas id="miniChartActiveDrivers"></canvas></div>
             </div>
         </div>
-
-        <!-- Card 3: Total KMs Travelled -->
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardTotalKms">
-                <button type="button" class="kpi-info-btn" data-kpi="total_kms" title="View Insights">
-                    <i class="fas fa-info-circle"></i>
-                </button>
+                <button type="button" class="kpi-info-btn" data-kpi="total_kms" title="View Insights"><i class="fas fa-info-circle"></i></button>
                 <div class="kpi-bitcoin-header">
-                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
-                        <i class="fas fa-road"></i>
-                    </div>
-                    <div class="kpi-bitcoin-title-box">
-                        <span class="kpi-bitcoin-label">KMs Travelled</span>
-                        <span class="kpi-bitcoin-sublabel">Total Logistics</span>
-                    </div>
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);"><i class="fas fa-road"></i></div>
+                    <div class="kpi-bitcoin-title-box"><span class="kpi-bitcoin-label">KMs Travelled</span><span class="kpi-bitcoin-sublabel">Total Logistics</span></div>
                 </div>
                 <div class="kpi-bitcoin-value" id="kpiTotalKms">0</div>
-                <div class="d-flex align-items-center mb-2" id="trendWrapperTotalKms" style="display: none !important;">
-                    <div id="trendTotalKms"></div>
-                    <span class="kpi-bitcoin-footer">vs previous period</span>
-                </div>
+                <div class="d-flex align-items-center mb-2" id="trendWrapperTotalKms" style="display: none !important;"><div id="trendTotalKms"></div><span class="kpi-bitcoin-footer">vs previous period</span></div>
                 <div class="kpi-mini-chart"><canvas id="miniChartTotalKms"></canvas></div>
             </div>
         </div>
-
-        <!-- Card 4: Active Centers -->
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardActiveCenters">
-                <button type="button" class="kpi-info-btn" data-kpi="active_centers" title="View Insights">
-                    <i class="fas fa-info-circle"></i>
-                </button>
+                <button type="button" class="kpi-info-btn" data-kpi="active_centers" title="View Insights"><i class="fas fa-info-circle"></i></button>
                 <div class="kpi-bitcoin-header">
-                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
-                        <i class="fas fa-map-marker-alt"></i>
-                    </div>
-                    <div class="kpi-bitcoin-title-box">
-                        <span class="kpi-bitcoin-label">Active Centers</span>
-                        <span class="kpi-bitcoin-sublabel">Total Hubs</span>
-                    </div>
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="kpi-bitcoin-title-box"><span class="kpi-bitcoin-label">Active Centers</span><span class="kpi-bitcoin-sublabel">Total Hubs</span></div>
                 </div>
                 <div class="kpi-bitcoin-value" id="kpiActiveCenters">0</div>
-                <div class="d-flex align-items-center mb-2" id="trendWrapperActiveCenters" style="display: none !important;">
-                    <div id="trendActiveCenters"></div>
-                    <span class="kpi-bitcoin-footer">vs previous period</span>
-                </div>
+                <div class="d-flex align-items-center mb-2" id="trendWrapperActiveCenters" style="display: none !important;"><div id="trendActiveCenters"></div><span class="kpi-bitcoin-footer">vs previous period</span></div>
                 <div class="kpi-mini-chart"><canvas id="miniChartActiveCenters"></canvas></div>
             </div>
         </div>
     </div>
 
+    <!-- Charts -->
     <div class="row">
         <div class="col-md-7 mb-3">
             <div class="card h-100 white-chart-card shadow-sm">
@@ -133,7 +87,6 @@
             </div>
         </div>
     </div>
-
     <div class="row">
         <div class="col-12 mb-3">
             <div class="card white-chart-card shadow-sm">
@@ -144,64 +97,30 @@
             </div>
         </div>
     </div>
+
+    <!-- Drilldown Panel -->
     <div id="drilldownPanel" style="display:none; margin-top: 16px;">
-        <div id="drilldownBreadcrumb" class="d-flex align-items-center mb-3 px-1" style="gap: 8px;">
-            <span class="text-muted" style="font-size:13px; cursor:pointer;" onclick="clearDrilldown()">
-                <i class="fas fa-th-large mr-1"></i>All Regions
-            </span>
+        <div class="d-flex align-items-center mb-3 px-1" style="gap: 8px;">
+            <span class="text-muted" style="font-size:13px; cursor:pointer;" onclick="clearDrilldown()"><i class="fas fa-th-large mr-1"></i>All Regions</span>
             <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
             <span id="drilldownRegionLabel" style="font-size:13px; font-weight:600; color:#1e3a8a;"></span>
-            <button onclick="clearDrilldown()" class="btn btn-md ml-auto clear-drilldown-btn"
-                style="background: #991b1b; border: 1px solid #991b1b; color: #ffffff; font-weight: 600; font-size: 15px; padding: 10px 24px; border-radius: 24px; transition: all 0.2s ease-in-out; box-shadow: 0 2px 4px rgba(153, 27, 27, 0.2);">
-                <i class="fas fa-times mr-1"></i>Clear Selection
-            </button>
+            <button onclick="clearDrilldown()" class="btn btn-md ml-auto clear-drilldown-btn" style="background: #991b1b; border: 1px solid #991b1b; color: #ffffff; font-weight: 600; font-size: 15px; padding: 10px 24px; border-radius: 24px;"><i class="fas fa-times mr-1"></i>Clear Selection</button>
         </div>
-
         <div class="row mb-3" id="drilldownStats">
-            <div class="col-md-4 mb-2">
-                <div class="kpi-card-v2 kpi-v2-navy">
-                    <span class="kpi-v2-val" id="ddSessions">0</span>
-                    <span class="kpi-v2-lbl">Total Sessions</span>
-                    <div class="kpi-v2-icon"><i class="fas fa-chalkboard"></i></div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-2">
-                <div class="kpi-card-v2 kpi-v2-green">
-                    <span class="kpi-v2-val" id="ddStudents">0</span>
-                    <span class="kpi-v2-lbl">Students Reached</span>
-                    <div class="kpi-v2-icon"><i class="fas fa-user-graduate"></i></div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-2">
-                <div class="kpi-card-v2 kpi-v2-teal">
-                    <span class="kpi-v2-val" id="ddSchools">0</span>
-                    <span class="kpi-v2-lbl">Schools Visited</span>
-                    <div class="kpi-v2-icon"><i class="fas fa-school"></i></div>
-                </div>
-            </div>
+            <div class="col-md-4 mb-2"><div class="kpi-card-v2 kpi-v2-navy"><span class="kpi-v2-val" id="ddSessions">0</span><span class="kpi-v2-lbl">Total Sessions</span><div class="kpi-v2-icon"><i class="fas fa-chalkboard"></i></div></div></div>
+            <div class="col-md-4 mb-2"><div class="kpi-card-v2 kpi-v2-green"><span class="kpi-v2-val" id="ddStudents">0</span><span class="kpi-v2-lbl">Students Reached</span><div class="kpi-v2-icon"><i class="fas fa-user-graduate"></i></div></div></div>
+            <div class="col-md-4 mb-2"><div class="kpi-card-v2 kpi-v2-teal"><span class="kpi-v2-val" id="ddSchools">0</span><span class="kpi-v2-lbl">Schools Visited</span><div class="kpi-v2-icon"><i class="fas fa-school"></i></div></div></div>
         </div>
-
         <div class="card white-chart-card shadow-sm" style="border-radius: 15px; overflow: hidden;">
             <div class="card-header d-flex align-items-center" style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
                 <i class="fas fa-table mr-2" style="color: #6366f1;"></i>
-                <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">
-                    Program Breakdown — <span id="ddTableRegionLabel" style="color: #6366f1;"></span>
-                </h3>
+                <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Program Breakdown — <span id="ddTableRegionLabel" style="color: #6366f1;"></span></h3>
                 <span id="ddProgramCount" class="ml-auto badge badge-pill badge-light text-muted" style="font-size:11px;">0 programs</span>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table id="drilldownTable" class="table table-hover mb-0" style="width:100%">
-                        <thead style="background: #f8fafc;">
-                            <tr>
-                                <th>Program Name</th>
-                                <th>Donor</th>
-                                <th class="text-right">Sessions</th>
-                                <th class="text-right">Students</th>
-                                <th class="text-right">Schools</th>
-                                <th class="text-right">Instructors</th>
-                            </tr>
-                        </thead>
+                        <thead style="background: #f8fafc;"><tr><th>Program Name</th><th>Donor</th><th class="text-right">Sessions</th><th class="text-right">Students</th><th class="text-right">Schools</th><th class="text-right">Instructors</th></tr></thead>
                         <tbody id="drilldownTableBody"></tbody>
                     </table>
                 </div>
@@ -209,20 +128,42 @@
         </div>
     </div>
 
-    <div class="card white-chart-card shadow-sm" style="border-radius:15px; overflow:hidden;">
-        <div class="card-header d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
-            <i class="fas fa-table mr-2" style="color:#6366f1;"></i>
-            <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;">Regional Operations Summary</h3>
+    <!-- Tabs: Regional Summary + Ignator Utilization -->
+    <ul class="nav nav-tabs-custom mb-3" id="opsTabs">
+        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#tabRegional"><i class="fas fa-globe mr-1"></i> Regional Operations</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#tabIgnator"><i class="fas fa-users mr-1"></i> Ignator Utilization</a></li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="tabRegional">
+            <div class="card white-chart-card shadow-sm" style="border-radius:15px; overflow:hidden;">
+                <div class="card-header d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <i class="fas fa-table mr-2" style="color:#6366f1;"></i>
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;">Regional Operations Summary</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="overviewTable" class="table table-hover mb-0 high-contrast-table" style="width:100%">
+                            <thead><tr><th>Region</th><th class="text-right">Instructors</th><th class="text-right">Working Days</th><th class="text-right">Schools</th><th class="text-right">Sessions</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table id="overviewTable" class="table table-hover mb-0 high-contrast-table" style="width:100%">
-                    <thead><tr>
-                        <th>Region</th><th class="text-right">Instructors</th><th class="text-right">Working Days</th>
-                        <th class="text-right">Schools</th><th class="text-right">Sessions</th>
-                    </tr></thead>
-                    <tbody></tbody>
-                </table>
+        <div class="tab-pane fade" id="tabIgnator">
+            <div class="card premium-card white-chart-card shadow-sm">
+                <div class="card-header card-header-premium d-flex align-items-center">
+                    <i class="fas fa-calendar-alt mr-2" style="color: #3b82f6;"></i>
+                    <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Ignator Utilization Log</h3>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table id="workDayTable" class="table table-hover mb-0" style="width:100%">
+                            <thead><tr><th>Ignator</th><th>Region / Area</th><th class="text-center">Work Days</th><th>Dates Active (DD)</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -236,519 +177,212 @@
         <button id="closeDrawer" class="fd-close"><i class="fas fa-times"></i></button>
     </div>
     <div class="fd-body">
-        <div class="fd-section"><label class="fd-label">Fiscal Year</label>
-            <select id="yearFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Year" data-filter="years"></select></div>
-        <div class="fd-section"><label class="fd-label">Regional Hubs</label>
-            <select id="regionFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Region" data-filter="region"></select></div>
-        <div class="fd-section"><label class="fd-label">Activity Type</label>
-            <select id="programFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Activity" data-filter="program"></select></div>
+        <div class="fd-section"><label class="fd-label">Fiscal Year</label><select id="yearFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Year" data-filter="years"></select></div>
+        <div class="fd-section"><label class="fd-label">Regional Hubs</label><select id="regionFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Region" data-filter="region"></select></div>
+        <div class="fd-section"><label class="fd-label">Area</label><select id="areaFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Area" data-filter="area"></select></div>
+        <div class="fd-section"><label class="fd-label">Activity Type</label><select id="programFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Activity" data-filter="program"></select></div>
+        <div class="fd-section"><label class="fd-label">Month</label><select id="monthFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Month" data-filter="month"></select></div>
+        <hr style="border-color:#e2e8f0; margin:20px 0;">
+        <div class="fd-section"><label class="fd-label">Quarter</label><select id="quarterFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Quarter" data-filter="quarter"></select></div>
     </div>
     <div class="fd-footer">
         <button id="resetFilters" class="btn btn-outline-secondary btn-block" style="border-radius:10px;"><i class="fas fa-undo mr-2"></i>Reset All Filters</button>
+        <button class="btn btn-success btn-block mt-2 shadow-sm" id="exportXlsx" style="border-radius: 10px; background: #10b981; border: none;"><i class="fas fa-file-excel mr-2"></i>Export XLSX</button>
     </div>
 </div>
 
 <!-- KPI Insights Modal -->
-<div class="modal fade" id="kpiInsightModal" tabindex="-1" role="dialog" aria-labelledby="kpiInsightModalLabel" aria-hidden="true">
+<div class="modal fade" id="kpiInsightModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content shadow-lg" style="border-radius: 16px; border: none; overflow: hidden;">
             <div class="modal-header d-flex align-items-center insight-modal-header">
                 <div class="d-flex align-items-center">
-                    <div id="modalIconWrapper" class="mr-3 shadow-sm" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #fff;">
-                        <i id="modalHeaderIcon" class="fas fa-chart-line"></i>
-                    </div>
-                    <div>
-                        <h5 class="modal-title font-weight-bold text-white" id="modalTitle" style="font-size: 1.2rem; font-family: Inter, Arial, sans-serif;">Metric Insights</h5>
-                        <span class="text-white-50" style="font-size: 0.8rem;">Performance analysis and recommendations</span>
-                    </div>
+                    <div id="modalIconWrapper" class="mr-3 shadow-sm" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #fff;"><i id="modalHeaderIcon" class="fas fa-chart-line"></i></div>
+                    <div><h5 class="modal-title font-weight-bold text-white" id="modalTitle" style="font-size: 1.2rem;">Metric Insights</h5><span class="text-white-50" style="font-size: 0.8rem;">Performance analysis and recommendations</span></div>
                 </div>
-                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Close" style="opacity: 0.8; outline: none; background: none; border: none; padding: 0;">
-                    <span aria-hidden="true" style="font-size: 1.5rem;">&times;</span>
-                </button>
+                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Close" style="opacity: 0.8; outline: none; background: none; border: none; padding: 0;"><span aria-hidden="true" style="font-size: 1.5rem;">&times;</span></button>
             </div>
             <div class="modal-body" style="padding: 2rem; background-color: #f8fafc;">
-                <!-- YoY Comparison -->
-                <div class="card insight-card">
-                    <div class="card-body d-flex align-items-start p-4">
-                        <div class="mr-3" id="modalComparisonIcon">
-                            <i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>
-                        </div>
-                        <div>
-                            <h6 class="font-weight-bold text-dark mb-1" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Year-over-Year Comparison</h6>
-                            <p class="text-muted mb-0" id="modalComparisonText" style="font-size: 0.95rem; line-height: 1.5;"></p>
-                        </div>
-                    </div>
-                </div>
-
-
-
-                <!-- Suggestions -->
-                <div class="card insight-card">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="mr-2 text-success" style="font-size: 1.15rem;">
-                                <i class="fas fa-tasks"></i>
-                            </div>
-                            <h6 class="font-weight-bold text-dark mb-0" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Strategic Suggestions to Improve</h6>
-                        </div>
-                        <ul class="list-unstyled mb-0" id="modalSuggestionsList">
-                            <!-- Dynamic items -->
-                        </ul>
-                    </div>
-                </div>
+                <div class="card insight-card"><div class="card-body d-flex align-items-start p-4"><div class="mr-3" id="modalComparisonIcon"><i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i></div><div><h6 class="font-weight-bold text-dark mb-1" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Year-over-Year Comparison</h6><p class="text-muted mb-0" id="modalComparisonText" style="font-size: 0.95rem; line-height: 1.5;"></p></div></div></div>
+                <div class="card insight-card"><div class="card-body p-4"><div class="d-flex align-items-center mb-3"><div class="mr-2 text-success" style="font-size: 1.15rem;"><i class="fas fa-tasks"></i></div><h6 class="font-weight-bold text-dark mb-0" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Strategic Suggestions to Improve</h6></div><ul class="list-unstyled mb-0" id="modalSuggestionsList"></ul></div></div>
             </div>
-            <div class="modal-footer" style="border-top: none; background-color: #f8fafc; padding: 1rem 2rem 2rem 2rem;">
-                <button type="button" class="btn btn-secondary px-4" data-dismiss="modal" style="border-radius: 8px; font-weight: 600; font-size: 0.9rem; background-color: #64748b; border: none;">Close</button>
-            </div>
+            <div class="modal-footer" style="border-top: none; background-color: #f8fafc; padding: 1rem 2rem 2rem 2rem;"><button type="button" class="btn btn-secondary px-4" data-dismiss="modal" style="border-radius: 8px; font-weight: 600; font-size: 0.9rem; background-color: #64748b; border: none;">Close</button></div>
         </div>
     </div>
 </div>
 
 <style>
-    .clear-drilldown-btn:hover {
-        background: #7f1d1d !important;
-        border-color: #7f1d1d !important;
-        color: #ffffff !important;
-        transform: scale(1.03);
-        box-shadow: 0 4px 12px rgba(127, 29, 29, 0.3) !important;
-    }
+    .clear-drilldown-btn:hover { background: #7f1d1d !important; border-color: #7f1d1d !important; color: #ffffff !important; transform: scale(1.03); box-shadow: 0 4px 12px rgba(127, 29, 29, 0.3) !important; }
     .content-header { display: none !important; }
     .select2-container--open { z-index: 9999 !important; }
-
-    /* Modal Style overrides */
-    .insight-modal-header {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
-        border-top-left-radius: 16px !important;
-        border-top-right-radius: 16px !important;
-        padding: 1.5rem 2rem !important;
-    }
-    .insight-card {
-        border-radius: 16px !important;
-        border: 1px solid #e2e8f0 !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
-        background: #ffffff !important;
-        margin-bottom: 1.5rem !important;
-        transition: transform 0.2s ease !important;
-    }
-    .insight-card:hover {
-        transform: translateY(-2px) !important;
-    }
-    .insight-list-item {
-        display: flex !important;
-        align-items: start !important;
-        margin-bottom: 1rem !important;
-        padding-bottom: 0.75rem !important;
-        border-bottom: 1px dashed #f1f5f9;
-    }
-    .insight-list-item:last-child {
-        border-bottom: none;
-        margin-bottom: 0 !important;
-        padding-bottom: 0 !important;
-    }
-
-    /* Info button inside cards */
-    .kpi-card-bitcoin {
-        position: relative !important;
-    }
-    .kpi-info-btn {
-        position: absolute !important;
-        top: 15px !important;
-        right: 15px !important;
-        background: transparent !important;
-        border: none !important;
-        outline: none !important;
-        color: #cbd5e1 !important;
-        font-size: 1.1rem !important;
-        cursor: pointer !important;
-        z-index: 50 !important;
-        padding: 6px !important;
-        border-radius: 50% !important;
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-        line-height: 1 !important;
-        transition: color 0.2s ease, transform 0.2s ease, background-color 0.2s ease !important;
-        width: 28px;
-        height: 28px;
-    }
-    .kpi-info-btn:hover {
-        color: #64748b !important;
-        transform: scale(1.15) !important;
-        background-color: #f1f5f9 !important;
-    }
-    .kpi-info-btn:focus {
-        outline: none !important;
-        box-shadow: none !important;
-    }
+    .insight-modal-header { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important; border-top-left-radius: 16px !important; border-top-right-radius: 16px !important; padding: 1.5rem 2rem !important; }
+    .insight-card { border-radius: 16px !important; border: 1px solid #e2e8f0 !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important; background: #ffffff !important; margin-bottom: 1.5rem !important; transition: transform 0.2s ease !important; }
+    .insight-card:hover { transform: translateY(-2px) !important; }
+    .insight-list-item { display: flex !important; align-items: start !important; margin-bottom: 1rem !important; padding-bottom: 0.75rem !important; border-bottom: 1px dashed #f1f5f9; }
+    .insight-list-item:last-child { border-bottom: none; margin-bottom: 0 !important; padding-bottom: 0 !important; }
+    .kpi-card-bitcoin { position: relative !important; }
+    .kpi-info-btn { position: absolute !important; top: 15px !important; right: 15px !important; background: transparent !important; border: none !important; outline: none !important; color: #cbd5e1 !important; font-size: 1.1rem !important; cursor: pointer !important; z-index: 50 !important; padding: 6px !important; border-radius: 50% !important; display: flex !important; align-items: center; justify-content: center; line-height: 1 !important; transition: color 0.2s ease, transform 0.2s ease, background-color 0.2s ease !important; width: 28px; height: 28px; }
+    .kpi-info-btn:hover { color: #64748b !important; transform: scale(1.15) !important; background-color: #f1f5f9 !important; }
+    .kpi-info-btn:focus { outline: none !important; box-shadow: none !important; }
+    .nav-tabs-custom .nav-link { border: none; color: #64748b; font-weight: 600; font-size: 0.9rem; padding: 10px 20px; border-bottom: 3px solid transparent; transition: all 0.2s; }
+    .nav-tabs-custom .nav-link.active { color: #3b82f6; border-bottom-color: #3b82f6; background: transparent; }
+    .nav-tabs-custom .nav-link:hover { color: #1e293b; }
 </style>
 {% endblock %}
 
 {% block scripts %}
 <script>
 $(function(){
-    if(typeof Chart !== 'undefined') {
-        Chart.defaults.font.family = 'Arial, Helvetica, sans-serif';
-    }
+    if(typeof Chart !== 'undefined') { Chart.defaults.font.family = 'Arial, Helvetica, sans-serif'; }
     const PALETTE = ['#6366f1','#10b981','#3b82f6','#f59e0b','#ec4899','#8b5cf6','#14b8a6','#f97316'];
+    let activeTab = 'regional';
+    let workDayDt = null;
 
+    // Tab switching
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+        activeTab = $(e.target).attr('id') === 'tabIgnator' ? 'ignator' : 'regional';
+        if (activeTab === 'ignator' && !workDayDt) loadWorkDayTable();
+    });
+
+    // Drawer
     $('#filterLauncher').click(()=>{ $('#filterDrawer, #filterDrawerOverlay').addClass('open'); });
     const closeDrawer = ()=>{ $('#filterDrawer, #filterDrawerOverlay').removeClass('open'); };
     $('#closeDrawer').click(closeDrawer); $('#filterDrawerOverlay').click(closeDrawer);
     if($.fn.select2){ $('.select2').select2({ theme:'bootstrap4', dropdownParent:$('#filterDrawer'), width:'100%', allowClear:true, multiple:true }); }
 
+    // Filters
     function fetchFilters(target, years, regions){
         const q = $.param({years:years||[], regions:regions||[]}, true);
         return fetch(`/dashboard/filters?${q}`).then(r=>r.json()).then(d=>{
             if(target==='all'){
-                $('#yearFilter').empty(); 
-                d.years.forEach(y=>$('#yearFilter').append(new Option(y,y)));
-                
-                // Default to current year if available and nothing is selected
+                $('#yearFilter').empty(); d.years.forEach(y=>$('#yearFilter').append(new Option(y,y)));
                 const currentYear = new Date().getFullYear();
-                if(!($('#yearFilter').val()||[]).length && d.years.includes(currentYear)){
-                    $('#yearFilter').val([currentYear]);
-                }
-                
+                if(!($('#yearFilter').val()||[]).length && d.years.includes(currentYear)){ $('#yearFilter').val([currentYear]); }
                 $('#regionFilter').empty(); d.regions.forEach(r=>$('#regionFilter').append(new Option(r,r)));
                 $('#programFilter').empty(); d.programs.forEach(p=>$('#programFilter').append(new Option(p,p)));
                 $('.select2').trigger('change.select2');
             } else if(target==='regions'){
-                const cur=$('#regionFilter').val()||[];
-                $('#regionFilter').empty(); d.regions.forEach(r=>$('#regionFilter').append(new Option(r,r)));
-                $('#regionFilter').val(cur).trigger('change.select2',{internal:true});
+                const cur=$('#regionFilter').val()||[]; $('#regionFilter').empty(); d.regions.forEach(r=>$('#regionFilter').append(new Option(r,r))); $('#regionFilter').val(cur).trigger('change.select2',{internal:true});
             } else if(target==='programs'){
-                const cur=$('#programFilter').val()||[];
-                $('#programFilter').empty(); d.programs.forEach(p=>$('#programFilter').append(new Option(p,p)));
-                $('#programFilter').val(cur).trigger('change.select2',{internal:true});
+                const cur=$('#programFilter').val()||[]; $('#programFilter').empty(); d.programs.forEach(p=>$('#programFilter').append(new Option(p,p))); $('#programFilter').val(cur).trigger('change.select2',{internal:true});
             }
             updateSummary();
         });
     }
     fetchFilters('all');
 
-    $('#yearFilter').on('change',(e,d)=>{ if(d&&d.internal) return; fetchFilters('regions',$('#yearFilter').val()).then(()=>fetchFilters('programs',$('#yearFilter').val(),$('#regionFilter').val())); loadData(); });
-    $('#regionFilter').on('change',(e,d)=>{ if(d&&d.internal) return; fetchFilters('programs',$('#yearFilter').val(),$('#regionFilter').val()); loadData(); });
-    $('#programFilter').on('change',(e,d)=>{ if(d&&d.internal) return; loadData(); });
-    $('#resetFilters').click(()=>{ $('.select2').val(null).trigger('change',{internal:true}); fetchFilters('all').then(()=>loadData()); });
-
-    function updateSummary(){
-        const t=($('#yearFilter').val()||[]).length+($('#regionFilter').val()||[]).length+($('#programFilter').val()||[]).length;
-        $('#activeFilterCount').text(t?`${t} Filters Applied`:'All Data');
-    }
-    $('.select2').on('change', updateSummary);
-
-    function animateNum(el, target){
-        const $el=$(el); const start=parseFloat(($el.text()||'0').replace(/,/g,''))||0;
-        const steps=20, inc=(target-start)/steps; let step=0;
-        const t=setInterval(()=>{ step++; $el.text(Math.round(start+inc*step).toLocaleString()); if(step>=steps){$el.text(target.toLocaleString()); clearInterval(t);} },25);
-    }
-
-    function getParams(){ return $.param(window.PramanaDashboard.collectFilters(), true); }
-
-    const miniCharts = {};
-    function renderMiniChart(canvasId, dataPoints, color) {
-        const el = document.getElementById(canvasId);
-        if (!el) return;
-        const ctx = el.getContext('2d');
-        if (miniCharts[canvasId]) miniCharts[canvasId].destroy();
-
-        let points = dataPoints;
-        let displayColor = color;
-        if (dataPoints && dataPoints.length === 2) {
-            const prev = dataPoints[0];
-            const curr = dataPoints[1];
-            points = [
-                prev,
-                prev + (curr - prev) * 0.2 + ((curr - prev) * 0.15),
-                prev + (curr - prev) * 0.4 - ((curr - prev) * 0.1),
-                prev + (curr - prev) * 0.7 + ((curr - prev) * 0.1),
-                prev + (curr - prev) * 0.8 - ((curr - prev) * 0.05),
-                curr
-            ];
-            if (curr > prev) {
-                displayColor = '#10b981'; // Green
-            } else if (curr < prev) {
-                displayColor = '#ef4444'; // Red
-            } else {
-                displayColor = '#f59e0b'; // Yellow
-            }
-        }
-
-        miniCharts[canvasId] = new Chart(ctx, {
-            type: 'line',
-            plugins: [ChartDataLabels],
-            data: {
-                labels: points.map((_, i) => i),
-                datasets: [{
-                    data: points,
-                    borderColor: displayColor,
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    fill: true,
-                    backgroundColor: displayColor + '15',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                layout: {
-                    padding: {
-                        left: 15,
-                        right: 15,
-                        top: 10,
-                        bottom: 10
-                    }
-                },
-                plugins: { 
-                    legend: { display: false }, 
-                    tooltip: { enabled: false },
-                    datalabels: {
-                        display: function(context) {
-                            return context.dataIndex === 0 || context.dataIndex === context.dataset.data.length - 1;
-                        },
-                        align: function(context) {
-                            return context.dataIndex === 0 ? 'right' : 'left';
-                        },
-                        anchor: function(context) {
-                            return context.dataIndex === 0 ? 'start' : 'end';
-                        },
-                        offset: 4,
-                        color: displayColor,
-                        font: {
-                            size: 10,
-                            weight: 'bold'
-                        },
-                        formatter: function(value) {
-                            return value.toLocaleString();
-                        }
-                    }
-                },
-                scales: { x: { display: false }, y: { display: false } }
-            }
+    function fetchWorkDayFilters(){
+        return fetch('/work-day/filters').then(r=>r.json()).then(data=>{
+            data.areas.forEach(a=>{ if(!$('#areaFilter option[value="'+a+'"]').length) $('#areaFilter').append(new Option(a,a)); });
+            if(!$('#monthFilter option').length) data.months.forEach(m=>$('#monthFilter').append(new Option(m.name,m.id)));
+            if(!$('#quarterFilter option').length) [1,2,3,4].forEach(q=>$('#quarterFilter').append(new Option('Q'+q,q)));
+            $('.select2').trigger('change.select2',{internal:true});
         });
     }
+    fetchWorkDayFilters();
 
-    function updateKpis(kpis, trends = [], sparklines = null) {
-        animateNum($('#kpiWorkingDays'), kpis.working_days);
-        animateNum($('#kpiActiveDrivers'), kpis.active_drivers);
-        animateNum($('#kpiTotalKms'), kpis.total_kms);
-        animateNum($('#kpiActiveCenters'), kpis.active_centers);
+    $('#yearFilter').on('change',(e,d)=>{ if(d&&d.internal) return; fetchFilters('regions',$('#yearFilter').val()).then(()=>fetchFilters('programs',$('#yearFilter').val(),$('#regionFilter').val())); applyAll(); });
+    $('#regionFilter').on('change',(e,d)=>{ if(d&&d.internal) return; fetchFilters('programs',$('#yearFilter').val(),$('#regionFilter').val()); applyAll(); });
+    $('#programFilter,#areaFilter,#monthFilter,#quarterFilter').on('change',(e,d)=>{ if(d&&d.internal) return; applyAll(); });
+    $('#resetFilters').click(()=>{ $('.select2').val(null).trigger('change',{internal:true}); fetchFilters('all').then(()=>fetchWorkDayFilters()).then(()=>applyAll()); });
+    $('#exportXlsx').click(()=>{ const q=$.param(window.PramanaDashboard.collectFilters(),true); window.exportToXLSX('/work-day/export?'+q,'operations_report.xlsx'); });
 
-        // Render trend pills
-        function renderTrend(wrapperId, containerId, trend) {
-            const wrapper = $(wrapperId);
-            const container = $(containerId).empty();
-            if (!trend || trend.dir === 'neutral') {
-                wrapper.attr('style', 'display: none !important;');
-                return;
-            }
-            const icon = trend.dir === 'up' ? '↗' : '↘';
-            const cls = trend.dir === 'up' ? 'kpi-bitcoin-trend-up' : 'kpi-bitcoin-trend-down';
-            container.append(`<div class="kpi-bitcoin-trend-pill ${cls}">${Math.abs(trend.pct)}% ${icon}</div>`);
-            wrapper.attr('style', 'display: flex !important;');
+    function updateSummary(){ const t=($('#yearFilter').val()||[]).length+($('#regionFilter').val()||[]).length+($('#programFilter').val()||[]).length+($('#areaFilter').val()||[]).length+($('#monthFilter').val()||[]).length+($('#quarterFilter').val()||[]).length; $('#activeFilterCount').text(t?`${t} Filters Applied`:'All Data'); }
+    $('.select2').on('change', updateSummary);
+
+    function animateNum(el, target){ const $el=$(el); const start=parseFloat(($el.text()||'0').replace(/,/g,''))||0; const steps=20, inc=(target-start)/steps; let step=0; const t=setInterval(()=>{ step++; $el.text(Math.round(start+inc*step).toLocaleString()); if(step>=steps){$el.text(target.toLocaleString()); clearInterval(t);} },25); }
+    function getParams(){ return $.param(window.PramanaDashboard.collectFilters(), true); }
+
+    // Mini charts
+    const miniCharts = {};
+    function renderMiniChart(canvasId, dataPoints, color) {
+        const el = document.getElementById(canvasId); if (!el) return;
+        const ctx = el.getContext('2d'); if (miniCharts[canvasId]) miniCharts[canvasId].destroy();
+        let points = dataPoints; let displayColor = color;
+        if (dataPoints && dataPoints.length === 2) {
+            const prev = dataPoints[0], curr = dataPoints[1];
+            points = [prev, prev+(curr-prev)*0.2+((curr-prev)*0.15), prev+(curr-prev)*0.4-((curr-prev)*0.1), prev+(curr-prev)*0.7+((curr-prev)*0.1), prev+(curr-prev)*0.8-((curr-prev)*0.05), curr];
+            displayColor = curr > prev ? '#10b981' : curr < prev ? '#ef4444' : '#f59e0b';
         }
-
-        if (kpis.trends) {
-            renderTrend('#trendWrapperWorkingDays', '#trendWorkingDays', kpis.trends.working_days);
-            renderTrend('#trendWrapperActiveDrivers', '#trendActiveDrivers', kpis.trends.active_drivers);
-            renderTrend('#trendWrapperTotalKms', '#trendTotalKms', kpis.trends.total_kms);
-            renderTrend('#trendWrapperActiveCenters', '#trendActiveCenters', kpis.trends.active_centers);
-        } else {
-            $('#trendWrapperWorkingDays, #trendWrapperActiveDrivers, #trendWrapperTotalKms, #trendWrapperActiveCenters').attr('style', 'display: none !important;');
-        }
-
-        if (sparklines) {
-            renderMiniChart('miniChartWorkingDays',  sparklines.working_days,  '#17a2b8');
-            renderMiniChart('miniChartActiveDrivers', sparklines.active_drivers, '#28a745');
-            renderMiniChart('miniChartTotalKms',     sparklines.total_kms,      '#001f3f');
-            renderMiniChart('miniChartActiveCenters', sparklines.active_centers, '#dc3545');
-        } else if (trends && trends.length) {
-            renderMiniChart('miniChartWorkingDays',  trends.map(t => t.working_days),  '#17a2b8');
-            renderMiniChart('miniChartActiveDrivers', trends.map(t => t.active_drivers), '#28a745');
-            renderMiniChart('miniChartTotalKms',     trends.map(t => t.total_kms),      '#001f3f');
-            renderMiniChart('miniChartActiveCenters', trends.map(t => t.active_centers), '#dc3545');
-        }
+        miniCharts[canvasId] = new Chart(ctx, { type: 'line', plugins: [ChartDataLabels], data: { labels: points.map((_,i)=>i), datasets: [{ data: points, borderColor: displayColor, borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: displayColor+'15', tension: 0.4 }] },
+            options: { maintainAspectRatio: false, layout: { padding: { left:15, right:15, top:10, bottom:10 } }, plugins: { legend: { display: false }, tooltip: { enabled: false }, datalabels: { display: function(ctx){ return ctx.dataIndex===0||ctx.dataIndex===ctx.dataset.data.length-1; }, align: function(ctx){ return ctx.dataIndex===0?'right':'left'; }, anchor: function(ctx){ return ctx.dataIndex===0?'start':'end'; }, offset: 4, color: displayColor, font: { size: 10, weight: 'bold' }, formatter: function(v){ return v.toLocaleString(); } } }, scales: { x: { display: false }, y: { display: false } } } });
     }
 
-    let dt=null;
-    let fullKpis = null;
-    let drilldownKpis = null;
-    let selectedRegion = null;
-    let fullTrends = null;
-    let fullSparklines = null;
+    // KPI update
+    function updateKpis(kpis, trends=[], sparklines=null) {
+        animateNum($('#kpiWorkingDays'), kpis.working_days); animateNum($('#kpiActiveDrivers'), kpis.active_drivers);
+        animateNum($('#kpiTotalKms'), kpis.total_kms); animateNum($('#kpiActiveCenters'), kpis.active_centers);
+        function renderTrend(w,c,t){ const wrapper=$(w), container=$(c).empty(); if(!t||t.dir==='neutral'){ wrapper.attr('style','display: none !important;'); return; } const icon=t.dir==='up'?'↗':'↘'; const cls=t.dir==='up'?'kpi-bitcoin-trend-up':'kpi-bitcoin-trend-down'; container.append(`<div class="kpi-bitcoin-trend-pill ${cls}">${Math.abs(t.pct)}% ${icon}</div>`); wrapper.attr('style','display: flex !important;'); }
+        if(kpis.trends){ renderTrend('#trendWrapperWorkingDays','#trendWorkingDays',kpis.trends.working_days); renderTrend('#trendWrapperActiveDrivers','#trendActiveDrivers',kpis.trends.active_drivers); renderTrend('#trendWrapperTotalKms','#trendTotalKms',kpis.trends.total_kms); renderTrend('#trendWrapperActiveCenters','#trendActiveCenters',kpis.trends.active_centers); }
+        else { $('#trendWrapperWorkingDays,#trendWrapperActiveDrivers,#trendWrapperTotalKms,#trendWrapperActiveCenters').attr('style','display: none !important;'); }
+        if(sparklines){ renderMiniChart('miniChartWorkingDays',sparklines.working_days,'#17a2b8'); renderMiniChart('miniChartActiveDrivers',sparklines.active_drivers,'#28a745'); renderMiniChart('miniChartTotalKms',sparklines.total_kms,'#001f3f'); renderMiniChart('miniChartActiveCenters',sparklines.active_centers,'#dc3545'); }
+    }
+
+    // Charts
+    let chartInstances={};
+    function destroyChart(id){ if(chartInstances[id]){ chartInstances[id].destroy(); delete chartInstances[id]; } }
+    function renderLine(id,points){ destroyChart(id); const c=document.getElementById(id); if(!c) return; chartInstances[id]=new Chart(c,{type:'line',data:{labels:points.map(p=>p.label),datasets:[{label:'Working Days',data:points.map(p=>p.value),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.12)',pointBackgroundColor:'#10b981',pointRadius:3,tension:.35,fill:true,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{display:false},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},scales:{x:{grid:{display:false},ticks:{color:'#64748b',maxRotation:45,font:{size:10}}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}}}}}); }
+    function renderHBar(id,points,label){ destroyChart(id); const c=document.getElementById(id); if(!c) return; chartInstances[id]=new Chart(c,{type:'bar',data:{labels:points.map(p=>p.label),datasets:[{label:label,data:points.map(p=>p.value),backgroundColor:points.map((_,i)=>PALETTE[i%PALETTE.length]),borderRadius:6,barThickness:22}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',onClick:(evt,elements)=>{if(elements.length>0){const idx=elements[0].index;loadDrilldown(points[idx].label);}},plugins:{legend:{display:false},datalabels:{display:true,anchor:'end',align:'end',color:'#334155',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString()},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},scales:{x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}},y:{grid:{display:false},ticks:{color:'#334155',font:{weight:'600'}}}}}}); }
+
+    // Data loading
+    let dt=null, fullKpis=null, drilldownKpis=null, selectedRegion=null, fullTrends=null, fullSparklines=null;
     function loadData(){
         const q=getParams();
         fetch(`/category-overview/operations?${q}`).then(r=>r.json()).then(data=>{
-            fullKpis = data.kpis;
-            fullTrends = data.trends;
-            fullSparklines = data.sparklines;
-            
-            updateKpis(data.kpis, data.trends, data.sparklines);
-
+            fullKpis=data.kpis; fullTrends=data.trends; fullSparklines=data.sparklines;
+            updateKpis(data.kpis,data.trends,data.sparklines);
             const ch=data.charts||{};
-            renderHBar('chartKm', ch.km_by_region||[], 'KMs Travelled');
-            renderHBar('chartVehicle', ch.vehicle_usage||[], 'Vehicle Count');
-            renderLine('chartTrend', ch.trend||[]);
-
-            if(dt){ dt.destroy(); dt=null; }
+            renderHBar('chartKm',ch.km_by_region||[],'KMs Travelled');
+            renderHBar('chartVehicle',ch.vehicle_usage||[],'Vehicle Count');
+            renderLine('chartTrend',ch.trend||[]);
+            if(dt){dt.destroy();dt=null;}
             const tb=$('#overviewTable tbody').empty();
-            (data.table||[]).forEach(r=>{
-                tb.append(`<tr><td class="font-weight-600">${r.region}</td>
-                    <td class="text-right">${Number(r.instructors||0).toLocaleString()}</td>
-                    <td class="text-right">${Number(r.working_days||0).toLocaleString()}</td>
-                    <td class="text-right">${Number(r.schools||0).toLocaleString()}</td>
-                    <td class="text-right">${Number(r.sessions||0).toLocaleString()}</td></tr>`);
-            });
+            (data.table||[]).forEach(r=>{ tb.append(`<tr><td class="font-weight-600">${r.region}</td><td class="text-right">${Number(r.instructors||0).toLocaleString()}</td><td class="text-right">${Number(r.working_days||0).toLocaleString()}</td><td class="text-right">${Number(r.schools||0).toLocaleString()}</td><td class="text-right">${Number(r.sessions||0).toLocaleString()}</td></tr>`); });
             dt=PramanaDashboard.initDataTable('#overviewTable',{paging:true,searching:true,pageLength:10,order:[[2,'desc']]});
         });
     }
 
-    // ── Drill-down Logic ─────────────────────────────────────────────
-    window.loadDrilldown = function(regionName) {
-        console.log("Loading drilldown for:", regionName);
-        selectedRegion = regionName;
-        const q = getParams() + `&region=${encodeURIComponent(regionName)}`;
-        
-        // Update main KPIs for the region
-        fetch(`/category-overview/operations?${q}`).then(r=>r.json()).then(data => {
-            if (data.kpis) {
-                drilldownKpis = data.kpis;
-                updateKpis(data.kpis, data.trends, data.sparklines);
-            }
-        });
-
-        // Fetch drilldown details
-        fetch(`/dashboard/drill-down?${q}`).then(r=>r.json()).then(data => {
-            if($.fn.DataTable.isDataTable('#drilldownTable')) $('#drilldownTable').DataTable().destroy();
-            
-            $('#drilldownRegionLabel, #ddTableRegionLabel').text(regionName);
-            animateNum('#ddSessions', data.summary.total_sessions);
-            animateNum('#ddStudents', data.summary.total_students);
-            animateNum('#ddSchools',  data.summary.total_schools);
-            
-            const tbody = $('#drilldownTableBody').empty();
-            (data.programs || []).forEach(p => {
-                tbody.append(`<tr>
-                    <td class="font-weight-600">${p.program}</td>
-                    <td class="text-muted">${p.donor}</td>
-                    <td class="text-right">${p.sessions.toLocaleString()}</td>
-                    <td class="text-right">${p.students_reached.toLocaleString()}</td>
-                    <td class="text-right">${p.schools_visited.toLocaleString()}</td>
-                    <td class="text-right">${p.instructors.toLocaleString()}</td>
-                </tr>`);
-            });
-            $('#ddProgramCount').text((data.programs||[]).length + ' programs');
-            
-            PramanaDashboard.initDataTable('#drilldownTable', { paging: true, searching: true, pageLength: 10, order: [[2, 'desc']] });
-            $('#drilldownPanel').show();
-            $('html, body').animate({ scrollTop: $('#drilldownPanel').offset().top - 20 }, 400);
-        });
+    function loadWorkDayTable(){
+        if(workDayDt){workDayDt.destroy();workDayDt=null;}
+        workDayDt=PramanaDashboard.initDataTable('#workDayTable',{ajaxUrl:'/work-day/data',getFilters:function(){return window.PramanaDashboard.collectFilters();},columns:[
+            {data:'instructor_name',render:d=>`<span class="font-weight-600 text-navy">${d}</span>`},
+            {data:'region',render:(d,t,r)=>`<div class="small"><span class="text-muted"><i class="fas fa-globe mr-1"></i> ${r.region}</span> / <span class="font-weight-bold">${r.area}</span></div>`},
+            {data:'days_worked',className:'text-center',render:d=>`<span class="badge badge-info px-2 py-1">${d}</span>`},
+            {data:'dates_active',render:d=>`<div class="text-primary small font-weight-bold" style="word-break: break-all; opacity:0.8;">${d}</div>`}
+        ]});
     }
 
-    window.clearDrilldown = function() {
-        selectedRegion = null;
-        drilldownKpis = null;
-        $('#drilldownPanel').hide();
-        if($.fn.DataTable.isDataTable('#drilldownTable')) $('#drilldownTable').DataTable().destroy();
-        $('#drilldownTableBody').empty();
-        if(fullKpis) {
-            updateKpis(fullKpis, fullTrends, fullSparklines);
-        }
+    // Drilldown
+    window.loadDrilldown = function(regionName){
+        selectedRegion=regionName;
+        const q=getParams()+`&region=${encodeURIComponent(regionName)}`;
+        fetch(`/category-overview/operations?${q}`).then(r=>r.json()).then(data=>{ if(data.kpis){drilldownKpis=data.kpis;updateKpis(data.kpis,data.trends,data.sparklines);} });
+        fetch(`/dashboard/drill-down?${q}`).then(r=>r.json()).then(data=>{
+            if($.fn.DataTable.isDataTable('#drilldownTable'))$('#drilldownTable').DataTable().destroy();
+            $('#drilldownRegionLabel,#ddTableRegionLabel').text(regionName);
+            animateNum('#ddSessions',data.summary.total_sessions); animateNum('#ddStudents',data.summary.total_students); animateNum('#ddSchools',data.summary.total_schools);
+            const tbody=$('#drilldownTableBody').empty();
+            (data.programs||[]).forEach(p=>{ tbody.append(`<tr><td class="font-weight-600">${p.program}</td><td class="text-muted">${p.donor}</td><td class="text-right">${p.sessions.toLocaleString()}</td><td class="text-right">${p.students_reached.toLocaleString()}</td><td class="text-right">${p.schools_visited.toLocaleString()}</td><td class="text-right">${p.instructors.toLocaleString()}</td></tr>`); });
+            $('#ddProgramCount').text((data.programs||[]).length+' programs');
+            PramanaDashboard.initDataTable('#drilldownTable',{paging:true,searching:true,pageLength:10,order:[[2,'desc']]});
+            $('#drilldownPanel').show(); $('html,body').animate({scrollTop:$('#drilldownPanel').offset().top-20},400);
+        });
     };
+    window.clearDrilldown = function(){ selectedRegion=null; drilldownKpis=null; $('#drilldownPanel').hide(); if($.fn.DataTable.isDataTable('#drilldownTable'))$('#drilldownTable').DataTable().destroy(); $('#drilldownTableBody').empty(); if(fullKpis)updateKpis(fullKpis,fullTrends,fullSparklines); };
 
-    // ── KPI Tooltip Click Handler ────────────────────────────────────
-    $(document).on('click', '.kpi-info-btn', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const kpiKey = $(this).attr('data-kpi');
-        const currentKpis = selectedRegion ? drilldownKpis : fullKpis;
-        if (!currentKpis || !currentKpis.insights || !currentKpis.insights[kpiKey]) {
-            console.error("Insights not loaded or not found for: " + kpiKey);
-            return;
-        }
-        
-        const insight = currentKpis.insights[kpiKey];
-        
-        // Set Modal Header details
-        $('#modalTitle').text(insight.title);
-        $('#modalHeaderIcon').attr('class', insight.icon);
-        $('#modalIconWrapper').css('background', insight.color);
-        
-        // Set YoY Comparison
-        $('#modalComparisonText').html(insight.comparison_text);
-        
-        // Highlight YoY card icon/color based on trend direction
-        const trend = (currentKpis.trends && currentKpis.trends[kpiKey]) ? currentKpis.trends[kpiKey] : { dir: 'neutral' };
-        const compIcon = $('#modalComparisonIcon').empty();
-        if (trend.dir === 'up') {
-            compIcon.append('<i class="fas fa-arrow-alt-circle-up text-success" style="font-size: 2rem;"></i>');
-        } else if (trend.dir === 'down') {
-            compIcon.append('<i class="fas fa-arrow-alt-circle-down text-danger" style="font-size: 2rem;"></i>');
-        } else {
-            compIcon.append('<i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>');
-        }
-        
-
-        
-        // Set Suggestions
-        const suggestionsList = $('#modalSuggestionsList').empty();
-        if (insight.suggestions && insight.suggestions.length) {
-            insight.suggestions.forEach(s => {
-                suggestionsList.append(`
-                    <li class="insight-list-item">
-                        <span class="mr-3 text-success" style="font-size: 1.15rem; line-height: 1.2;">
-                            <i class="fas fa-check-circle"></i>
-                        </span>
-                        <span class="text-secondary" style="font-size: 0.95rem; line-height: 1.5; font-family: Inter, Arial, sans-serif;">${s}</span>
-                    </li>
-                `);
-            });
-        } else {
-            suggestionsList.append('<li class="text-muted">No suggestions available for this view.</li>');
-        }
-        
-        // Show modal
+    // KPI modal
+    $(document).on('click','.kpi-info-btn',function(e){
+        e.preventDefault();e.stopPropagation(); const kpiKey=$(this).attr('data-kpi'); const currentKpis=selectedRegion?drilldownKpis:fullKpis;
+        if(!currentKpis||!currentKpis.insights||!currentKpis.insights[kpiKey])return;
+        const insight=currentKpis.insights[kpiKey]; $('#modalTitle').text(insight.title); $('#modalHeaderIcon').attr('class',insight.icon); $('#modalIconWrapper').css('background',insight.color); $('#modalComparisonText').html(insight.comparison_text);
+        const trend=(currentKpis.trends&&currentKpis.trends[kpiKey])?currentKpis.trends[kpiKey]:{dir:'neutral'}; const compIcon=$('#modalComparisonIcon').empty();
+        if(trend.dir==='up')compIcon.append('<i class="fas fa-arrow-alt-circle-up text-success" style="font-size: 2rem;"></i>'); else if(trend.dir==='down')compIcon.append('<i class="fas fa-arrow-alt-circle-down text-danger" style="font-size: 2rem;"></i>'); else compIcon.append('<i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>');
+        const sl=$('#modalSuggestionsList').empty(); if(insight.suggestions&&insight.suggestions.length){insight.suggestions.forEach(s=>{sl.append(`<li class="insight-list-item"><span class="mr-3 text-success" style="font-size:1.15rem;line-height:1.2;"><i class="fas fa-check-circle"></i></span><span class="text-secondary" style="font-size:0.95rem;line-height:1.5;">${s}</span></li>`);});}else{sl.append('<li class="text-muted">No suggestions available.</li>');}
         $('#kpiInsightModal').modal('show');
     });
 
-    let chartInstances={};
-    function destroyChart(id){ if(chartInstances[id]){ chartInstances[id].destroy(); delete chartInstances[id]; } }
-
-    function renderDoughnut(id, points){
-        destroyChart(id); const c=document.getElementById(id); if(!c) return;
-        chartInstances[id]=new Chart(c,{type:'doughnut',data:{labels:points.map(p=>p.label),datasets:[{data:points.map(p=>p.value),backgroundColor:points.map((_,i)=>PALETTE[i%PALETTE.length]),borderWidth:2,borderColor:'#fff'}]},
-            options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:true,position:'right',labels:{boxWidth:12,padding:12,usePointStyle:true,pointStyle:'circle',color:'#475569',font:{size:11}}},datalabels:{display:true,color:'#fff',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString()},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}}}});
-    }
-
-    function renderLine(id, points){
-        destroyChart(id); const c=document.getElementById(id); if(!c) return;
-        chartInstances[id]=new Chart(c,{type:'line',data:{labels:points.map(p=>p.label),datasets:[{label:'Working Days',data:points.map(p=>p.value),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.12)',pointBackgroundColor:'#10b981',pointRadius:3,tension:.35,fill:true,borderWidth:2}]},
-            options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{display:false},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},scales:{x:{grid:{display:false},ticks:{color:'#64748b',maxRotation:45,font:{size:10}}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}}}}});
-    }
-
-    function renderHBar(id, points, label){
-        destroyChart(id);
-        const c=document.getElementById(id); if(!c) return;
-        chartInstances[id]=new Chart(c,{type:'bar',data:{
-            labels:points.map(p=>p.label), datasets:[{label:label,data:points.map(p=>p.value),
-            backgroundColor:points.map((_,i)=>PALETTE[i%PALETTE.length]),borderRadius:6,barThickness:22}]},
-            options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
-                onClick: (evt, elements) => {
-                    if (elements.length > 0) {
-                        const idx = elements[0].index;
-                        const regionName = points[idx].label;
-                        loadDrilldown(regionName);
-                    }
-                },
-                plugins:{legend:{display:false},datalabels:{display:true,anchor:'end',align:'end',color:'#334155',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString()},
-                    tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},
-                scales:{x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}},
-                        y:{grid:{display:false},ticks:{color:'#334155',font:{weight:'600'}}}}}
-        });
-    }
-
-    setTimeout(loadData, 300);
+    function applyAll(){ $('#drilldownPanel').hide(); loadData(); if(activeTab==='ignator')loadWorkDayTable(); }
+    setTimeout(applyAll, 300);
 });
 </script>
 {% endblock %}

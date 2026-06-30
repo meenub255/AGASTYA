@@ -2,7 +2,6 @@
 
 {% block content %}
 <div class="col-md-12">
-    <!-- Top Action Bar -->
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
             <h1 class="m-0 font-weight-bold" style="font-size: 1.5rem; color: #1e293b; font-family: Arial, sans-serif !important;">Ignator Performance</h1>
@@ -22,7 +21,6 @@
 
     <!-- KPIs -->
     <div class="row mb-3">
-        <!-- Card 1: Total Instructors -->
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardInstructors">
                 <button type="button" class="kpi-info-btn" data-kpi="total_instructors" title="View Insights">
@@ -45,8 +43,6 @@
                 <div class="kpi-mini-chart"><canvas id="miniChartInstructors"></canvas></div>
             </div>
         </div>
-        
-        <!-- Card 2: Sessions Conducted -->
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardSessions">
                 <button type="button" class="kpi-info-btn" data-kpi="total_sessions" title="View Insights">
@@ -69,8 +65,6 @@
                 <div class="kpi-mini-chart"><canvas id="miniChartSessions"></canvas></div>
             </div>
         </div>
-
-        <!-- Card 3: Avg / Instructor -->
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardAvgSessions">
                 <button type="button" class="kpi-info-btn" data-kpi="avg_per_instructor" title="View Insights">
@@ -93,8 +87,6 @@
                 <div class="kpi-mini-chart"><canvas id="miniChartAvgSessions"></canvas></div>
             </div>
         </div>
-
-        <!-- Card 4: Students Impacted -->
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardStudents">
                 <button type="button" class="kpi-info-btn" data-kpi="total_students" title="View Insights">
@@ -119,31 +111,31 @@
         </div>
     </div>
 
-    <!-- Charts Row 1 -->
+    <!-- Charts Row -->
     <div class="row">
-        <div class="col-md-12 mb-3">
-            <div class="card h-100 white-chart-card shadow-sm">
-                <div class="card-header border-0 pb-1" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
-                    <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;">Monthly Sessions Trend</h3>
+        <div class="col-xl-7 col-lg-7 mb-3">
+            <div class="card h-100 white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header border-0 pb-1 d-flex align-items-center justify-content-between" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <div>
+                        <h3 class="card-title text-sm text-uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-chart-line mr-2" style="color:#3b82f6;"></i>Session Target vs Actual</h3>
+                        <small class="text-muted">Click a point to drill into ignator breakdown</small>
+                    </div>
                 </div>
-                <div class="card-body"><div style="height:320px;"><canvas id="chartTrend"></canvas></div></div>
+                <div class="card-body" style="padding:16px;"><div style="height:350px;"><canvas id="trendChart"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-xl-5 col-lg-5 mb-3">
+            <div class="card h-100 white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header border-0 pb-1 d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-map-marked-alt mr-2" style="color:#8b5cf6;"></i>Sessions by Region</h3>
+                    <i class="fas fa-info-circle text-muted ml-auto region-legend-trigger" style="cursor:pointer;" data-toggle="popover" data-trigger="click" data-html="true" tabindex="0" title="Region Code Legend" data-content="Loading..."></i>
+                </div>
+                <div class="card-body" style="padding:16px;"><div style="height:350px;"><canvas id="regionChart"></canvas></div></div>
             </div>
         </div>
     </div>
 
-    <!-- Charts Row 2 -->
-    <div class="row">
-        <div class="col-12 mb-3">
-            <div class="card white-chart-card shadow-sm">
-                <div class="card-header border-0 pb-1" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
-                    <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;">Top Regions by Sessions</h3>
-                </div>
-                <div class="card-body"><div style="height:300px;"><canvas id="chartRegion"></canvas></div></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Data Table -->
+    <!-- Drilldown Panel (Overview - Program Breakdown by Region) -->
     <div id="drilldownPanel" style="display:none; margin-top: 16px;">
         <div id="drilldownBreadcrumb" class="d-flex align-items-center mb-3 px-1" style="gap: 8px;">
             <span class="text-muted" style="font-size:13px; cursor:pointer;" onclick="clearDrilldown()">
@@ -156,7 +148,6 @@
                 <i class="fas fa-times mr-1"></i>Clear Selection
             </button>
         </div>
-
         <div class="row mb-3" id="drilldownStats">
             <div class="col-md-4 mb-2">
                 <div class="kpi-card-v2 kpi-v2-navy">
@@ -180,7 +171,6 @@
                 </div>
             </div>
         </div>
-
         <div class="card white-chart-card shadow-sm" style="border-radius: 15px; overflow: hidden;">
             <div class="card-header d-flex align-items-center" style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
                 <i class="fas fa-table mr-2" style="color: #6366f1;"></i>
@@ -199,7 +189,7 @@
                                 <th class="text-right">Sessions</th>
                                 <th class="text-right">Students</th>
                                 <th class="text-right">Schools</th>
-                                <th class="text-right">Instructors</th>
+                                <th class="text-right">Ignators</th>
                             </tr>
                         </thead>
                         <tbody id="drilldownTableBody"></tbody>
@@ -209,7 +199,50 @@
         </div>
     </div>
 
-    <div class="card white-chart-card shadow-sm" style="border-radius:15px; overflow:hidden;">
+    <!-- Performance Drilldown Panel (Ignator Breakdown) -->
+    <div id="perfDrilldownPanel" style="display:none; margin-top: 8px;">
+        <div class="d-flex align-items-center mb-3 px-1" style="gap: 8px;">
+            <span class="text-muted" style="font-size:13px; cursor:pointer;" onclick="clearPerfDrilldown()">
+                <i class="fas fa-chart-bar mr-1"></i>All Data
+            </span>
+            <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
+            <span id="perfDrilldownTitle" style="font-size:13px; font-weight:600; color:#1e3a8a;"></span>
+            <button onclick="clearPerfDrilldown()" class="btn btn-sm ml-auto"
+                style="background:#f1f5f9; border:1px solid #e2e8f0; color:#64748b; font-size:11px; padding:3px 10px; border-radius:20px;">
+                <i class="fas fa-times mr-1"></i>Close
+            </button>
+        </div>
+        <div class="card white-chart-card shadow-sm" style="border-radius:15px; overflow:hidden;">
+            <div class="card-header d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0 !important;">
+                <i class="fas fa-table mr-2" style="color:#3b82f6;"></i>
+                <h3 class="card-title text-sm uppercase font-weight-bold" style="color:#334155;">Ignator Breakdown —
+                    <span id="perfDdTableLabel" style="color:#3b82f6;"></span></h3>
+                <span id="perfDdRecordCount" class="badge badge-pill ml-2"
+                    style="background:#ede9fe; color:#6366f1; font-size:11px;"></span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="perfDrilldownTable" class="table table-hover mb-0" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Ignator</th>
+                                <th>Region</th>
+                                <th class="text-right">Programs</th>
+                                <th class="text-right">Sessions</th>
+                                <th class="text-right">Schools</th>
+                                <th class="text-right">Students</th>
+                                <th class="text-right">Avg Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody id="perfDrilldownBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Ignators Table -->
+    <div class="card white-chart-card shadow-sm" style="border-radius:15px; overflow:hidden; margin-top: 16px;">
         <div class="card-header d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
             <i class="fas fa-table mr-2" style="color:#6366f1;"></i>
             <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;">Top Ignators</h3>
@@ -248,6 +281,24 @@
             <label class="fd-label">Activity Type</label>
             <select id="programFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Activity" data-filter="program"></select>
         </div>
+        <div class="fd-section">
+            <label class="fd-label">Month</label>
+            <select id="monthFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Month" data-filter="month"></select>
+        </div>
+        <hr style="border-color:#e2e8f0; margin:20px 0;">
+        <div class="fd-section">
+            <label class="fd-label">Quarter</label>
+            <select id="quarterFilter" class="form-control select2 filter-multi" multiple data-placeholder="Select Quarter" data-filter="quarter"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Group Chart By</label>
+            <select id="groupByFilter" class="form-control" style="border:1px solid #e2e8f0; border-radius:10px; padding:8px;">
+                <option value="month">Month</option>
+                <option value="day">Day</option>
+                <option value="quarter">Quarter</option>
+                <option value="year">Year</option>
+            </select>
+        </div>
     </div>
     <div class="fd-footer">
         <button id="resetFilters" class="btn btn-outline-secondary btn-block" style="border-radius:10px;">
@@ -257,7 +308,7 @@
 </div>
 
 <!-- KPI Insights Modal -->
-<div class="modal fade" id="kpiInsightModal" tabindex="-1" role="dialog" aria-labelledby="kpiInsightModalLabel" aria-hidden="true">
+<div class="modal fade" id="kpiInsightModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content shadow-lg" style="border-radius: 16px; border: none; overflow: hidden;">
             <div class="modal-header d-flex align-items-center insight-modal-header">
@@ -275,7 +326,6 @@
                 </button>
             </div>
             <div class="modal-body" style="padding: 2rem; background-color: #f8fafc;">
-                <!-- YoY Comparison -->
                 <div class="card insight-card">
                     <div class="card-body d-flex align-items-start p-4">
                         <div class="mr-3" id="modalComparisonIcon">
@@ -287,20 +337,13 @@
                         </div>
                     </div>
                 </div>
-
-
-                <!-- Suggestions -->
                 <div class="card insight-card">
                     <div class="card-body p-4">
                         <div class="d-flex align-items-center mb-3">
-                            <div class="mr-2 text-success" style="font-size: 1.15rem;">
-                                <i class="fas fa-tasks"></i>
-                            </div>
+                            <div class="mr-2 text-success" style="font-size: 1.15rem;"><i class="fas fa-tasks"></i></div>
                             <h6 class="font-weight-bold text-dark mb-0" style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Strategic Suggestions to Improve</h6>
                         </div>
-                        <ul class="list-unstyled mb-0" id="modalSuggestionsList">
-                            <!-- Dynamic items -->
-                        </ul>
+                        <ul class="list-unstyled mb-0" id="modalSuggestionsList"></ul>
                     </div>
                 </div>
             </div>
@@ -313,113 +356,65 @@
 
 <style>
     .clear-drilldown-btn:hover {
-        background: #7f1d1d !important;
-        border-color: #7f1d1d !important;
-        color: #ffffff !important;
-        transform: scale(1.03);
-        box-shadow: 0 4px 12px rgba(127, 29, 29, 0.3) !important;
+        background: #7f1d1d !important; border-color: #7f1d1d !important; color: #ffffff !important;
+        transform: scale(1.03); box-shadow: 0 4px 12px rgba(127, 29, 29, 0.3) !important;
     }
     .content-header { display: none !important; }
     .select2-container--open { z-index: 9999 !important; }
-
-    /* Modal Style overrides */
     .insight-modal-header {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
-        border-top-left-radius: 16px !important;
-        border-top-right-radius: 16px !important;
-        padding: 1.5rem 2rem !important;
+        border-top-left-radius: 16px !important; border-top-right-radius: 16px !important; padding: 1.5rem 2rem !important;
     }
     .insight-card {
-        border-radius: 16px !important;
-        border: 1px solid #e2e8f0 !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
-        background: #ffffff !important;
-        margin-bottom: 1.5rem !important;
-        transition: transform 0.2s ease !important;
+        border-radius: 16px !important; border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important; background: #ffffff !important;
+        margin-bottom: 1.5rem !important; transition: transform 0.2s ease !important;
     }
-    .insight-card:hover {
-        transform: translateY(-2px) !important;
-    }
+    .insight-card:hover { transform: translateY(-2px) !important; }
     .insight-list-item {
-        display: flex !important;
-        align-items: start !important;
-        margin-bottom: 1rem !important;
-        padding-bottom: 0.75rem !important;
-        border-bottom: 1px dashed #f1f5f9;
+        display: flex !important; align-items: start !important; margin-bottom: 1rem !important;
+        padding-bottom: 0.75rem !important; border-bottom: 1px dashed #f1f5f9;
     }
-    .insight-list-item:last-child {
-        border-bottom: none;
-        margin-bottom: 0 !important;
-        padding-bottom: 0 !important;
-    }
-
-    /* Info button inside cards */
-    .kpi-card-bitcoin {
-        position: relative !important;
-    }
+    .insight-list-item:last-child { border-bottom: none; margin-bottom: 0 !important; padding-bottom: 0 !important; }
+    .kpi-card-bitcoin { position: relative !important; }
     .kpi-info-btn {
-        position: absolute !important;
-        top: 15px !important;
-        right: 15px !important;
-        background: transparent !important;
-        border: none !important;
-        outline: none !important;
-        color: #cbd5e1 !important;
-        font-size: 1.1rem !important;
-        cursor: pointer !important;
-        z-index: 50 !important;
-        padding: 6px !important;
-        border-radius: 50% !important;
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-        line-height: 1 !important;
-        transition: color 0.2s ease, transform 0.2s ease, background-color 0.2s ease !important;
-        width: 28px;
-        height: 28px;
+        position: absolute !important; top: 15px !important; right: 15px !important;
+        background: transparent !important; border: none !important; outline: none !important;
+        color: #cbd5e1 !important; font-size: 1.1rem !important; cursor: pointer !important;
+        z-index: 50 !important; padding: 6px !important; border-radius: 50% !important;
+        display: flex !important; align-items: center; justify-content: center;
+        line-height: 1 !important; transition: color 0.2s ease, transform 0.2s ease, background-color 0.2s ease !important;
+        width: 28px; height: 28px;
     }
-    .kpi-info-btn:hover {
-        color: #64748b !important;
-        transform: scale(1.15) !important;
-        background-color: #f1f5f9 !important;
-    }
-    .kpi-info-btn:focus {
-        outline: none !important;
-        box-shadow: none !important;
-    }
+    .kpi-info-btn:hover { color: #64748b !important; transform: scale(1.15) !important; background-color: #f1f5f9 !important; }
+    .kpi-info-btn:focus { outline: none !important; box-shadow: none !important; }
+    #perfDrilldownPanel { animation: slideDown .3s ease; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 {% endblock %}
 
 {% block scripts %}
 <script>
 $(function(){
-    if(typeof Chart !== 'undefined') {
-        Chart.defaults.font.family = 'Arial, Helvetica, sans-serif';
-    }
+    if(typeof Chart !== 'undefined') { Chart.defaults.font.family = 'Arial, Helvetica, sans-serif'; }
     const PALETTE = ['#6366f1','#10b981','#3b82f6','#f59e0b','#ec4899','#8b5cf6','#14b8a6','#f97316'];
+    const POLAR_PALETTE = ['rgba(99,102,241,0.8)','rgba(16,185,129,0.8)','rgba(245,158,11,0.8)','rgba(59,130,246,0.8)','rgba(139,92,246,0.8)','rgba(236,72,153,0.8)','rgba(20,184,166,0.8)','rgba(249,115,22,0.8)','rgba(168,85,247,0.8)','rgba(14,165,233,0.8)'];
 
-    // Drawer logic
+    // ── Drawer Logic ──
     $('#filterLauncher').click(()=>{ $('#filterDrawer, #filterDrawerOverlay').addClass('open'); });
     const closeDrawer = ()=>{ $('#filterDrawer, #filterDrawerOverlay').removeClass('open'); };
     $('#closeDrawer').click(closeDrawer);
     $('#filterDrawerOverlay').click(closeDrawer);
-
     if($.fn.select2){ $('.select2').select2({ theme:'bootstrap4', dropdownParent:$('#filterDrawer'), width:'100%', allowClear:true, multiple:true }); }
 
-    // Filters
-    function fetchFilters(target, years, regions){
+    // ── Filters ──
+    function fetchOverviewFilters(target, years, regions){
         const q = $.param({years:years||[], regions:regions||[]}, true);
         return fetch(`/dashboard/filters?${q}`).then(r=>r.json()).then(d=>{
             if(target==='all'){
-                $('#yearFilter').empty(); 
-                d.years.forEach(y=>$('#yearFilter').append(new Option(y,y)));
-                
-                // Default to current year if available and nothing is selected
+                $('#yearFilter').empty(); d.years.forEach(y=>$('#yearFilter').append(new Option(y,y)));
                 const currentYear = new Date().getFullYear();
-                if(!($('#yearFilter').val()||[]).length && d.years.includes(currentYear)){
-                    $('#yearFilter').val([currentYear]);
-                }
-                
+                if(!($('#yearFilter').val()||[]).length && d.years.includes(currentYear)){ $('#yearFilter').val([currentYear]); }
                 $('#regionFilter').empty(); d.regions.forEach(r=>$('#regionFilter').append(new Option(r,r)));
                 $('#programFilter').empty(); d.programs.forEach(p=>$('#programFilter').append(new Option(p,p)));
                 $('.select2').trigger('change.select2');
@@ -432,21 +427,39 @@ $(function(){
                 $('#programFilter').empty(); d.programs.forEach(p=>$('#programFilter').append(new Option(p,p)));
                 $('#programFilter').val(cur).trigger('change.select2',{internal:true});
             }
-            updateSummary();
+            updateFilterSummary();
         });
     }
-    fetchFilters('all');
 
-    $('#yearFilter').on('change',(e,d)=>{ if(d&&d.internal) return; fetchFilters('regions',$('#yearFilter').val()).then(()=>fetchFilters('programs',$('#yearFilter').val(),$('#regionFilter').val())); loadData(); });
-    $('#regionFilter').on('change',(e,d)=>{ if(d&&d.internal) return; fetchFilters('programs',$('#yearFilter').val(),$('#regionFilter').val()); loadData(); });
-    $('#programFilter').on('change',(e,d)=>{ if(d&&d.internal) return; loadData(); });
-    $('#resetFilters').click(()=>{ $('.select2').val(null).trigger('change',{internal:true}); fetchFilters('all').then(()=>loadData()); });
+    function fetchPerfFilters(){
+        const f = collectFilters();
+        return fetch('/performance-mgmt/filters?' + $.param(f, true)).then(r=>r.json()).then(data=>{
+            if (!$('#monthFilter option').length) {
+                data.months.forEach(m => $('#monthFilter').append(new Option(m.name, m.id)));
+            }
+            if (!$('#quarterFilter option').length) {
+                data.quarters.forEach(q => $('#quarterFilter').append(new Option('Q' + q, q)));
+            }
+            $('.select2').trigger('change.select2', { internal: true });
+        });
+    }
 
-    function updateSummary(){
-        const t=($('#yearFilter').val()||[]).length+($('#regionFilter').val()||[]).length+($('#programFilter').val()||[]).length;
+    fetchOverviewFilters('all');
+    fetchPerfFilters();
+
+    function collectFilters(){ return window.PramanaDashboard.collectFilters(); }
+
+    function updateFilterSummary(){
+        const t=($('#yearFilter').val()||[]).length+($('#regionFilter').val()||[]).length+($('#programFilter').val()||[]).length+($('#monthFilter').val()||[]).length+($('#quarterFilter').val()||[]).length;
         $('#activeFilterCount').text(t?`${t} Filters Applied`:'All Data');
     }
-    $('.select2').on('change', updateSummary);
+    $('.select2').on('change', updateFilterSummary);
+
+    $('#yearFilter').on('change',(e,d)=>{ if(d&&d.internal) return; fetchOverviewFilters('regions',$('#yearFilter').val()).then(()=>fetchOverviewFilters('programs',$('#yearFilter').val(),$('#regionFilter').val())); applyAll(); });
+    $('#regionFilter').on('change',(e,d)=>{ if(d&&d.internal) return; fetchOverviewFilters('programs',$('#yearFilter').val(),$('#regionFilter').val()); applyAll(); });
+    $('#programFilter').on('change',(e,d)=>{ if(d&&d.internal) return; applyAll(); });
+    $('#monthFilter,#quarterFilter,#groupByFilter').on('change',(e,d)=>{ if(d&&d.internal) return; applyAll(); });
+    $('#resetFilters').click(()=>{ $('.select2').val(null).trigger('change',{internal:true}); $('#groupByFilter').val('month'); fetchOverviewFilters('all').then(()=>fetchPerfFilters()).then(()=>applyAll()); });
 
     function animateNum(el, target){
         const $el=$(el); const start=parseFloat(($el.text()||'0').replace(/,/g,''))||0;
@@ -454,344 +467,226 @@ $(function(){
         const t=setInterval(()=>{ step++; $el.text(Math.round(start+inc*step).toLocaleString()); if(step>=steps){$el.text(target.toLocaleString()); clearInterval(t);} },25);
     }
 
-    function getParams(){
-        return $.param(window.PramanaDashboard.collectFilters(), true);
-    }
+    function getParams(){ return $.param(collectFilters(), true); }
 
+    // ── Mini Sparkline Charts ──
     const miniCharts = {};
     function renderMiniChart(canvasId, dataPoints, color) {
-        const el = document.getElementById(canvasId);
-        if (!el) return;
+        const el = document.getElementById(canvasId); if (!el) return;
         const ctx = el.getContext('2d');
         if (miniCharts[canvasId]) miniCharts[canvasId].destroy();
-
-        let points = dataPoints;
-        let displayColor = color;
+        let points = dataPoints; let displayColor = color;
         if (dataPoints && dataPoints.length === 2) {
-            const prev = dataPoints[0];
-            const curr = dataPoints[1];
-            points = [
-                prev,
-                prev + (curr - prev) * 0.2 + ((curr - prev) * 0.15),
-                prev + (curr - prev) * 0.4 - ((curr - prev) * 0.1),
-                prev + (curr - prev) * 0.7 + ((curr - prev) * 0.1),
-                prev + (curr - prev) * 0.8 - ((curr - prev) * 0.05),
-                curr
-            ];
-            if (curr > prev) {
-                displayColor = '#10b981'; // Green
-            } else if (curr < prev) {
-                displayColor = '#ef4444'; // Red
-            } else {
-                displayColor = '#f59e0b'; // Yellow
-            }
+            const prev = dataPoints[0], curr = dataPoints[1];
+            points = [prev, prev+(curr-prev)*0.2+((curr-prev)*0.15), prev+(curr-prev)*0.4-((curr-prev)*0.1), prev+(curr-prev)*0.7+((curr-prev)*0.1), prev+(curr-prev)*0.8-((curr-prev)*0.05), curr];
+            displayColor = curr > prev ? '#10b981' : curr < prev ? '#ef4444' : '#f59e0b';
         }
-
         miniCharts[canvasId] = new Chart(ctx, {
-            type: 'line',
-            plugins: [ChartDataLabels],
-            data: {
-                labels: points.map((_, i) => i),
-                datasets: [{
-                    data: points,
-                    borderColor: displayColor,
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    fill: true,
-                    backgroundColor: displayColor + '15',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                layout: {
-                    padding: {
-                        left: 15,
-                        right: 15,
-                        top: 10,
-                        bottom: 10
-                    }
-                },
-                plugins: { 
-                    legend: { display: false }, 
-                    tooltip: { enabled: false },
-                    datalabels: {
-                        display: function(context) {
-                            return context.dataIndex === 0 || context.dataIndex === context.dataset.data.length - 1;
-                        },
-                        align: function(context) {
-                            return context.dataIndex === 0 ? 'right' : 'left';
-                        },
-                        anchor: function(context) {
-                            return context.dataIndex === 0 ? 'start' : 'end';
-                        },
-                        offset: 4,
-                        color: displayColor,
-                        font: {
-                            size: 10,
-                            weight: 'bold'
-                        },
-                        formatter: function(value) {
-                            return value.toLocaleString();
-                        }
-                    }
-                },
-                scales: { x: { display: false }, y: { display: false } }
-            }
+            type: 'line', plugins: [ChartDataLabels],
+            data: { labels: points.map((_,i)=>i), datasets: [{ data: points, borderColor: displayColor, borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: displayColor+'15', tension: 0.4 }] },
+            options: { maintainAspectRatio: false, layout: { padding: { left:15, right:15, top:10, bottom:10 } },
+                plugins: { legend: { display: false }, tooltip: { enabled: false },
+                    datalabels: { display: function(ctx){ return ctx.dataIndex===0||ctx.dataIndex===ctx.dataset.data.length-1; },
+                        align: function(ctx){ return ctx.dataIndex===0?'right':'left'; }, anchor: function(ctx){ return ctx.dataIndex===0?'start':'end'; },
+                        offset: 4, color: displayColor, font: { size: 10, weight: 'bold' }, formatter: function(v){ return v.toLocaleString(); } } },
+                scales: { x: { display: false }, y: { display: false } } }
         });
     }
 
-    function updateKpis(kpis, trends = [], sparklines = null) {
+    // ── KPI Updates ──
+    function updateKpis(kpis, trends=[], sparklines=null) {
         animateNum($('#kpiInstructors'), kpis.total_instructors);
-        animateNum($('#kpiSessions'),    kpis.total_sessions);
-        
-        // Handle floating point average
-        const avgEl = $('#kpiAvgSessions');
-        const startAvg = parseFloat(avgEl.text()) || 0;
-        const targetAvg = kpis.avg_per_instructor || 0;
-        const steps = 20, inc = (targetAvg - startAvg) / steps;
-        let step = 0;
-        const t = setInterval(() => {
-            step++;
-            avgEl.text((startAvg + inc * step).toFixed(1));
-            if (step >= steps) { avgEl.text(targetAvg.toFixed(1)); clearInterval(t); }
-        }, 25);
-
-        animateNum($('#kpiStudents'),    kpis.total_students);
-
-        // Render trend pills
+        animateNum($('#kpiSessions'), kpis.total_sessions);
+        const avgEl=$('#kpiAvgSessions'); const startAvg=parseFloat(avgEl.text())||0; const targetAvg=kpis.avg_per_instructor||0;
+        const steps=20, inc=(targetAvg-startAvg)/steps; let step=0;
+        const t=setInterval(()=>{ step++; avgEl.text((startAvg+inc*step).toFixed(1)); if(step>=steps){avgEl.text(targetAvg.toFixed(1));clearInterval(t);} },25);
+        animateNum($('#kpiStudents'), kpis.total_students);
         function renderTrend(wrapperId, containerId, trend) {
-            const wrapper = $(wrapperId);
-            const container = $(containerId).empty();
-            if (!trend || trend.dir === 'neutral') {
-                wrapper.attr('style', 'display: none !important;');
-                return;
-            }
-            const icon = trend.dir === 'up' ? '↗' : '↘';
-            const cls = trend.dir === 'up' ? 'kpi-bitcoin-trend-up' : 'kpi-bitcoin-trend-down';
+            const wrapper=$(wrapperId), container=$(containerId).empty();
+            if(!trend||trend.dir==='neutral'){ wrapper.attr('style','display: none !important;'); return; }
+            const icon=trend.dir==='up'?'↗':'↘'; const cls=trend.dir==='up'?'kpi-bitcoin-trend-up':'kpi-bitcoin-trend-down';
             container.append(`<div class="kpi-bitcoin-trend-pill ${cls}">${Math.abs(trend.pct)}% ${icon}</div>`);
-            wrapper.attr('style', 'display: flex !important;');
+            wrapper.attr('style','display: flex !important;');
         }
-
-        if (kpis.trends) {
-            renderTrend('#trendWrapperInstructors', '#trendInstructors', kpis.trends.total_instructors);
-            renderTrend('#trendWrapperSessions',    '#trendSessions',    kpis.trends.total_sessions);
-            renderTrend('#trendWrapperAvgSessions', '#trendAvgSessions', kpis.trends.avg_per_instructor);
-            renderTrend('#trendWrapperStudents',    '#trendStudents',    kpis.trends.total_students);
-        } else {
-            $('#trendWrapperInstructors, #trendWrapperSessions, #trendWrapperAvgSessions, #trendWrapperStudents').attr('style', 'display: none !important;');
-        }
-
-        if (sparklines) {
-            renderMiniChart('miniChartInstructors', sparklines.instructors, '#f39c12');
-            renderMiniChart('miniChartSessions',    sparklines.sessions,    '#28a745');
-            renderMiniChart('miniChartAvgSessions', sparklines.avg,         '#001f3f');
-            renderMiniChart('miniChartStudents',    sparklines.students,    '#dc3545');
-        } else if (trends && trends.length) {
-            renderMiniChart('miniChartInstructors', trends.map(t => t.instructors), '#f39c12');
-            renderMiniChart('miniChartSessions',    trends.map(t => t.sessions),    '#28a745');
-            renderMiniChart('miniChartAvgSessions', trends.map(t => t.avg),         '#001f3f');
-            renderMiniChart('miniChartStudents',    trends.map(t => t.students),    '#dc3545');
-        }
+        if(kpis.trends){ renderTrend('#trendWrapperInstructors','#trendInstructors',kpis.trends.total_instructors); renderTrend('#trendWrapperSessions','#trendSessions',kpis.trends.total_sessions); renderTrend('#trendWrapperAvgSessions','#trendAvgSessions',kpis.trends.avg_per_instructor); renderTrend('#trendWrapperStudents','#trendStudents',kpis.trends.total_students); }
+        else { $('#trendWrapperInstructors,#trendWrapperSessions,#trendWrapperAvgSessions,#trendWrapperStudents').attr('style','display: none !important;'); }
+        if(sparklines){ renderMiniChart('miniChartInstructors',sparklines.instructors,'#f39c12'); renderMiniChart('miniChartSessions',sparklines.sessions,'#28a745'); renderMiniChart('miniChartAvgSessions',sparklines.avg,'#001f3f'); renderMiniChart('miniChartStudents',sparklines.students,'#dc3545'); }
+        else if(trends&&trends.length){ renderMiniChart('miniChartInstructors',trends.map(t=>t.instructors),'#f39c12'); renderMiniChart('miniChartSessions',trends.map(t=>t.sessions),'#28a745'); renderMiniChart('miniChartAvgSessions',trends.map(t=>t.avg),'#001f3f'); renderMiniChart('miniChartStudents',trends.map(t=>t.students),'#dc3545'); }
     }
 
-    let dt=null;
-    let fullKpis = null;
-    let drilldownKpis = null;
-    let selectedRegion = null;
-    let fullTrends = null;
-    let fullSparklines = null;
-    function loadData(){
+    // ── Chart Instances ──
+    let chartInstances={};
+    function destroyChart(id){ if(chartInstances[id]){ chartInstances[id].destroy(); delete chartInstances[id]; } }
+
+    let candleChart=null, regionChartInstance=null, regionMapping={};
+    function getAcronym(str){ if(!str)return''; const parts=str.split(/[_ \-]/); if(parts.length===1&&str.length>5)return str.substring(0,3).toUpperCase(); let a=''; parts.forEach(p=>{if(p.length>0)a+=p[0].toUpperCase();}); return a.length>1?a:str.substring(0,3).toUpperCase(); }
+
+    // ── Overview Charts (from /category-overview/instructor) ──
+    function renderLine(id,points){
+        destroyChart(id); const c=document.getElementById(id); if(!c) return;
+        chartInstances[id]=new Chart(c,{type:'line',data:{labels:points.map(p=>p.label),datasets:[{label:'Sessions',data:points.map(p=>p.value),borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.12)',pointBackgroundColor:'#6366f1',pointRadius:3,tension:.35,fill:true,borderWidth:2}]},
+            options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{display:false},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},scales:{x:{grid:{display:false},ticks:{color:'#64748b',maxRotation:45,font:{size:10}}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}}}}});
+    }
+
+    // ── Perf Trend Chart (Target vs Actual from /performance-mgmt/chart) ──
+    function renderPerfTrendChart(data){
+        const ctx=document.getElementById('trendChart').getContext('2d');
+        const labels=data.map(d=>d.label), actuals=data.map(d=>d.actual), targets=data.map(d=>d.target);
+        const pointColors=data.map(d=>d.actual>=d.target?'#10b981':'#ef4444');
+        if(candleChart)candleChart.destroy();
+        const gradientFill=ctx.createLinearGradient(0,0,0,350); gradientFill.addColorStop(0,'rgba(59,130,246,0.25)'); gradientFill.addColorStop(1,'rgba(59,130,246,0.02)');
+        candleChart=new Chart(ctx,{type:'line',plugins:[ChartDataLabels],data:{labels,datasets:[
+            {label:'Target',data:targets,borderColor:'#94a3b8',borderWidth:2,borderDash:[6,4],pointRadius:0,tension:0.4,fill:false,order:2},
+            {label:'Actual',data:actuals,borderColor:'#3b82f6',borderWidth:3,backgroundColor:gradientFill,fill:true,tension:0.4,pointBackgroundColor:pointColors,pointBorderColor:'#fff',pointBorderWidth:2,pointRadius:6,pointHoverRadius:9,order:1}
+        ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+            onClick(evt,elements){ if(!elements.length)return; const period=candleChart.data.labels[elements[0].index]; loadPerfDrilldown(period,'period'); },
+            plugins:{legend:{display:true,position:'bottom',labels:{color:'#475569',usePointStyle:true,pointStyle:'circle',padding:20}},datalabels:{display:false},
+                tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8,callbacks:{label(ctx){return'  '+ctx.dataset.label+': '+(ctx.parsed.y||0).toLocaleString()},afterLabel(ctx){if(ctx.datasetIndex===1){const d=window._chartRawData||[];if(d[ctx.dataIndex])return d[ctx.dataIndex].met?'  ✅ Met':'  ❌ Missed';}return '';}}}},
+            scales:{x:{grid:{display:false},ticks:{color:'#334155',font:{size:11,weight:600},maxRotation:35}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#334155',font:{size:11},callback(v){return v>=1000?(v/1000).toFixed(1)+'k':v}}}}}});
+    }
+
+    // ── Region Bar Chart (from /performance-mgmt/region-chart) ──
+    function renderRegionBarChart(data){
+        const ctx=document.getElementById('regionChart').getContext('2d');
+        if(regionChartInstance)regionChartInstance.destroy();
+        if(!data||!data.length)return;
+        regionMapping={}; const labels=data.map(d=>{const c=getAcronym(d.region_name);regionMapping[c]=d.region_name;return c;});
+        const sessions=data.map(d=>d.sessions), students=data.map(d=>d.students);
+        regionChartInstance=new Chart(ctx,{type:'bar',plugins:[ChartDataLabels],data:{labels,datasets:[{data:sessions,backgroundColor:labels.map((_,i)=>POLAR_PALETTE[i%POLAR_PALETTE.length]),borderRadius:6,borderSkipped:false,barThickness:16}]},
+            options:{indexAxis:'y',maintainAspectRatio:false,
+                onClick(evt,elements){if(!elements.length)return;const idx=elements[0].index;const fullName=regionMapping[labels[idx]]||labels[idx];loadPerfDrilldown(fullName,'region');},
+                scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{color:'#64748b',font:{size:10,weight:'600'}}}},
+                plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8,callbacks:{title(items){return regionMapping[items[0].label]||items[0].label},label(item){return' Sessions: '+item.raw.toLocaleString()},afterLabel(item){return' Students: '+(students[item.dataIndex]||0).toLocaleString()}}},
+                    datalabels:{display:true,anchor:'end',align:'start',color:'#fff',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString(),offset:4}}}});
+        updateLegendPopover();
+    }
+
+    function updateLegendPopover(){
+        const keys=Object.keys(regionMapping).sort(); let c='';
+        if(!keys.length){c='No regions displayed';}else{c='<div class="small" style="max-height:200px;overflow-y:auto;"><table class="table table-sm mb-0">';keys.forEach(k=>{c+='<tr><td class="font-weight-bold pr-2" style="border-top:0">'+k+'</td><td style="border-top:0">: '+regionMapping[k]+'</td></tr>';});c+='</table></div>';}
+        $('.region-legend-trigger').each(function(){$(this).popover('dispose').popover({html:true,container:'body',boundary:'viewport',placement:'auto',trigger:'click',content:c});});
+    }
+
+    // ── Overview HBar (from overview) ──
+    function renderHBar(id,points){
+        destroyChart(id); const c=document.getElementById(id); if(!c) return;
+        chartInstances[id]=new Chart(c,{type:'bar',data:{labels:points.map(p=>p.label),datasets:[{label:'Sessions',data:points.map(p=>p.value),backgroundColor:points.map((_,i)=>PALETTE[i%PALETTE.length]),borderRadius:6,barThickness:22}]},
+            options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+                onClick:(evt,elements)=>{if(elements.length>0){const idx=elements[0].index;loadOverviewDrilldown(points[idx].label);}},
+                plugins:{legend:{display:false},datalabels:{display:true,anchor:'end',align:'end',color:'#334155',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString()},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},
+                scales:{x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}},y:{grid:{display:false},ticks:{color:'#334155',font:{weight:'600'}}}}}});
+    }
+
+    // ── Data Loading ──
+    let dt=null, fullKpis=null, drilldownKpis=null, selectedRegion=null, fullTrends=null, fullSparklines=null;
+
+    function loadOverviewData(){
         const q=getParams();
         fetch(`/category-overview/instructor?${q}`).then(r=>r.json()).then(data=>{
-            fullKpis = data.kpis;
-            fullTrends = data.trends;
-            fullSparklines = data.sparklines;
-            
-            updateKpis(data.kpis, data.trends, data.sparklines);
-
-            // Charts
+            fullKpis=data.kpis; fullTrends=data.trends; fullSparklines=data.sparklines;
+            updateKpis(data.kpis,data.trends,data.sparklines);
             const ch=data.charts||{};
-            // renderDoughnut('chartType', ch.by_type||[]);
-            renderLine('chartTrend', ch.trend||[]);
-            renderHBar('chartRegion', ch.by_region||[]);
-
-            // Table
-            if(dt){ dt.destroy(); dt=null; }
+            renderHBar('regionChart', ch.by_region||[]); // Fallback if perf chart doesn't load
+            if(dt){dt.destroy();dt=null;}
             const tb=$('#overviewTable tbody').empty();
             (data.table||[]).forEach(r=>{
-                tb.append(`<tr><td class="font-weight-600">${r.name}</td><td>${r.region}</td>
-                    <td class="text-right">${Number(r.sessions||0).toLocaleString()}</td>
-                    <td class="text-right">${Number(r.students||0).toLocaleString()}</td>
-                    <td class="text-right">${Number(r.schools||0).toLocaleString()}</td></tr>`);
+                tb.append(`<tr><td class="font-weight-600">${r.name}</td><td>${r.region}</td><td class="text-right">${Number(r.sessions||0).toLocaleString()}</td><td class="text-right">${Number(r.students||0).toLocaleString()}</td><td class="text-right">${Number(r.schools||0).toLocaleString()}</td></tr>`);
             });
             dt=PramanaDashboard.initDataTable('#overviewTable',{paging:true,searching:true,pageLength:10,order:[[2,'desc']]});
         });
     }
 
-    // ── Drill-down Logic ─────────────────────────────────────────────
-    window.loadDrilldown = function(regionName) {
-        console.log("Loading drilldown for:", regionName);
-        selectedRegion = regionName;
-        const q = getParams() + `&region=${encodeURIComponent(regionName)}`;
-        
-        // Update main KPIs for the region
-        fetch(`/category-overview/instructor?${q}`).then(r=>r.json()).then(data => {
-            if (data.kpis) {
-                drilldownKpis = data.kpis;
-                updateKpis(data.kpis, data.trends, data.sparklines);
-            }
-        });
-
-        // Fetch drilldown details
-        fetch(`/dashboard/drill-down?${q}`).then(r=>r.json()).then(data => {
-            if($.fn.DataTable.isDataTable('#drilldownTable')) $('#drilldownTable').DataTable().destroy();
-            
-            $('#drilldownRegionLabel, #ddTableRegionLabel').text(regionName);
-            animateNum('#ddSessions', data.summary.total_sessions);
-            animateNum('#ddStudents', data.summary.total_students);
-            animateNum('#ddSchools',  data.summary.total_schools);
-            
-            const tbody = $('#drilldownTableBody').empty();
-            (data.programs || []).forEach(p => {
-                tbody.append(`<tr>
-                    <td class="font-weight-600">${p.program}</td>
-                    <td class="text-muted">${p.donor}</td>
-                    <td class="text-right">${p.sessions.toLocaleString()}</td>
-                    <td class="text-right">${p.students_reached.toLocaleString()}</td>
-                    <td class="text-right">${p.schools_visited.toLocaleString()}</td>
-                    <td class="text-right">${p.instructors.toLocaleString()}</td>
-                </tr>`);
-            });
-            $('#ddProgramCount').text((data.programs||[]).length + ' programs');
-            
-            PramanaDashboard.initDataTable('#drilldownTable', { paging: true, searching: true, pageLength: 10, order: [[2, 'desc']] });
-            $('#drilldownPanel').show();
-            $('html, body').animate({ scrollTop: $('#drilldownPanel').offset().top - 20 }, 400);
-        });
+    function loadPerfData(){
+        const f=collectFilters(); f.group_by=$('#groupByFilter').val()||'month';
+        fetch('/performance-mgmt/chart?'+$.param(f,true)).then(r=>r.json()).then(resp=>{
+            window._chartRawData=resp.data; renderPerfTrendChart(resp.data);
+        }).catch(e=>console.error('Chart error',e));
+        fetch('/performance-mgmt/region-chart?'+$.param(f,true)).then(r=>r.json()).then(resp=>{
+            renderRegionBarChart(resp.data);
+        }).catch(e=>console.error('Region chart error',e));
     }
 
-    window.clearDrilldown = function() {
-        selectedRegion = null;
-        drilldownKpis = null;
-        $('#drilldownPanel').hide();
-        if($.fn.DataTable.isDataTable('#drilldownTable')) $('#drilldownTable').DataTable().destroy();
+    function applyAll(){
+        $('#drilldownPanel').hide(); $('#perfDrilldownPanel').hide();
+        loadOverviewData(); loadPerfData();
+    }
+
+    // ── Overview Drilldown (Program Breakdown by Region) ──
+    window.loadOverviewDrilldown = function(regionName){
+        selectedRegion=regionName;
+        const q=getParams()+`&region=${encodeURIComponent(regionName)}`;
+        fetch(`/category-overview/instructor?${q}`).then(r=>r.json()).then(data=>{
+            if(data.kpis){drilldownKpis=data.kpis;updateKpis(data.kpis,data.trends,data.sparklines);}
+        });
+        fetch(`/dashboard/drill-down?${q}`).then(r=>r.json()).then(data=>{
+            if($.fn.DataTable.isDataTable('#drilldownTable'))$('#drilldownTable').DataTable().destroy();
+            $('#drilldownRegionLabel,#ddTableRegionLabel').text(regionName);
+            animateNum('#ddSessions',data.summary.total_sessions); animateNum('#ddStudents',data.summary.total_students); animateNum('#ddSchools',data.summary.total_schools);
+            const tbody=$('#drilldownTableBody').empty();
+            (data.programs||[]).forEach(p=>{
+                tbody.append(`<tr><td class="font-weight-600">${p.program}</td><td class="text-muted">${p.donor}</td><td class="text-right">${p.sessions.toLocaleString()}</td><td class="text-right">${p.students_reached.toLocaleString()}</td><td class="text-right">${p.schools_visited.toLocaleString()}</td><td class="text-right">${p.instructors.toLocaleString()}</td></tr>`);
+            });
+            $('#ddProgramCount').text((data.programs||[]).length+' programs');
+            PramanaDashboard.initDataTable('#drilldownTable',{paging:true,searching:true,pageLength:10,order:[[2,'desc']]});
+            $('#drilldownPanel').show(); $('html,body').animate({scrollTop:$('#drilldownPanel').offset().top-20},400);
+        });
+    };
+    window.clearDrilldown = function(){
+        selectedRegion=null; drilldownKpis=null; $('#drilldownPanel').hide();
+        if($.fn.DataTable.isDataTable('#drilldownTable'))$('#drilldownTable').DataTable().destroy();
         $('#drilldownTableBody').empty();
-        if(fullKpis) {
-            updateKpis(fullKpis, fullTrends, fullSparklines);
-        }
+        if(fullKpis){updateKpis(fullKpis,fullTrends,fullSparklines);}
     };
 
-    // ── KPI Tooltip Click Handler ────────────────────────────────────
-    $(document).on('click', '.kpi-info-btn', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const kpiKey = $(this).attr('data-kpi');
-        const currentKpis = selectedRegion ? drilldownKpis : fullKpis;
-        if (!currentKpis || !currentKpis.insights || !currentKpis.insights[kpiKey]) {
-            console.error("Insights not loaded or not found for: " + kpiKey);
-            return;
-        }
-        
-        const insight = currentKpis.insights[kpiKey];
-        
-        // Set Modal Header details
-        $('#modalTitle').text(insight.title);
-        $('#modalHeaderIcon').attr('class', insight.icon);
-        $('#modalIconWrapper').css('background', insight.color);
-        
-        // Set YoY Comparison
-        $('#modalComparisonText').html(insight.comparison_text);
-        
-        // Highlight YoY card icon/color based on trend direction
-        const trend = (currentKpis.trends && currentKpis.trends[kpiKey]) ? currentKpis.trends[kpiKey] : { dir: 'neutral' };
-        const compIcon = $('#modalComparisonIcon').empty();
-        if (trend.dir === 'up') {
-            compIcon.append('<i class="fas fa-arrow-alt-circle-up text-success" style="font-size: 2rem;"></i>');
-        } else if (trend.dir === 'down') {
-            compIcon.append('<i class="fas fa-arrow-alt-circle-down text-danger" style="font-size: 2rem;"></i>');
-        } else {
-            compIcon.append('<i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>');
-        }
-        
-        // Set Rationale
-        $('#modalRationaleText').text(insight.rationale);
-        
-        // Set Suggestions
-        const suggestionsList = $('#modalSuggestionsList').empty();
-        if (insight.suggestions && insight.suggestions.length) {
-            insight.suggestions.forEach(s => {
-                suggestionsList.append(`
-                    <li class="insight-list-item">
-                        <span class="mr-3 text-success" style="font-size: 1.15rem; line-height: 1.2;">
-                            <i class="fas fa-check-circle"></i>
-                        </span>
-                        <span class="text-secondary" style="font-size: 0.95rem; line-height: 1.5; font-family: Inter, Arial, sans-serif;">${s}</span>
-                    </li>
-                `);
+    // ── Performance Drilldown (Ignator Breakdown) ──
+    function loadPerfDrilldown(value,type){
+        $('#perfDrilldownTitle').text(value); $('#perfDdTableLabel').text(value);
+        const filters=collectFilters(); const params=new URLSearchParams();
+        if(filters.year&&filters.year.length)filters.year.forEach(v=>params.append('year',v));
+        if(filters.month&&filters.month.length)filters.month.forEach(v=>params.append('month',v));
+        if(filters.quarter&&filters.quarter.length)filters.quarter.forEach(v=>params.append('quarter',v));
+        if(type==='region'){params.append('region',value);params.set('period','ALL');}
+        else{if(filters.region&&filters.region.length)filters.region.forEach(v=>params.append('region',v));params.set('period',value);}
+        params.set('group_by',$('#groupByFilter').val()||'month');
+        fetch('/performance-mgmt/drilldown?'+params.toString(),{cache:'no-store'}).then(r=>r.json()).then(resp=>{
+            if($.fn.DataTable.isDataTable('#perfDrilldownTable'))$('#perfDrilldownTable').DataTable().destroy();
+            const rows=resp.table||[];
+            $('#perfDdRecordCount').text(rows.length+' record'+(rows.length!==1?'s':''));
+            const tbody=$('#perfDrilldownBody').empty();
+            rows.forEach(r=>{
+                tbody.append('<tr><td class="font-weight-600">'+r.instructor_name+'</td><td>'+r.region_name+'</td><td class="text-right">'+(r.programs||0).toLocaleString()+'</td><td class="text-right">'+(r.sessions||0).toLocaleString()+'</td><td class="text-right">'+(r.schools||0).toLocaleString()+'</td><td class="text-right">'+(r.students_impacted||0).toLocaleString()+'</td><td class="text-right">'+(r.avg_duration_min||0)+'</td></tr>');
             });
-        } else {
-            suggestionsList.append('<li class="text-muted">No suggestions available for this view.</li>');
-        }
-        
-        // Show modal
+            PramanaDashboard.initDataTable('#perfDrilldownTable',{paging:true,searching:true,pageLength:15,order:[[3,'desc']]});
+            $('#perfDrilldownPanel').show(); $('html,body').animate({scrollTop:$('#perfDrilldownPanel').offset().top-20},400);
+        }).catch(e=>console.error('Drilldown error',e));
+    }
+    window.clearPerfDrilldown = function(){
+        $('#perfDrilldownPanel').hide();
+        if($.fn.DataTable.isDataTable('#perfDrilldownTable'))$('#perfDrilldownTable').DataTable().destroy();
+        $('#perfDrilldownBody').empty();
+    };
+
+    // ── KPI Insight Modal ──
+    $(document).on('click','.kpi-info-btn',function(e){
+        e.preventDefault();e.stopPropagation();
+        const kpiKey=$(this).attr('data-kpi');
+        const currentKpis=selectedRegion?drilldownKpis:fullKpis;
+        if(!currentKpis||!currentKpis.insights||!currentKpis.insights[kpiKey]){console.error("Insights not found for: "+kpiKey);return;}
+        const insight=currentKpis.insights[kpiKey];
+        $('#modalTitle').text(insight.title); $('#modalHeaderIcon').attr('class',insight.icon); $('#modalIconWrapper').css('background',insight.color);
+        $('#modalComparisonText').html(insight.comparison_text);
+        const trend=(currentKpis.trends&&currentKpis.trends[kpiKey])?currentKpis.trends[kpiKey]:{dir:'neutral'};
+        const compIcon=$('#modalComparisonIcon').empty();
+        if(trend.dir==='up')compIcon.append('<i class="fas fa-arrow-alt-circle-up text-success" style="font-size: 2rem;"></i>');
+        else if(trend.dir==='down')compIcon.append('<i class="fas fa-arrow-alt-circle-down text-danger" style="font-size: 2rem;"></i>');
+        else compIcon.append('<i class="fas fa-balance-scale text-primary" style="font-size: 2rem;"></i>');
+        const suggestionsList=$('#modalSuggestionsList').empty();
+        if(insight.suggestions&&insight.suggestions.length){insight.suggestions.forEach(s=>{suggestionsList.append(`<li class="insight-list-item"><span class="mr-3 text-success" style="font-size:1.15rem;line-height:1.2;"><i class="fas fa-check-circle"></i></span><span class="text-secondary" style="font-size:0.95rem;line-height:1.5;font-family:Inter,Arial,sans-serif;">${s}</span></li>`);});}
+        else{suggestionsList.append('<li class="text-muted">No suggestions available for this view.</li>');}
         $('#kpiInsightModal').modal('show');
     });
 
-    // Chart helpers
-    let chartInstances={};
-    function destroyChart(id){ if(chartInstances[id]){ chartInstances[id].destroy(); delete chartInstances[id]; } }
-
-    function renderDoughnut(id, points){
-        destroyChart(id);
-        const c=document.getElementById(id); if(!c) return;
-        chartInstances[id]=new Chart(c,{type:'doughnut',data:{
-            labels:points.map(p=>p.label), datasets:[{data:points.map(p=>p.value),
-            backgroundColor:points.map((_,i)=>PALETTE[i%PALETTE.length]), borderWidth:2, borderColor:'#fff'}]},
-            options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
-                plugins:{legend:{display:true,position:'right',labels:{boxWidth:12,padding:12,usePointStyle:true,pointStyle:'circle',color:'#475569',font:{size:11}}},
-                    datalabels:{display:true,color:'#fff',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString()},
-                    tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}}}
-        });
-    }
-
-    function renderLine(id, points){
-        destroyChart(id);
-        const c=document.getElementById(id); if(!c) return;
-        chartInstances[id]=new Chart(c,{type:'line',data:{
-            labels:points.map(p=>p.label), datasets:[{label:'Sessions',data:points.map(p=>p.value),
-            borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.12)',pointBackgroundColor:'#6366f1',
-            pointRadius:3,tension:.35,fill:true,borderWidth:2}]},
-            options:{responsive:true,maintainAspectRatio:false,
-                plugins:{legend:{display:false},datalabels:{display:false},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},
-                scales:{x:{grid:{display:false},ticks:{color:'#64748b',maxRotation:45,font:{size:10}}},
-                        y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}}}}
-        });
-    }
-
-    function renderHBar(id, points){
-        destroyChart(id);
-        const c=document.getElementById(id); if(!c) return;
-        chartInstances[id]=new Chart(c,{type:'bar',data:{
-            labels:points.map(p=>p.label), datasets:[{label:'Sessions',data:points.map(p=>p.value),
-            backgroundColor:points.map((_,i)=>PALETTE[i%PALETTE.length]),borderRadius:6,barThickness:22}]},
-            options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
-                onClick: (evt, elements) => {
-                    if (elements.length > 0) {
-                        const idx = elements[0].index;
-                        const regionName = points[idx].label;
-                        loadDrilldown(regionName);
-                    }
-                },
-                plugins:{legend:{display:false},datalabels:{display:true,anchor:'end',align:'end',color:'#334155',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString()},
-                    tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},
-                scales:{x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}},
-                        y:{grid:{display:false},ticks:{color:'#334155',font:{weight:'600'}}}}}
-        });
-    }
-
-    setTimeout(loadData, 300);
+    setTimeout(applyAll, 300);
 });
 </script>
 {% endblock %}

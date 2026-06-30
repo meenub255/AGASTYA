@@ -147,7 +147,27 @@ def get_school_visit_data(region=None, area=None, program=None, years=None, mont
         LIMIT %s OFFSET %s
     """
     rows = fetch_all(sql, params + search_params + [limit, offset])
-    
+
+    # School Visit Summary (grouped by school)
+    school_summary = fetch_all(f"""
+        SELECT
+            COALESCE(g.region_name, 'Unknown') AS region,
+            COALESCE(g.area_name, 'Unknown') AS area,
+            COALESCE(s.school_name, 'Unknown') AS school_name,
+            COALESCE(SUM(e.total_exposure_count), 0) AS total_exposure,
+            COUNT(DISTINCT f.sk_fact_session_id) AS sessions,
+            COUNT(DISTINCT p.program_name) AS programs
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_program p ON f.sk_program_id = p.sk_program_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+        WHERE {where_sql} AND s.school_name IS NOT NULL
+        GROUP BY g.region_name, g.area_name, s.school_name
+        ORDER BY total_exposure DESC
+    """, params)
+
     # Chart 1: Sessions by Program (pie chart)
     sessions_by_program = fetch_all(f"""
         SELECT COALESCE(p.program_name, 'Unknown') AS label,
@@ -170,8 +190,34 @@ def get_school_visit_data(region=None, area=None, program=None, years=None, mont
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
         WHERE {where_sql} AND d.full_date IS NOT NULL
-        GROUP BY {grp_expr}
+        GROUP BY {label_expr}
         ORDER BY {sort_expr}
+    """, params)
+
+    # Chart 3: Top 10 Schools by Exposure
+    top_schools = fetch_all(f"""
+        SELECT COALESCE(s.school_name, 'Unknown') AS label,
+               COALESCE(SUM(e.total_exposure_count), 0) AS value
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_school s ON f.sk_school_id = s.sk_school_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+        WHERE {where_sql} AND s.school_name IS NOT NULL
+        GROUP BY s.school_name
+        ORDER BY value DESC LIMIT 10
+    """, params)
+
+    # Chart 4: Sessions by Area
+    sessions_by_area = fetch_all(f"""
+        SELECT COALESCE(g.area_name, 'Unknown') AS label,
+               COUNT(DISTINCT f.sk_fact_session_id) AS value
+        FROM {DATAMART_SCHEMA_NAME}.fact_session f
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+        WHERE {where_sql} AND g.area_name IS NOT NULL
+        GROUP BY g.area_name
+        ORDER BY value DESC LIMIT 10
     """, params)
 
     return {
@@ -179,8 +225,11 @@ def get_school_visit_data(region=None, area=None, program=None, years=None, mont
         "total_count": total_count,
         "kpis": kpi_list,
         "sparklines": sparklines,
+        "school_summary": school_summary,
         "charts": {
             "sessions_by_program": [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_program],
             "sessions_trend_monthly": [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_month],
+            "top_schools": [{"label": r["label"], "value": float(r["value"])} for r in top_schools],
+            "sessions_by_area": [{"label": r["label"], "value": float(r["value"])} for r in sessions_by_area],
         }
     }

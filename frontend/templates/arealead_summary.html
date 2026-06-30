@@ -1,13 +1,29 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>.content-header { display: none !important; }</style>
+<style>
+    .content-header { display: none !important; }
+    #areaTable th {
+        background: #f1f5f9 !important; color: #475569 !important; font-size: 11px;
+        font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 10px;
+        border-bottom: 1px solid #e2e8f0 !important; white-space: nowrap;
+    }
+    #areaTable td {
+        padding: 10px; vertical-align: middle; color: #1e293b !important; font-size: 0.85rem;
+    }
+    .card-header-premium { background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important; padding: 15px 20px; }
+    .premium-card { border-radius: 15px; border: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); overflow: hidden; }
+    .metric-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; }
+    .metric-high { background: #dcfce7; color: #166534; }
+    .metric-mid { background: #fef9c3; color: #854d0e; }
+    .metric-low { background: #fee2e2; color: #991b1b; }
+</style>
+
 <div class="col-md-12">
-    <!-- Premium Header -->
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-            <h1 class="m-0 font-weight-bold" style="font-size:1.8rem;color:#1e293b;">Area Management</h1>
-            <p class="text-muted small mb-0">Leadership metrics, center coverage and impact summaries</p>
+            <h1 class="m-0 font-weight-bold" style="font-size: 1.8rem; color: #1e293b;">Area Management</h1>
+            <p class="text-muted small mb-0">Area Lead wise exposures, sessions & ignator productivity</p>
         </div>
         <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
             <div class="fl-content">
@@ -45,7 +61,7 @@
                         <i class="fas fa-chalkboard-teacher"></i>
                     </div>
                     <div class="kpi-bitcoin-title-box">
-                        <span class="kpi-bitcoin-label">Instructors</span>
+                        <span class="kpi-bitcoin-label">Ignators</span>
                         <span class="kpi-bitcoin-sublabel">Total Under Management</span>
                     </div>
                 </div>
@@ -75,8 +91,8 @@
                         <i class="fas fa-user-graduate"></i>
                     </div>
                     <div class="kpi-bitcoin-title-box">
-                        <span class="kpi-bitcoin-label">Students Impacted</span>
-                        <span class="kpi-bitcoin-sublabel">Total Exposure</span>
+                        <span class="kpi-bitcoin-label">Total Exposures</span>
+                        <span class="kpi-bitcoin-sublabel">Student Impact</span>
                     </div>
                 </div>
                 <div class="kpi-bitcoin-value" id="kpiTotalStudents">0</div>
@@ -85,23 +101,26 @@
         </div>
     </div>
 
-
     <!-- Table -->
     <div class="card premium-card white-chart-card shadow-sm">
         <div class="card-header card-header-premium d-flex align-items-center">
             <i class="fas fa-sitemap mr-2" style="color: #3b82f6;"></i>
-            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Regional Leadership Summary</h3>
+            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Area Lead Wise, Exposures / Ignator &mdash; Exposures/Program</h3>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table id="areaTable" class="table table-hover mb-0" style="width:100%">
                     <thead>
                         <tr>
-                            <th>Area / Center</th>
-                            <th>Region</th>
-                            <th class="text-center">Instructors</th>
-                            <th class="text-center">Sessions</th>
-                            <th class="text-center">Students</th>
+                            <th>Area Name</th>
+                            <th class="text-right">Total Exposures</th>
+                            <th class="text-right">No of Session</th>
+                            <th class="text-right">Exp/Pgm</th>
+                            <th class="text-right">Expo/Ignator</th>
+                            <th class="text-right">Expo/Session</th>
+                            <th class="text-right">No of Pgm</th>
+                            <th class="text-right">No of Ign</th>
+                            <th class="text-right">WD</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -169,13 +188,8 @@ $(function () {
         });
     }
 
-    // ── Drawer Logic ──
-    $('#filterLauncher').click(() => {
-        $('#filterDrawerOverlay, #filterDrawer').addClass('open');
-    });
-    $('#closeDrawer, #filterDrawerOverlay').click(() => {
-        $('#filterDrawerOverlay, #filterDrawer').removeClass('open');
-    });
+    $('#filterLauncher').click(() => { $('#filterDrawerOverlay, #filterDrawer').addClass('open'); });
+    $('#closeDrawer, #filterDrawerOverlay').click(() => { $('#filterDrawerOverlay, #filterDrawer').removeClass('open'); });
 
     function updateFilterSummary() {
         const r = $('#regionFilter').val() || [], a = $('#areaFilter').val() || [], y = $('#yearFilter').val() || [], m = $('#monthFilter').val() || [], q = $('#quarterFilter').val() || [];
@@ -183,9 +197,7 @@ $(function () {
         $('#activeFilterCount').text(total ? total + ' Filter' + (total>1?'s':'') + ' Applied' : 'All Data');
     }
 
-    function collectFilters() {
-        return window.PramanaDashboard.collectFilters();
-    }
+    function collectFilters() { return window.PramanaDashboard.collectFilters(); }
 
     fetch('/arealead-summary/filters')
         .then(res => res.json())
@@ -193,17 +205,19 @@ $(function () {
             data.regions.forEach(r => $('#regionFilter').append(new Option(r, r)));
             data.areas.forEach(a => $('#areaFilter').append(new Option(a, a)));
             data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
-            
-            // Default to current year if available and nothing is selected
             const currentYear = new Date().getFullYear();
             if (!$('#yearFilter').val()?.length && data.years.some(y => String(y).startsWith(String(currentYear)))) {
                 $('#yearFilter').val([currentYear]);
             }
-            
             data.months.forEach(m => $('#monthFilter').append(new Option(m.name, m.id)));
             $('.select2').trigger('change.select2', { internal: true });
             updateFilterSummary();
         });
+
+    function formatNum(val) {
+        if (val === null || val === undefined) return '0';
+        return Number(val).toLocaleString();
+    }
 
     function loadData() {
         window.loadReportData = loadData;
@@ -216,19 +230,67 @@ $(function () {
                     $('#kpiTotalInstructors').text(data.kpis[1].value.toLocaleString());
                     $('#kpiTotalSessions').text(data.kpis[2].value.toLocaleString());
                     $('#kpiTotalStudents').text(data.kpis[3].value.toLocaleString());
-
                     if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
                         window.PramanaInsights.enhanceAllKpiCards(data.kpis);
                     }
                 }
             },
             columns: [
-                { data: 'area', render: d => `<span class="font-weight-600 text-navy">${d}</span>` },
-                { data: 'region', render: d => `<div class="small"><span class="text-muted"><i class="fas fa-globe mr-1"></i> ${d}</span></div>` },
-                { data: 'total_instructors', className: 'text-center', render: d => `<span class="badge badge-info px-2 py-1">${d}</span>` },
-                { data: 'total_sessions', className: 'text-center font-weight-bold small', render: d => (d||0).toLocaleString() },
-                { data: 'total_students', className: 'text-center text-success font-weight-bold small', render: d => (d||0).toLocaleString() }
-            ]
+                { 
+                    data: 'area', 
+                    render: function(d, type, row) {
+                        return '<div><span class="font-weight-600" style="color:#1e293b;">' + d + '</span>' +
+                               '<div class="small text-muted"><i class="fas fa-globe mr-1"></i>' + (row.region || '') + '</div></div>';
+                    }
+                },
+                { 
+                    data: 'total_exposures', 
+                    className: 'text-right font-weight-bold',
+                    render: function(d) { return formatNum(d); }
+                },
+                { 
+                    data: 'total_sessions', 
+                    className: 'text-right',
+                    render: function(d) { return formatNum(d); }
+                },
+                { 
+                    data: 'exp_per_pgm', 
+                    className: 'text-right',
+                    render: function(d) { return formatNum(d); }
+                },
+                { 
+                    data: 'expo_per_ignator', 
+                    className: 'text-right font-weight-bold',
+                    render: function(d) { 
+                        const val = Number(d) || 0;
+                        let cls = 'metric-mid';
+                        if (val >= 1500) cls = 'metric-high';
+                        else if (val < 1000) cls = 'metric-low';
+                        return '<span class="metric-badge ' + cls + '">' + formatNum(d) + '</span>';
+                    }
+                },
+                { 
+                    data: 'expo_per_session', 
+                    className: 'text-right',
+                    render: function(d) { return formatNum(d); }
+                },
+                { 
+                    data: 'no_of_pgm', 
+                    className: 'text-right',
+                    render: function(d) { return formatNum(d); }
+                },
+                { 
+                    data: 'no_of_ign', 
+                    className: 'text-right',
+                    render: function(d) { return formatNum(d); }
+                },
+                { 
+                    data: 'work_days', 
+                    className: 'text-right',
+                    render: function(d) { return formatNum(d); }
+                }
+            ],
+            order: [[1, 'desc']]
         });
     }
 
@@ -238,13 +300,11 @@ $(function () {
         loadData();
     });
 
-    $('#resetFilters').click(function() {
-        $('.select2').val(null).trigger('change');
-    });
+    $('#resetFilters').click(function() { $('.select2').val(null).trigger('change'); });
 
     $('#exportXlsx').click(function() {
         const q = $.param(collectFilters(), true);
-        window.exportToXLSX(`/arealead-summary/export?${q}`, 'arealead_summary.xlsx');
+        window.exportToXLSX('/arealead-summary/export?' + q, 'arealead_summary.xlsx');
     });
 
     setTimeout(loadData, 300);

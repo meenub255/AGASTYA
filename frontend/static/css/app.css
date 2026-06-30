@@ -764,7 +764,13 @@ table.dataTable thead th:hover .dt-sort-icon {
 .dataTables_wrapper .dataTables_length,
 .dataTables_wrapper .dataTables_filter {
     padding: 1rem;
-    color: #111827 !important; /* Force black text */
+    color: #111827 !important;
+}
+.dataTables_wrapper .dataTables_filter {
+    text-align: right !important;
+}
+.dataTables_wrapper .dataTables_filter input {
+    margin-left: 0.5rem;
 }
 
 .dataTables_wrapper .dataTables_info {
@@ -2232,7 +2238,100 @@ body[data-page="programs"] .exposure-empty {
     }
 }
 
+/* --- Custom DataTables-style Pagination --- */
+.dt-top-bar {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 12px 16px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    background: #fff !important;
+    font-size: 13px !important;
+    color: #64748b !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+.dt-top-bar .length-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+.dt-top-bar .length-wrapper select {
+    background: #fff !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    font-size: 13px !important;
+    color: #1e293b !important;
+}
+.dt-search-input {
+    background: #fff !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px !important;
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+    color: #1e293b !important;
+    width: 200px !important;
+    margin-left: auto !important;
+}
+.dt-search-input::placeholder { color: #9ca3af !important; }
+.dt-search-input:focus {
+    outline: none !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.15) !important;
+}
+.dt-bottom-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 12px 16px !important;
+    border-top: 1px solid #e2e8f0 !important;
+    background: #fff !important;
+    font-size: 13px !important;
+    color: #64748b !important;
+}
+.dt-bottom-bar .pagination-info {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+}
+.dt-bottom-bar .pagination-controls-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+.dt-bottom-bar .pagination-btn {
+    background: #fff !important;
+    color: #3b82f6 !important;
+    border: 1px solid #e5e7eb !important;
+    padding: 4px 12px !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+.dt-bottom-bar .pagination-btn:hover:not(:disabled) {
+    background: #eff6ff !important;
+    border-color: #3b82f6 !important;
+}
+.dt-bottom-bar .pagination-btn:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+.dt-bottom-bar .page-indicator {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #334155 !important;
+}
+
 /* --- DataTables Stying --- */
+.dataTables_wrapper {
+    display: flex;
+    flex-direction: column;
+}
 .dataTables_wrapper .dataTables_length,
 .dataTables_wrapper .dataTables_filter,
 .dataTables_wrapper .dataTables_info,
@@ -3010,6 +3109,153 @@ table.dataTable thead th {
 .fd-body::-webkit-scrollbar-thumb:hover {
     background: #cbd5e1;
 }
+
+/* ═══════════════════════════════════════════════════════
+   COLLAPSIBLE FILTER BAR
+   ═══════════════════════════════════════════════════════ */
+.filter-bar {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    margin-bottom: 20px;
+    overflow: hidden;
+    transition: box-shadow 0.25s ease;
+}
+.filter-bar:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.fb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+.fb-header:hover {
+    background: #f8fafc;
+}
+.fb-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.fb-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.fb-pill {
+    display: none;
+    background: #eff6ff;
+    color: #3b82f6;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    line-height: 1;
+}
+.fb-pill.active {
+    display: inline-flex;
+    align-items: center;
+}
+.fb-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.fb-chevron {
+    color: #94a3b8;
+    font-size: 12px;
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.filter-bar.open .fb-chevron {
+    transform: rotate(180deg);
+}
+.fb-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), padding 0.35s;
+    padding: 0 20px;
+}
+.filter-bar.open .fb-body {
+    max-height: 300px;
+    padding: 0 20px 16px;
+}
+.fb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+    padding-top: 4px;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 16px;
+}
+.fb-field {
+    display: flex;
+    flex-direction: column;
+}
+.fb-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+.fb-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+}
+.fb-actions-left, .fb-actions-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+/* Filter bar select2 overrides */
+.filter-bar .select2-container--bootstrap4 {
+    margin-top: 0;
+}
+.filter-bar .select2-container--bootstrap4 .select2-selection--multiple {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    min-height: 36px !important;
+    padding: 2px 6px !important;
+}
+.filter-bar .select2-container--bootstrap4 .select2-selection--multiple:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.15) !important;
+}
+.filter-bar .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice {
+    background: #eff6ff !important;
+    border: none !important;
+    color: #1e40af !important;
+    border-radius: 6px !important;
+    padding: 4px 10px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    margin: 4px 3px 0 0 !important;
+}
+.filter-bar .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice__remove {
+    color: #93c5fd !important;
+    margin-right: 6px !important;
+}
+.filter-bar .select2-container--bootstrap4 .select2-selection--multiple .select2-search__field {
+    font-size: 13px !important;
+}
+.filter-bar .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__placeholder {
+    color: #94a3b8 !important;
+    font-size: 13px !important;
+}
+
 /* KPI Trend Indicators */
 .kpi-trend-badge {
     display: inline-flex;
@@ -3185,5 +3431,38 @@ table.dataTable thead th {
 
 #exportXlsx {
     display: none !important;
+}
+
+/* Global: force all dt-top-bar to row layout */
+.dt-top-bar, div.dt-top-bar {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+.dt-top-bar .length-wrapper, div.dt-top-bar .length-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+}
+.dt-top-bar .length-wrapper select, div.dt-top-bar .length-wrapper select {
+    display: inline-flex !important;
+    width: auto !important;
+}
+.dt-top-bar .dt-search-input, div.dt-top-bar .dt-search-input {
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
+}
+
+/* DataTables: push filter to right */
+.dataTables_wrapper .dataTables_filter {
+    text-align: right !important;
+}
+.dataTables_wrapper .dataTables_filter input {
+    margin-left: 0.5rem;
 }
 

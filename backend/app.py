@@ -343,6 +343,10 @@ def program_impact_overview_page(request: Request):
 def operations_overview_page(request: Request):
     return render_page(request, "operations_overview.html", "Operations Overview", "operations-overview")
 
+@app.get("/vehicle-ops", response_class=HTMLResponse)
+def vehicle_ops_page(request: Request):
+    return render_page(request, "vehicle_ops.html", "Vehicle Operations", "vehicle-ops")
+
 
 @app.get("/pramana-intelligence", response_class=HTMLResponse)
 def pramana_intelligence_page(request: Request):

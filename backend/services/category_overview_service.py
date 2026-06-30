@@ -274,11 +274,12 @@ def get_instructor_overview(region=None, years=None, program=None, limit=15, off
             SELECT COALESCE(NULLIF(INITCAP(TRIM(u.role_name)),''), 'Unknown') AS label,
                    COUNT(DISTINCT f.sk_fact_session_id) AS value
             FROM {DW}.fact_session f
-            LEFT JOIN {DW}.dim_user u      ON f.sk_user_id = u.sk_user_id
+            JOIN {DW}.dim_user u      ON f.sk_user_id = u.sk_user_id
             LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DW}.dim_date d      ON f.date_id = d.date_id
             LEFT JOIN {DW}.dim_program p   ON f.sk_program_id = p.sk_program_id
-            WHERE {where_sql} GROUP BY u.role_name ORDER BY value DESC LIMIT 8"""
+            WHERE {where_sql} AND u.user_name IS NOT NULL
+            GROUP BY u.role_name ORDER BY value DESC LIMIT 8"""
 
         SQL_TREND = f"""
             SELECT TO_CHAR(d.full_date, 'Mon YYYY') AS label,
@@ -302,11 +303,12 @@ def get_instructor_overview(region=None, years=None, program=None, limit=15, off
         SQL_COUNT = f"""
             SELECT COUNT(*) FROM (
                 SELECT u.sk_user_id FROM {DW}.fact_session f
-                LEFT JOIN {DW}.dim_user u ON f.sk_user_id = u.sk_user_id
+                JOIN {DW}.dim_user u ON f.sk_user_id = u.sk_user_id
                 LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
                 LEFT JOIN {DW}.dim_date d ON f.date_id = d.date_id
                 LEFT JOIN {DW}.dim_program p ON f.sk_program_id = p.sk_program_id
-                WHERE {where_sql} AND {search_sql} GROUP BY u.sk_user_id
+                WHERE {where_sql} AND {search_sql} AND u.user_name IS NOT NULL
+                GROUP BY u.sk_user_id
             ) sub"""
 
         SQL_TABLE = f"""
@@ -317,12 +319,12 @@ def get_instructor_overview(region=None, years=None, program=None, limit=15, off
                    COALESCE(SUM(e.total_exposure_count),0) AS students,
                    COUNT(DISTINCT f.sk_school_id) AS schools
             FROM {DW}.fact_session f
-            LEFT JOIN {DW}.dim_user u ON f.sk_user_id = u.sk_user_id
+            JOIN {DW}.dim_user u ON f.sk_user_id = u.sk_user_id
             LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DW}.dim_date d ON f.date_id = d.date_id
             LEFT JOIN {DW}.dim_program p ON f.sk_program_id = p.sk_program_id
             LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-            WHERE {where_sql} AND {search_sql}
+            WHERE {where_sql} AND {search_sql} AND u.user_name IS NOT NULL
             GROUP BY u.sk_user_id, u.user_name, u.role_name, g.region_name
             {sort_sql} LIMIT %s OFFSET %s"""
 
@@ -332,11 +334,13 @@ def get_instructor_overview(region=None, years=None, program=None, limit=15, off
                    COUNT(DISTINCT f.sk_fact_session_id) AS sessions,
                    COALESCE(SUM(e.total_exposure_count), 0) AS students
             FROM {DW}.fact_session f
+            JOIN {DW}.dim_user u ON f.sk_user_id = u.sk_user_id
             LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DW}.dim_date d      ON f.date_id = d.date_id
             LEFT JOIN {DW}.dim_program p   ON f.sk_program_id = p.sk_program_id
             LEFT JOIN {DW}.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
-            WHERE {where_sql} GROUP BY d.year_actual, d.month_actual ORDER BY sort_key LIMIT 24"""
+            WHERE {where_sql} AND u.user_name IS NOT NULL
+            GROUP BY d.year_actual, d.month_actual ORDER BY sort_key LIMIT 24"""
 
         futures_map = {}
         with ThreadPoolExecutor(max_workers=8) as ex:
@@ -686,7 +690,8 @@ def get_program_impact_overview(region=None, years=None, program=None, limit=15,
             LEFT JOIN {DW}.dim_program p ON f.sk_program_id = p.sk_program_id
             LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DW}.dim_date d ON f.date_id = d.date_id
-            WHERE {where_sql} GROUP BY p.program_name ORDER BY value DESC LIMIT 8"""
+            WHERE {where_sql} AND p.program_name IS NOT NULL
+            GROUP BY p.program_name ORDER BY value DESC LIMIT 8"""
 
         SQL_TREND = f"""
             SELECT TO_CHAR(d.full_date, 'Mon YYYY') AS label,

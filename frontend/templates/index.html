@@ -108,6 +108,121 @@
         </div>
     </section>
 
+    <!-- Pie Charts Row: Programs Reach, Mode of Engagement, Expo/Program % -->
+    <section class="overview-content-stack mt-2">
+        <div class="row">
+            <div class="col-md-4 mb-2">
+                <div class="card h-100 white-chart-card">
+                    <div class="card-header border-0 pb-1 d-flex align-items-center"
+                        style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
+                        <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Programs Reach</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:380px;">
+                            <canvas id="programsReachPie"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <div class="card h-100 white-chart-card">
+                    <div class="card-header border-0 pb-1 d-flex align-items-center"
+                        style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
+                        <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Mode of Engagement</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:380px;">
+                            <canvas id="modeEngagementPie"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <div class="card h-100 white-chart-card">
+                    <div class="card-header border-0 pb-1 d-flex align-items-center"
+                        style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important;">
+                        <h3 class="card-title text-sm uppercase font-weight-bold" style="color: #334155;">Exposure by Activity</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:380px;">
+                            <canvas id="exposureActivityPie"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mode of Engagement Summary Table -->
+    <section class="mb-4">
+        <div class="card premium-card white-chart-card shadow-sm">
+            <div class="card-header card-header-premium d-flex align-items-center">
+                <i class="fas fa-layer-group mr-2" style="color: #f59e0b;"></i>
+                <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Mode of Engagement Summary</h3>
+            </div>
+            <div class="card-body p-0">
+                <div id="moePaginationBar">
+                    <div class="dt-top-bar" style="display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;justify-content:space-between !important;align-items:center !important;width:100% !important;box-sizing:border-box !important;">
+                        <div class="length-wrapper" style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                            <span>Show</span>
+                            <select id="moePageSize" class="form-control form-control-sm" style="width:auto;display:inline-flex !important;">
+                                <option value="10">10</option>
+                                <option value="15" selected>15</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="-1">All</option>
+                            </select>
+                            <span>entries</span>
+                        </div>
+                        <input type="search" id="moeSearchInput" class="dt-search-input" placeholder="Filter records..." style="margin-left:auto !important;flex-shrink:0;">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="modeEngagementSummaryTable" class="table table-hover mb-0" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-col="mode_of_engagement" data-type="string">MODE_OF_ENGAGEMENT <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="total_exposures" data-type="number">Total Exposures <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="no_of_session" data-type="number">Total Sessions <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="exp_pgm" data-type="number">Exp/Pgm <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="expo_instructor" data-type="number">Expo/Instructor <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="expo_session" data-type="number">Expo/Session <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="no_of_pgm" data-type="number">No of Pgm <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="no_of_ins" data-type="number">No of Ins <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="wd" data-type="number">WD <i class="fas fa-sort sort-icon"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot id="modeEngagementSummaryFooter"></tfoot>
+                    </table>
+                </div>
+                <div class="dt-bottom-bar">
+                    <div id="moePaginationInfo" class="pagination-info">Showing 0 to 0 of 0 entries</div>
+                    <div class="pagination-controls-wrapper">
+                        <button id="moePrevPage" class="pagination-btn" disabled><i class="fas fa-chevron-left mr-1"></i> Previous</button>
+                        <span id="moePageInfo" class="page-indicator">Page 1 of 1</span>
+                        <button id="moeNextPage" class="pagination-btn" disabled>Next <i class="fas fa-chevron-right ml-1"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Exposures by Activity & Program Type (Stacked Horizontal Bar) -->
+    <section class="mb-4">
+        <div class="card premium-card white-chart-card shadow-sm">
+            <div class="card-header card-header-premium d-flex align-items-center">
+                <i class="fas fa-chart-bar mr-2" style="color: #6366f1;"></i>
+                <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Exposures / Program - Activity Wise</h3>
+            </div>
+            <div class="card-body">
+                <div style="height:420px"><canvas id="activityProgramChart"></canvas></div>
+            </div>
+        </div>
+    </section>
+
     <!-- ============================================================
              DRILL-DOWN PANEL (hidden by default)
         ============================================================ -->
@@ -307,6 +422,12 @@
     .content-header {
         display: none !important;
     }
+
+    .sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+    .sortable:hover { background: #f1f5f9; }
+    .sort-icon { font-size: 10px; margin-left: 4px; opacity: 0.4; }
+    .sortable.asc .sort-icon::before { content: "\f0de"; opacity: 1; }
+    .sortable.desc .sort-icon::before { content: "\f0dd"; opacity: 1; }
 
     /* Modal Style overrides */
     .insight-modal-header {
@@ -757,7 +878,7 @@
                     layout: {
                         padding: {
                             left: 15,
-                            right: 15,
+                            right: 35,
                             top: 10,
                             bottom: 10
                         }
@@ -770,16 +891,16 @@
                                 return context.dataIndex === 0 || context.dataIndex === context.dataset.data.length - 1;
                             },
                             align: function (context) {
-                                return context.dataIndex === 0 ? 'right' : 'left';
+                                return context.dataIndex === 0 ? 'left' : 'right';
                             },
                             anchor: function (context) {
                                 return context.dataIndex === 0 ? 'start' : 'end';
                             },
-                            offset: 4,
-                            color: displayColor,
+                            offset: 2,
+                            color: '#64748b',
                             font: {
-                                size: 10,
-                                weight: 'bold'
+                                size: 9,
+                                weight: '600'
                             },
                             formatter: function (value) {
                                 return value.toLocaleString();
@@ -851,25 +972,37 @@
                 });
             }
 
+            // Filter out zero-value regions
+            const filteredLabels = [];
+            const filteredData = [];
+            chartData.labels.forEach((label, i) => {
+                if (chartData.datasets[0].data[i] > 0) {
+                    filteredLabels.push(label);
+                    filteredData.push(chartData.datasets[0].data[i]);
+                }
+            });
+
             // Store original data for drill-down reset
             programChartData = {
-                labels: [...chartData.labels],
-                data: [...chartData.datasets[0].data]
+                labels: [...filteredLabels],
+                data: [...filteredData]
             };
 
             if (programChartInst) programChartInst.destroy();
 
-            const originalColors = chartData.labels.map(() => BASE_BAR_COLOR);
+            const barColors = filteredLabels.map(() => BASE_BAR_COLOR);
 
             programChartInst = new Chart(el.getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels: chartData.labels,
+                    labels: filteredLabels,
                     datasets: [{
                         label: 'Programs',
-                        data: chartData.datasets[0].data,
-                        backgroundColor: originalColors,
-                        borderRadius: 4
+                        data: filteredData,
+                        backgroundColor: barColors,
+                        borderRadius: 4,
+                        barThickness: 'flex',
+                        maxBarThickness: 50
                     }]
                 },
                 options: {
@@ -883,17 +1016,12 @@
                         handleBarClick(idx, fullName);
                     },
                     plugins: {
-                        legend: {
-                            display: true,
-                            position: 'bottom',
-                            align: 'start',
-                            labels: { color: '#000000' }
-                        },
+                        legend: { display: false },
                         datalabels: {
                             anchor: 'end', align: 'top', offset: 4,
-                            color: '#666666',
+                            color: '#334155',
                             font: { weight: 'bold', size: 11 },
-                            formatter: v => v.toLocaleString()
+                            formatter: v => v > 0 ? v.toLocaleString() : ''
                         },
                         tooltip: {
                             callbacks: {
@@ -1087,17 +1215,82 @@
                             }
                         },
                         datalabels: {
-                            display: true,
+                            display: function(ctx) {
+                                const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                return sum > 0 && (ctx.dataset.data[ctx.dataIndex] / sum) > 0.04;
+                            },
                             color: '#ffffff',
                             font: { weight: 'bold', size: 11 },
                             formatter: (value, ctx) => {
-                                let sum = 0;
-                                let dataArr = ctx.chart.data.datasets[0].data;
-                                dataArr.map(data => {
-                                    sum += Number(data);
-                                });
-                                let percentage = (value*100 / sum).toFixed(1)+"%";
-                                return percentage;
+                                const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                return sum > 0 ? (value * 100 / sum).toFixed(1) + '%' : '';
+                            },
+                            textShadowColor: 'rgba(0,0,0,0.6)',
+                            textShadowBlur: 4
+                        }
+                    }
+                }
+            });
+        }
+
+        // ── Generic Pie Chart ──────────────────────────────────────────────
+        const PIE_PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1','#14b8a6','#e11d48','#8b4513','#0ea5e9','#4b5563'];
+        const pieInstances = {};
+
+        function renderPieChart(canvasId, chartData, opts = {}) {
+            const el = document.getElementById(canvasId);
+            if (!el) return;
+            if (pieInstances[canvasId]) pieInstances[canvasId].destroy();
+
+            const labels = chartData.labels || [];
+            const data = chartData.datasets[0].data || [];
+            const total = data.reduce((s, v) => s + v, 0);
+
+            pieInstances[canvasId] = new Chart(el.getContext('2d'), {
+                type: 'pie',
+                plugins: [ChartDataLabels],
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: labels.map((_, i) => PIE_PALETTE[i % PIE_PALETTE.length]),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right',
+                            labels: {
+                                boxWidth: 10,
+                                padding: 10,
+                                font: { size: 10, family: 'Inter, sans-serif' },
+                                color: '#475569',
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: item => ` ${item.label}: ${item.raw.toLocaleString()} (${(item.raw * 100 / total).toFixed(1)}%)`
+                            }
+                        },
+                        datalabels: {
+                            display: function(ctx) {
+                                const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                return sum > 0 && (ctx.dataset.data[ctx.dataIndex] / sum) > 0.04;
+                            },
+                            color: '#ffffff',
+                            font: { weight: 'bold', size: 11 },
+                            formatter: (value, ctx) => {
+                                const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                return sum > 0 ? (value * 100 / sum).toFixed(1) + '%' : '';
                             },
                             textShadowColor: 'rgba(0,0,0,0.6)',
                             textShadowBlur: 4
@@ -1108,6 +1301,183 @@
         }
 
         // ── Load main data ───────────────────────────────────────────────
+        // ── Exposures by Activity & Program Type (Stacked Bar) ─────────
+        let activityProgramInst = null;
+        function renderActivityProgramChart(rawData) {
+            const el = document.getElementById('activityProgramChart');
+            if (!el) return;
+            const ctx = el.getContext('2d');
+            if (activityProgramInst) activityProgramInst.destroy();
+
+            const activities = [...new Set(rawData.map(r => r.activity))].filter(Boolean);
+            const programTypes = [...new Set(rawData.map(r => r.program_type))].filter(Boolean);
+
+            const lookup = {};
+            rawData.forEach(r => {
+                if (!lookup[r.activity]) lookup[r.activity] = {};
+                lookup[r.activity][r.program_type] = Number(r.exposure) || 0;
+            });
+
+            const PALETTE = ['#94a3b8','#f97316','#ec4899','#8b5cf6','#1e293b','#f59e0b','#334155','#3b82f6','#b45309','#6b7280','#10b981','#06b6d4','#a855f7'];
+
+            const datasets = programTypes.map((pt, i) => ({
+                label: pt,
+                data: activities.map(a => (lookup[a] && lookup[a][pt]) || 0),
+                backgroundColor: PALETTE[i % PALETTE.length],
+                borderRadius: 2,
+                borderSkipped: false
+            }));
+
+            activityProgramInst = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: activities, datasets },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { right: 20 } },
+                    scales: {
+                        x: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', font: { size: 10 }, callback: v => v >= 1000 ? (v/1000).toFixed(0)+'K' : v } },
+                        y: { stacked: true, grid: { display: false }, ticks: { color: '#334155', font: { size: 11, weight: '600' } } }
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { usePointStyle: true, padding: 14, font: { size: 11 } } },
+                        datalabels: {
+                            display: function(ctx) {
+                                const val = ctx.dataset.data[ctx.dataIndex];
+                                if (!val || val <= 0) return false;
+                                const meta = ctx.chart.getDatasetMeta(ctx.datasetIndex);
+                                const bar = meta.data[ctx.dataIndex];
+                                if (!bar) return false;
+                                const barWidth = bar.width || 0;
+                                return barWidth > 45;
+                            },
+                            color: '#fff',
+                            font: { size: 9, weight: 'bold' },
+                            formatter: v => v >= 1000 ? (v/1000).toFixed(1)+'K' : v
+                        },
+                        tooltip: { mode: 'index', intersect: false }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        // ── Mode of Engagement Summary Table ───────────────────────────
+let moeSummaryData = [];
+let moeSortState = { col: 'total_exposures', dir: 'desc' };
+let moeFullData = [];
+let moeCurrentPage = 1;
+let moePageSize = 15;
+let moeSearchText = '';
+
+function renderModeEngagementSummary(data) {
+    moeSummaryData = data;
+    moeFullData = data || [];
+    moeCurrentPage = 1;
+    moePageSize = parseInt($('#moePageSize').val()) || 15;
+    moeSearchText = '';
+    $('#moeSearchInput').val('');
+    drawModeEngagementSummaryTable();
+}
+
+function drawModeEngagementSummaryTable() {
+    const tbody = $('#modeEngagementSummaryTable tbody').empty();
+    const tfoot = $('#modeEngagementSummaryFooter').empty();
+    if (!moeFullData.length) { tbody.html('<tr><td colspan="9" class="text-center text-muted py-3">No data available</td></tr>'); $('#moePaginationBar').hide(); return; }
+    $('#moePaginationBar').show();
+
+    let filtered = moeFullData;
+    if (moeSearchText) {
+        const q = moeSearchText.toLowerCase();
+        filtered = moeFullData.filter(row => Object.values(row).some(v => String(v).toLowerCase().includes(q)));
+    }
+
+    const sorted = filtered.slice().sort((a, b) => {
+        let va = a[moeSortState.col], vb = b[moeSortState.col];
+        if (moeSortState.col === 'mode_of_engagement') {
+            va = (va || '').toLowerCase(); vb = (vb || '').toLowerCase();
+            return moeSortState.dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+        }
+        va = Number(va) || 0; vb = Number(vb) || 0;
+        return moeSortState.dir === 'asc' ? va - vb : vb - va;
+    });
+
+    const total = sorted.length;
+    const totalPages = moePageSize === -1 ? 1 : Math.ceil(total / moePageSize);
+    if (moeCurrentPage > totalPages) moeCurrentPage = totalPages;
+    const startIdx = moePageSize === -1 ? 0 : (moeCurrentPage - 1) * moePageSize;
+    const endIdx = moePageSize === -1 ? total : Math.min(startIdx + moePageSize, total);
+    const pageData = sorted.slice(startIdx, endIdx);
+
+    let totals = { exposures: 0, sessions: 0, pgm: 0, ins: 0, wd: 0 };
+    moeFullData.forEach(row => {
+        totals.exposures += Number(row.total_exposures) || 0;
+        totals.sessions += Number(row.no_of_session) || 0;
+        totals.pgm += Number(row.no_of_pgm) || 0;
+        totals.ins += Number(row.no_of_ins) || 0;
+        totals.wd = Math.max(totals.wd, Number(row.wd) || 0);
+    });
+
+    pageData.forEach(row => {
+        tbody.append(`
+            <tr>
+                <td class="font-weight-600">${row.mode_of_engagement}</td>
+                <td class="text-center">${(Number(row.total_exposures)||0).toLocaleString()}</td>
+                <td class="text-center">${(Number(row.no_of_session)||0).toLocaleString()}</td>
+                <td class="text-center">${Number(row.exp_pgm||0).toLocaleString()}</td>
+                <td class="text-center">${Number(row.expo_instructor||0).toLocaleString()}</td>
+                <td class="text-center">${Number(row.expo_session||0).toLocaleString()}</td>
+                <td class="text-center">${Number(row.no_of_pgm||0).toLocaleString()}</td>
+                <td class="text-center">${Number(row.no_of_ins||0).toLocaleString()}</td>
+                <td class="text-center">${Number(row.wd||0).toLocaleString()}</td>
+            </tr>
+        `);
+    });
+
+    const avgExpPgm = totals.pgm > 0 ? Math.round(totals.exposures / totals.pgm) : 0;
+    const avgExpoIns = totals.ins > 0 ? Math.round(totals.exposures / totals.ins) : 0;
+    const avgExpoSess = totals.sessions > 0 ? Math.round(totals.exposures / totals.sessions) : 0;
+
+    tfoot.append(`
+        <tr style="background:#fef3c7;font-weight:700;">
+            <td>Grand total</td>
+            <td class="text-center">${totals.exposures.toLocaleString()}</td>
+            <td class="text-center">${totals.sessions.toLocaleString()}</td>
+            <td class="text-center">${avgExpPgm.toLocaleString()}</td>
+            <td class="text-center">${avgExpoIns.toLocaleString()}</td>
+            <td class="text-center">${avgExpoSess.toLocaleString()}</td>
+            <td class="text-center">${totals.pgm.toLocaleString()}</td>
+            <td class="text-center">${totals.ins.toLocaleString()}</td>
+            <td class="text-center">${totals.wd}</td>
+        </tr>
+    `);
+
+    $('#moePaginationInfo').text(`Showing ${total > 0 ? startIdx + 1 : 0} to ${endIdx} of ${total} entries`);
+    $('#moePageInfo').text(`Page ${moeCurrentPage} of ${totalPages}`);
+    $('#moePrevPage').prop('disabled', moeCurrentPage <= 1);
+    $('#moeNextPage').prop('disabled', moeCurrentPage >= totalPages);
+
+    $('#modeEngagementSummaryTable thead th').removeClass('asc desc');
+    $(`#modeEngagementSummaryTable thead th[data-col="${moeSortState.col}"]`).addClass(moeSortState.dir);
+}
+
+$('#moePageSize').on('change', function() { moePageSize = parseInt($(this).val()) || 15; moeCurrentPage = 1; drawModeEngagementSummaryTable(); });
+$('#moePrevPage').on('click', function() { if (moeCurrentPage > 1) { moeCurrentPage--; drawModeEngagementSummaryTable(); } });
+$('#moeNextPage').on('click', function() { const tp = moePageSize === -1 ? 1 : Math.ceil(moeFullData.length / moePageSize); if (moeCurrentPage < tp) { moeCurrentPage++; drawModeEngagementSummaryTable(); } });
+$('#moeSearchInput').on('input', function() { moeSearchText = $(this).val(); moeCurrentPage = 1; drawModeEngagementSummaryTable(); });
+
+$('#modeEngagementSummaryTable thead').on('click', 'th.sortable', function() {
+    const col = $(this).data('col');
+    if (moeSortState.col === col) {
+        moeSortState.dir = moeSortState.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+        moeSortState.col = col;
+        moeSortState.dir = $(this).data('type') === 'string' ? 'asc' : 'desc';
+    }
+    drawModeEngagementSummaryTable();
+});
+
         function loadData() {
             clearDrilldown(false);  // reset without re-fetching
             const filters = window.PramanaDashboard.collectFilters();
@@ -1124,6 +1494,11 @@
                     renderPolarAreaChart(data.charts.instructors_by_region);
                     renderSessionsDoughnutChart(data.charts.sessions_by_region);
                     renderBarChart(data.charts.programs_by_region);
+                    if (data.charts.programs_by_type) renderPieChart('programsReachPie', data.charts.programs_by_type);
+                    if (data.charts.mode_of_engagement) renderPieChart('modeEngagementPie', data.charts.mode_of_engagement);
+                    if (data.charts.exposure_by_activity) renderPieChart('exposureActivityPie', data.charts.exposure_by_activity);
+                    if (data.mode_engagement_summary) renderModeEngagementSummary(data.mode_engagement_summary);
+                    if (data.exposure_by_activity_program) renderActivityProgramChart(data.exposure_by_activity_program);
                     updateLegendPopover();
                     updateReportPeriodText();
                 });

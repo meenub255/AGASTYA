@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>.content-header { display: none !important; }</style>
+<div class="col-md-12">
+    <!-- Premium Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="m-0 font-weight-bold" style="font-size:1.8rem;color:#1e293b;">Vehicle Operations</h1>
+            <p class="text-muted small mb-0">Fleet metrics, fuel consumption and detailed trip logs</p>
+        </div>
+        <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
+            <div class="fl-content">
+                <div class="fl-icon"><i class="fas fa-sliders-h"></i></div>
+                <div class="fl-text">
+                    <span class="fl-label">Data Filters</span>
+                    <span class="fl-value" id="activeFilterCount">All Data</span>
+                </div>
+            </div>
+            <div class="fl-chevron"><i class="fas fa-chevron-right"></i></div>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardKms">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                        <i class="fas fa-road"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Total KMs</span>
+                        <span class="kpi-bitcoin-sublabel">Distance Covered</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiKms">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartKms"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardFuelCost">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                        <i class="fas fa-rupee-sign"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Fuel Cost</span>
+                        <span class="kpi-bitcoin-sublabel">Total Spend (&#8377;)</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiFuelCost">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartFuelCost"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardFuelQty">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                        <i class="fas fa-gas-pump"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Total Fuel</span>
+                        <span class="kpi-bitcoin-sublabel">Litres Consumed</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiFuelQty">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartFuelQty"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="kpi-card-bitcoin" id="kpiCardDrivers">
+                <div class="kpi-bitcoin-header">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div class="kpi-bitcoin-title-box">
+                        <span class="kpi-bitcoin-label">Active Drivers</span>
+                        <span class="kpi-bitcoin-sublabel">Fleet Personnel</span>
+                    </div>
+                </div>
+                <div class="kpi-bitcoin-value" id="kpiDrivers">0</div>
+                <div class="kpi-mini-chart"><canvas id="miniChartDrivers"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs mb-3" id="vehicleOpsTabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="fleet-summary-tab" data-toggle="tab" href="#fleetSummary" role="tab">
+                <i class="fas fa-chart-bar mr-1"></i>Fleet Summary
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="trip-logs-tab" data-toggle="tab" href="#tripLogs" role="tab">
+                <i class="fas fa-list-alt mr-1"></i>Trip Logs
+            </a>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="vehicleOpsTabContent">
+        <!-- Fleet Summary Tab -->
+        <div class="tab-pane fade show active" id="fleetSummary" role="tabpanel">
+            <div class="card premium-card white-chart-card shadow-sm">
+                <div class="card-header card-header-premium d-flex align-items-center">
+                    <i class="fas fa-table mr-2" style="color: #3b82f6;"></i>
+                    <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Operations Summary</h3>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table id="fleetSummaryTable" class="table table-hover mb-0" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Region</th>
+                                    <th>Program</th>
+                                    <th class="text-center">Drivers</th>
+                                    <th class="text-center">Total KMs</th>
+                                    <th class="text-center">Fuel (L)</th>
+                                    <th class="text-center">Cost (₹)</th>
+                                    <th class="text-center">Vehicles</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trip Logs Tab -->
+        <div class="tab-pane fade" id="tripLogs" role="tabpanel">
+            <div class="card premium-card white-chart-card shadow-sm">
+                <div class="card-header card-header-premium d-flex align-items-center">
+                    <i class="fas fa-truck-moving mr-2" style="color: #3b82f6;"></i>
+                    <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Detailed Trip Logs</h3>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table id="tripLogsTable" class="table table-hover mb-0" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Vehicle Name</th>
+                                    <th>Date</th>
+                                    <th>Registration</th>
+                                    <th>Center</th>
+                                    <th>Region</th>
+                                    <th>Driver</th>
+                                    <th class="text-center">Initial</th>
+                                    <th class="text-center">End</th>
+                                    <th class="text-center">Total KMs</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Drawer -->
+<div class="filter-drawer-overlay" id="filterDrawerOverlay"></div>
+<div class="filter-drawer shadow-lg" id="filterDrawer">
+    <div class="fd-header">
+        <h3 class="fd-title"><i class="fas fa-sliders-h mr-2" style="color: #3b82f6;"></i>Filters</h3>
+        <button type="button" class="fd-close" id="closeDrawer"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="fd-body">
+        <div class="fd-section">
+            <label class="fd-label">Region</label>
+            <select id="regionFilter" class="form-control select2 filter-multi" data-filter="region" multiple data-placeholder="Select Region"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Center</label>
+            <select id="areaFilter" class="form-control select2 filter-multi" data-filter="area" multiple data-placeholder="Select Center"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Fiscal Year</label>
+            <select id="yearFilter" class="form-control select2 filter-multi" data-filter="years" multiple data-placeholder="Select Year"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Month</label>
+            <select id="monthFilter" class="form-control select2 filter-multi" data-filter="month" multiple data-placeholder="Select Month"></select>
+        </div>
+        <div class="fd-section">
+            <label class="fd-label">Quarter</label>
+            <select id="quarterFilter" class="form-control select2 filter-multi" data-filter="quarter" multiple data-placeholder="Select Quarter">
+                <option value="1">Q1 (Apr-Jun)</option>
+                <option value="2">Q2 (Jul-Sep)</option>
+                <option value="3">Q3 (Oct-Dec)</option>
+                <option value="4">Q4 (Jan-Mar)</option>
+            </select>
+        </div>
+    </div>
+    <div class="fd-footer">
+        <button class="btn btn-outline-secondary btn-block shadow-sm" id="resetFilters" style="border-radius: 10px;">
+            <i class="fas fa-undo mr-2"></i>Reset All
+        </button>
+        <button class="btn btn-success btn-block mt-2 shadow-sm" id="exportXlsx" style="border-radius: 10px; background: #10b981; border: none;">
+            <i class="fas fa-file-excel mr-2"></i>Export XLSX
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(function () {
+    let filtersInitialized = false;
+    let activeTab = 'fleet-summary';
+
+    if ($.fn.select2) {
+        $('.select2').select2({ 
+            theme: 'bootstrap4',
+            dropdownParent: $('#filterDrawer'),
+            width: '100%',
+            allowClear: true,
+            multiple: true
+        });
+    }
+
+    // ── Drawer Logic ──
+    $('#filterLauncher').click(() => {
+        $('#filterDrawerOverlay, #filterDrawer').addClass('open');
+    });
+    $('#closeDrawer, #filterDrawerOverlay').click(() => {
+        $('#filterDrawerOverlay, #filterDrawer').removeClass('open');
+    });
+
+    function updateFilterSummary() {
+        const r = $('#regionFilter').val() || [], a = $('#areaFilter').val() || [], y = $('#yearFilter').val() || [], m = $('#monthFilter').val() || [], q = $('#quarterFilter').val() || [];
+        const total = r.length + a.length + y.length + m.length + q.length;
+        $('#activeFilterCount').text(total ? total + ' Filter' + (total>1?'s':'') + ' Applied' : 'All Data');
+    }
+
+    function collectFilters() {
+        return window.PramanaDashboard.collectFilters();
+    }
+
+    function fetchFilters() {
+        const region = $('#regionFilter').val() || [];
+        const query = $.param({ region_name: region }, true);
+        fetch(`/vehicle-report/filters?${query}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!filtersInitialized) {
+                    data.regions.forEach(r => $('#regionFilter').append(new Option(r, r)));
+                    data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
+                    
+                    const currentYear = new Date().getFullYear();
+                    if (!$('#yearFilter').val()?.length && data.years.some(y => String(y).startsWith(String(currentYear)))) {
+                        $('#yearFilter').val([currentYear]);
+                    }
+                    
+                    data.months.forEach(m => $('#monthFilter').append(new Option(m.name, m.id)));
+                    filtersInitialized = true;
+                }
+                const currentArea = $('#areaFilter').val();
+                $('#areaFilter').empty();
+                data.areas.forEach(a => $('#areaFilter').append(new Option(a, a)));
+                $('#areaFilter').val(currentArea).trigger('change.select2', { internal: true });
+                updateFilterSummary();
+            });
+    }
+
+    function loadFleetSummaryData() {
+        window.PramanaDashboard.initDataTable('#fleetSummaryTable', {
+            ajaxUrl: '/manpower-vehicle/data',
+            getFilters: collectFilters,
+            onDataLoad: function(data) {
+                if (data.kpis && data.kpis.length >= 4) {
+                    $('#kpiKms').text(data.kpis[0].value.toLocaleString());
+                    $('#kpiFuelCost').text(data.kpis[1].value.toLocaleString());
+                    $('#kpiFuelQty').text(data.kpis[2].value.toLocaleString());
+                    $('#kpiDrivers').text(data.kpis[3].value.toLocaleString());
+
+                    if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
+                        window.PramanaInsights.enhanceAllKpiCards(data.kpis);
+                    }
+                }
+            },
+            columns: [
+                { data: 'region_name', render: d => `<span class="font-weight-600 text-navy">${d}</span>` },
+                { data: 'program_name', className: 'small font-weight-bold' },
+                { data: 'drivers', className: 'text-center small', render: d => (d||0).toLocaleString() },
+                { data: 'total_kms', className: 'text-center font-weight-bold small', render: d => (d||0).toLocaleString() },
+                { data: 'total_fuel_l', className: 'text-center small', render: d => (d||0).toLocaleString() },
+                { data: 'total_cost', className: 'text-center small font-weight-bold text-danger', render: d => '₹' + (d||0).toLocaleString() },
+                { data: 'vehicles_used', className: 'text-center', render: d => `<span class="badge badge-info px-2 py-1">${d||0}</span>` }
+            ]
+        });
+    }
+
+    function loadTripLogsData() {
+        window.PramanaDashboard.initDataTable('#tripLogsTable', {
+            ajaxUrl: '/vehicle-report/data',
+            getFilters: collectFilters,
+            columns: [
+                { data: 'vehicle_name', render: d => `<span class="font-weight-600 text-navy">${d || 'N/A'}</span>` },
+                { data: 'date', className: 'small' },
+                { data: 'registration_no', render: d => `<span class="badge badge-secondary" style="font-size:10px;">${d || 'N/A'}</span>` },
+                { data: 'center_name', className: 'small' },
+                { data: 'region_name', className: 'small' },
+                { data: 'driver_name', className: 'small font-weight-bold' },
+                { data: 'initial_km', className: 'text-center small', render: d => (d || 0).toLocaleString() },
+                { data: 'end_km', className: 'text-center small', render: d => (d || 0).toLocaleString() },
+                { data: 'total_kms', className: 'text-center font-weight-bold text-info small', render: d => (d || 0).toLocaleString() }
+            ]
+        });
+    }
+
+    // Tab change handling
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+        const target = $(e.target).attr('href');
+        if (target === '#fleetSummary') {
+            activeTab = 'fleet-summary';
+            loadFleetSummaryData();
+        } else if (target === '#tripLogs') {
+            activeTab = 'trip-logs';
+            loadTripLogsData();
+        }
+    });
+
+    $('#regionFilter').on('change', function(e, opts) {
+        if (opts && opts.internal) return;
+        fetchFilters();
+        if (activeTab === 'fleet-summary') {
+            loadFleetSummaryData();
+        } else {
+            loadTripLogsData();
+        }
+    });
+
+    $('.select2').not('#regionFilter').on('change', function(e, opts) {
+        if (opts && opts.internal) return;
+        updateFilterSummary();
+        if (activeTab === 'fleet-summary') {
+            loadFleetSummaryData();
+        } else {
+            loadTripLogsData();
+        }
+    });
+
+    $('#resetFilters').click(function() {
+        $('.select2').val(null).trigger('change');
+    });
+
+    $('#exportXlsx').click(() => {
+        const q = $.param(collectFilters(), true);
+        const exportUrl = activeTab === 'fleet-summary' ? '/manpower-vehicle-dashboard/export' : '/vehicle-report/export';
+        window.exportToXLSX(`${exportUrl}?${q}`, 'vehicle_operations.xlsx');
+    });
+
+    fetchFilters();
+    setTimeout(loadFleetSummaryData, 300);
+});
+</script>
+{% endblock %}

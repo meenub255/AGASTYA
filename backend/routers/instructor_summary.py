@@ -54,6 +54,30 @@ def export_data(
     data = instructor_summary_service.get_instructor_summary_data(region, area, years, month, quarter, limit=100000, offset=0)
     return json_to_excel_streaming_response(data["table"], "instructor_summary_report.xlsx")
 
+@router.get("/exposure-summary")
+def get_exposure_summary(
+    request: Request,
+    region: list[str] | None = Query(None),
+    area: list[str] | None = Query(None),
+    years: list[str] | None = Query(None),
+    month: list[str] | None = Query(None),
+    quarter: list[str] | None = Query(None)
+):
+    from backend.services.query_utils import parse_datatables_params
+    dt_params = parse_datatables_params(dict(request.query_params))
+    
+    if "length" in request.query_params:
+        dt_params = parse_datatables_params(dict(request.query_params))
+    
+    return instructor_summary_service.get_instructor_exposure_summary(
+        region=region,
+        area=area,
+        years=years,
+        month=month,
+        quarter=quarter,
+        dt_params=dt_params
+    )
+
 @router.get("/monthly")
 def get_monthly_data(
     region: list[str] | None = Query(None),

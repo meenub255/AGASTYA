@@ -39,3 +39,13 @@ def export_data(
     from backend.services.export_utils import json_to_excel_streaming_response
     data = regionwise_service.get_regionwise_data(region, area, years, month, quarter, limit=100000, offset=0)
     return json_to_excel_streaming_response(data["table"], "regionwise_dashboard.xlsx")
+
+@router.get("/state-summary")
+def state_summary(
+    region: list[str] | None = Query(None),
+    area:   list[str] | None = Query(None),
+    years:  list[str] | None = Query(None),
+    month:  list[str] | None = Query(None),
+    quarter: list[str] | None = Query(None),
+):
+    return regionwise_service.get_state_summary(region, area, years, month, quarter)

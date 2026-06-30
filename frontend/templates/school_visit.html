@@ -358,10 +358,10 @@ $(function () {
                     borderColor: '#ffffff'
                 }]
             },
-            plugins: [ChartDataLabels, window.PieConnectorPlugin],
+            plugins: [ChartDataLabels],
             options: {
                 maintainAspectRatio: false,
-                layout: { padding: 25 },
+                layout: { padding: 10 },
                 onClick: (evt, elements) => {
                     if (elements.length > 0) {
                         const idx = elements[0].index;
@@ -374,17 +374,20 @@ $(function () {
                     legend: { display: true, position: 'bottom', labels: { color: '#64748b', usePointStyle: true, boxWidth: 8, padding: 12, font: { size: 10 } } },
                     datalabels: { 
                         display: function(context) {
-                            return $('#toggleDataLabels').is(':checked');
+                            if (!$('#toggleDataLabels').is(':checked')) return false;
+                            const total = context.dataset.data.reduce((s, v) => s + v, 0);
+                            const pct = total ? Math.round((context.dataset.data[context.dataIndex] / total) * 100) : 0;
+                            return pct >= 5;
                         },
-                        anchor: 'end',
-                        align: 'end',
-                        offset: 12,
-                        color: '#1e293b',
+                        anchor: 'center',
+                        align: 'center',
+                        offset: 0,
+                        color: '#ffffff',
                         font: { weight: 'bold', size: 9 },
                         formatter: function(value, context) {
                             const total = context.dataset.data.reduce((s, v) => s + v, 0);
                             const pct = total ? Math.round((value / total) * 100) : 0;
-                            return pct >= 2 ? `${value.toLocaleString()} (${pct}%)` : '';
+                            return `${value.toLocaleString()}\n(${pct}%)`;
                         }
                     },
                     tooltip: {

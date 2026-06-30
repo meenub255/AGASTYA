@@ -11,40 +11,27 @@ TEMPLATES_DIR = FRONTEND_DIR / "templates"
 STATIC_DIR = FRONTEND_DIR / "static"
 SQL_DIR = BASE_DIR / "sql"
 
-'''
-# For Production
-DB_USER = os.getenv("PRAMANA_DB_USER", "pramana")
-DB_PASSWORD = os.getenv("PRAMANA_DB_PASSWORD", "QbqokyOFxJoI4I9n9Ti8")
-DB_HOST = os.getenv("PRAMANA_DB_HOST", "192.168.113.15")
-DB_PORT = os.getenv("PRAMANA_DB_PORT", "5432")
-DB_SSL_MODE = os.getenv("PRAMANA_DB_SSL_MODE", "require")
-'''
-
-# For Local Instance 
+# Database Configuration
+# Set these environment variables or use the defaults for local development
 DB_USER = os.getenv("PRAMANA_DB_USER", "postgres")
 DB_PASSWORD = os.getenv("PRAMANA_DB_PASSWORD", "postgres")
 DB_HOST = os.getenv("PRAMANA_DB_HOST", "127.0.0.1")
 DB_PORT = os.getenv("PRAMANA_DB_PORT", "5432")
 DB_SSL_MODE = os.getenv("PRAMANA_DB_SSL_MODE", "disable")
 
-'''
-# For Production 
-ADMIN_DB_NAME = os.getenv("PRAMANA_ADMIN_DB_NAME", "pramanadb")
-SOURCE_DB_NAME = os.getenv("PRAMANA_SOURCE_DB_NAME", "pramanadb")
-DATAMART_DB_NAME = os.getenv("PRAMANA_DATAMART_DB_NAME", "pramanadb")
-
-'''
-# For Local Instance
-ADMIN_DB_NAME = os.getenv("PRAMANA_ADMIN_DB_NAME", "pramanadb_v5")
-SOURCE_DB_NAME = os.getenv("PRAMANA_SOURCE_DB_NAME", "pramanadb_v5")
-DATAMART_DB_NAME = os.getenv("PRAMANA_DATAMART_DB_NAME", "pramanadb_v5")
-
+ADMIN_DB_NAME = os.getenv("PRAMANA_ADMIN_DB_NAME", "pramana")
+SOURCE_DB_NAME = os.getenv("PRAMANA_SOURCE_DB_NAME", "pramana")
+DATAMART_DB_NAME = os.getenv("PRAMANA_DATAMART_DB_NAME", "pramana")
 
 
 # Default schema names
 SOURCE_SCHEMA_NAME = "source"
 DATAMART_SCHEMA_NAME = "dw"
 
+# Data Ops config
+DATA_OPS_SCHEMA_NAME = os.getenv("PRAMANA_DATA_OPS_SCHEMA", "source")
+DATA_OPS_FILES_DIR = BASE_DIR / "sql"
+DATA_OPS_MAX_FILE_SIZE = int(os.getenv("PRAMANA_DATA_OPS_MAX_FILE_SIZE", "10485760"))
 
 # If source and datamart are in the same DB, don't use FDW alias, use real schema name
 default_fdw_schema = SOURCE_SCHEMA_NAME if SOURCE_DB_NAME == DATAMART_DB_NAME else "source_fdw"

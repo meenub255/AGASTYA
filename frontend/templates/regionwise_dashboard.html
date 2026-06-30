@@ -1,13 +1,26 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>.content-header { display: none !important; }</style>
+<style>
+.content-header { display: none !important; }
+.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.sortable:hover { background: #f1f5f9; }
+.sort-icon { font-size: 10px; margin-left: 4px; opacity: 0.4; }
+.sortable.asc .sort-icon::before { content: "\f0de"; opacity: 1; }
+.sortable.desc .sort-icon::before { content: "\f0dd"; opacity: 1; }
+.tab-nav { display: flex; gap: 0; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; }
+.tab-nav-btn { background: none; border: none; padding: 10px 20px; font-size: 14px; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .2s; }
+.tab-nav-btn:hover { color: #334155; }
+.tab-nav-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+</style>
 <div class="col-md-12">
     <!-- Premium Header -->
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-            <h1 class="m-0 font-weight-bold" style="font-size:1.5rem;color:#1e293b; font-family: Arial, sans-serif !important;">Regional Insights</h1>
-            <p class="text-muted small mb-0">Deep dive into regional performance and program distribution</p>
+            <h1 class="m-0 font-weight-bold" style="font-size: 1.5rem; color: #1e293b; font-family: Arial, sans-serif !important;">Regional Insights</h1>
+            <p class="text-muted small mb-0">Deep dive into regional performance and site visit tracking</p>
         </div>
         <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
             <div class="fl-content">
@@ -21,137 +34,377 @@
         </div>
     </div>
 
-    <!-- KPI Cards -->
-    <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="kpi-card-bitcoin" id="kpiCardSessions">
-                <div class="kpi-bitcoin-header">
-                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
-                        <i class="fas fa-chalkboard-teacher"></i>
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+        <button class="tab-nav-btn active" data-tab="tab-regional">Regional Overview</button>
+        <button class="tab-nav-btn" data-tab="tab-sitevisits">Site Visits</button>
+        <button class="tab-nav-btn" data-tab="tab-state">State Summary</button>
+    </div>
+
+    <!-- ═══ TAB: Regional Overview ═══ -->
+    <div class="tab-pane active" id="tab-regional">
+        <!-- KPI Cards -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="kpi-card-bitcoin" id="kpiCardSessions">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Sessions</span>
+                            <span class="kpi-bitcoin-sublabel">Total Sessions</span>
+                        </div>
                     </div>
-                    <div class="kpi-bitcoin-title-box">
-                        <span class="kpi-bitcoin-label">Sessions</span>
-                        <span class="kpi-bitcoin-sublabel">Total Sessions</span>
-                    </div>
+                    <div class="kpi-bitcoin-value" id="kpiSessions">0</div>
+                    <div class="kpi-mini-chart"><canvas id="miniChartSessions"></canvas></div>
                 </div>
-                <div class="kpi-bitcoin-value" id="kpiSessions">0</div>
-                <div class="kpi-mini-chart"><canvas id="miniChartSessions"></canvas></div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="kpi-card-bitcoin" id="kpiCardSchools">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                            <i class="fas fa-school"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Schools</span>
+                            <span class="kpi-bitcoin-sublabel">Total Schools</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="kpiSchools">0</div>
+                    <div class="kpi-mini-chart"><canvas id="miniChartSchools"></canvas></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="kpi-card-bitcoin" id="kpiCardExposure">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Exposure</span>
+                            <span class="kpi-bitcoin-sublabel">Total Exposure</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="kpiExposure">0</div>
+                    <div class="kpi-mini-chart"><canvas id="miniChartExposure"></canvas></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="kpi-card-bitcoin" id="kpiCardAvgDuration">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Avg Session</span>
+                            <span class="kpi-bitcoin-sublabel">Duration (min)</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="kpiAvgDuration">0</div>
+                    <div class="kpi-mini-chart"><canvas id="miniChartAvgDuration"></canvas></div>
+                </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="kpi-card-bitcoin" id="kpiCardSchools">
-                <div class="kpi-bitcoin-header">
-                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
-                        <i class="fas fa-school"></i>
+
+        <!-- Charts Row -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="card h-100 premium-card white-chart-card shadow-sm">
+                    <div class="card-header card-header-premium border-0 pb-0 d-flex justify-content-between align-items-center">
+                        <h3 class="card-title text-sm uppercase">Sessions by Program</h3>
+                        <i class="fas fa-info-circle text-muted ml-auto acronym-legend-trigger" 
+                           style="cursor: pointer;"
+                           data-toggle="popover" 
+                           data-trigger="click" 
+                           data-html="true"
+                           tabindex="0"
+                           title="Program Code Legend" 
+                           data-content="Loading..."></i>
                     </div>
-                    <div class="kpi-bitcoin-title-box">
-                        <span class="kpi-bitcoin-label">Schools</span>
-                        <span class="kpi-bitcoin-sublabel">Total Schools</span>
+                    <div class="card-body">
+                        <div style="height:250px"><canvas id="sessionsProgramChart"></canvas></div>
                     </div>
                 </div>
-                <div class="kpi-bitcoin-value" id="kpiSchools">0</div>
-                <div class="kpi-mini-chart"><canvas id="miniChartSchools"></canvas></div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100 premium-card white-chart-card shadow-sm">
+                    <div class="card-header card-header-premium border-0 pb-0">
+                        <h3 class="card-title text-sm uppercase">Exposure Trend by Month</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:250px"><canvas id="exposureTrendChart"></canvas></div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="kpi-card-bitcoin" id="kpiCardExposure">
-                <div class="kpi-bitcoin-header">
-                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
-                        <i class="fas fa-user-graduate"></i>
-                    </div>
-                    <div class="kpi-bitcoin-title-box">
-                        <span class="kpi-bitcoin-label">Exposure</span>
-                        <span class="kpi-bitcoin-sublabel">Total Exposure</span>
-                    </div>
-                </div>
-                <div class="kpi-bitcoin-value" id="kpiExposure">0</div>
-                <div class="kpi-mini-chart"><canvas id="miniChartExposure"></canvas></div>
+
+        <!-- Regional Comparison Chart -->
+        <div class="card premium-card white-chart-card shadow-sm mb-3">
+            <div class="card-header card-header-premium d-flex align-items-center">
+                <i class="fas fa-chart-bar mr-2" style="color: #3b82f6;"></i>
+                <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Regional Comparison</h3>
+            </div>
+            <div class="card-body">
+                <div style="height:420px"><canvas id="regionalComparisonChart"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="kpi-card-bitcoin" id="kpiCardAvgDuration">
-                <div class="kpi-bitcoin-header">
-                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="kpi-bitcoin-title-box">
-                        <span class="kpi-bitcoin-label">Avg Session</span>
-                        <span class="kpi-bitcoin-sublabel">Duration (min)</span>
+
+        <!-- Regional Summary Table -->
+        <div class="card premium-card white-chart-card shadow-sm mb-3">
+            <div class="card-header card-header-premium d-flex align-items-center">
+                <i class="fas fa-table mr-2" style="color: #f59e0b;"></i>
+                <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Regional Summary</h3>
+            </div>
+            <div class="card-body p-0">
+                <div id="regionalPaginationBar">
+                    <div class="dt-top-bar" style="display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;justify-content:space-between !important;align-items:center !important;width:100% !important;box-sizing:border-box !important;">
+                        <div class="length-wrapper" style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                            <span>Show</span>
+                            <select id="regionalPageSize" class="form-control form-control-sm" style="width:auto;display:inline-flex !important;">
+                                <option value="10">10</option>
+                                <option value="15" selected>15</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="-1">All</option>
+                            </select>
+                            <span>entries</span>
+                        </div>
+                        <input type="search" id="regionalSearchInput" class="dt-search-input" placeholder="Filter records..." style="margin-left:auto !important;flex-shrink:0;">
                     </div>
                 </div>
-                <div class="kpi-bitcoin-value" id="kpiAvgDuration">0</div>
-                <div class="kpi-mini-chart"><canvas id="miniChartAvgDuration"></canvas></div>
+                <div class="table-responsive">
+                    <table id="regionalSummaryTable" class="table table-hover mb-0" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-col="region" data-type="string">Region <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="total_exposures" data-type="number">Total Exposures <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="no_of_session" data-type="number">Total Sessions <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="exp_pgm" data-type="number">Exp/Pgm <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="expo_ign" data-type="number">Expo/Ign <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="expo_session" data-type="number">Expo/Session <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="session_ignator" data-type="number">Session/Ignator <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="no_of_programs" data-type="number">No of Programs <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="no_of_ignator" data-type="number">No of Ignator <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="wd" data-type="number">WD <i class="fas fa-sort sort-icon"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot id="regionalSummaryFooter"></tfoot>
+                    </table>
+                </div>
+                <div class="dt-bottom-bar">
+                    <div id="regionalPaginationInfo" class="pagination-info">Showing 0 to 0 of 0 entries</div>
+                    <div class="pagination-controls-wrapper">
+                        <button id="regionalPrevPage" class="pagination-btn" disabled><i class="fas fa-chevron-left mr-1"></i> Previous</button>
+                        <span id="regionalPageInfo" class="page-indicator">Page 1 of 1</span>
+                        <button id="regionalNextPage" class="pagination-btn" disabled>Next <i class="fas fa-chevron-right ml-1"></i></button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Drilldown Panel -->
-    <div id="drilldownPanel" style="display:none;margin-top:-10px;margin-bottom:20px;">
-        <div class="d-flex align-items-center px-1" style="gap:8px;">
-            <span class="text-muted" style="font-size:13px;cursor:pointer;" onclick="clearDrilldown()"><i class="fas fa-layer-group mr-1"></i>All Programs</span>
-            <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
-            <span id="drilldownTitle" style="font-size:13px;font-weight:600;color:#1e3a8a;"></span>
-            <button onclick="clearDrilldown()" class="btn btn-sm ml-auto" style="background:#991b1b;border:none;color:#fff;font-size:12px;padding:5px 14px;border-radius:20px;font-weight:600;">
-                <i class="fas fa-times mr-1"></i>Clear Drilldown
-            </button>
-        </div>
-    </div>
-
-    <!-- Charts Row -->
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <div class="card h-100 premium-card white-chart-card shadow-sm">
-                <div class="card-header card-header-premium border-0 pb-0 d-flex justify-content-between align-items-center">
-                    <h3 class="card-title text-sm uppercase">Sessions by Program</h3>
-                    <i class="fas fa-info-circle text-muted ml-auto acronym-legend-trigger" 
-                       style="cursor: pointer;"
-                       data-toggle="popover" 
-                       data-trigger="click" 
-                       data-html="true"
-                       tabindex="0"
-                       title="Program Code Legend" 
-                       data-content="Loading..."></i>
+    <!-- ═══ TAB: Site Visits ═══ -->
+    <div class="tab-pane" id="tab-sitevisits">
+        <!-- KPI Cards -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="kpi-card-bitcoin" id="kpiCardSVSchools">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                            <i class="fas fa-school"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Total Schools</span>
+                            <span class="kpi-bitcoin-sublabel">Active</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="kpiTotalSchools">0</div>
+                    <div class="kpi-mini-chart"><canvas id="miniChartSVSchools"></canvas></div>
                 </div>
-                <div class="card-body">
-                    <div style="height:350px"><canvas id="sessionsProgramChart"></canvas></div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="kpi-card-bitcoin" id="kpiCardSVStudents">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Total Students</span>
+                            <span class="kpi-bitcoin-sublabel">Student Exposure</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="kpiTotalStudents">0</div>
+                    <div class="kpi-mini-chart"><canvas id="miniChartSVStudents"></canvas></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="kpi-card-bitcoin" id="kpiCardSVSessions">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Total Sessions</span>
+                            <span class="kpi-bitcoin-sublabel">Delivered</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="kpiSVTotalSessions">0</div>
+                    <div class="kpi-mini-chart"><canvas id="miniChartSVSessions"></canvas></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="kpi-card-bitcoin" id="kpiCardSVMonthly">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Monthly Sessions</span>
+                            <span class="kpi-bitcoin-sublabel">This Month</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="kpiSVMonthlySessions">0</div>
+                    <div class="kpi-mini-chart"><canvas id="miniChartSVMonthly"></canvas></div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card h-100 premium-card white-chart-card shadow-sm">
-                <div class="card-header card-header-premium border-0 pb-0">
-                    <h3 class="card-title text-sm uppercase">Exposure Trend by Month</h3>
+
+        <!-- Charts Row -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="card h-100 premium-card white-chart-card shadow-sm">
+                    <div class="card-header card-header-premium border-0 pb-0 d-flex justify-content-between align-items-center">
+                        <h3 class="card-title text-sm uppercase">Top 10 Schools by Exposure</h3>
+                        <i class="fas fa-info-circle text-muted ml-auto sv-acronym-legend-trigger" 
+                           style="cursor: pointer;"
+                           data-toggle="popover" 
+                           data-trigger="click" 
+                           data-html="true"
+                           tabindex="0"
+                           title="School Legend" 
+                           data-content="Loading..."></i>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:350px"><canvas id="topSchoolsBar"></canvas></div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div style="height:350px"><canvas id="exposureTrendChart"></canvas></div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100 premium-card white-chart-card shadow-sm">
+                    <div class="card-header card-header-premium border-0 pb-0">
+                        <h3 class="card-title text-sm uppercase">Sessions by Area</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:380px"><canvas id="sessionsAreaPie"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- School Visit Summary Table -->
+        <div class="card premium-card white-chart-card shadow-sm">
+            <div class="card-header card-header-premium d-flex align-items-center">
+                <i class="fas fa-table mr-2" style="color: #3b82f6;"></i>
+                <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">School Visit Summary</h3>
+            </div>
+            <div class="card-body p-0">
+                <div id="schoolPaginationBar">
+                    <div class="dt-top-bar" style="display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;justify-content:space-between !important;align-items:center !important;width:100% !important;box-sizing:border-box !important;">
+                        <div class="length-wrapper" style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                            <span>Show</span>
+                            <select id="schoolPageSize" class="form-control form-control-sm" style="width:auto;display:inline-flex !important;">
+                                <option value="10">10</option>
+                                <option value="15" selected>15</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="-1">All</option>
+                            </select>
+                            <span>entries</span>
+                        </div>
+                        <input type="search" id="schoolSearchInput" class="dt-search-input" placeholder="Filter records..." style="margin-left:auto !important;flex-shrink:0;">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="schoolSummaryTable" class="table table-hover mb-0" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-col="region" data-type="string">Region <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="sortable" data-col="area" data-type="string">Area <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="sortable" data-col="school_name" data-type="string">School Name <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="total_exposure" data-type="number">Total Exposure <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="sessions" data-type="number">Sessions <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="programs" data-type="number">Programs <i class="fas fa-sort sort-icon"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot id="schoolSummaryFooter"></tfoot>
+                    </table>
+                </div>
+                <div class="dt-bottom-bar">
+                    <div id="schoolPaginationInfo" class="pagination-info">Showing 0 to 0 of 0 entries</div>
+                    <div class="pagination-controls-wrapper">
+                        <button id="schoolPrevPage" class="pagination-btn" disabled><i class="fas fa-chevron-left mr-1"></i> Previous</button>
+                        <span id="schoolPageInfo" class="page-indicator">Page 1 of 1</span>
+                        <button id="schoolNextPage" class="pagination-btn" disabled>Next <i class="fas fa-chevron-right ml-1"></i></button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Table -->
-    <div class="card premium-card white-chart-card shadow-sm">
-        <div class="card-header card-header-premium d-flex align-items-center">
-            <i class="fas fa-table mr-2" style="color: #3b82f6;"></i>
-            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Regional Data Table</h3>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table id="regionwiseTable" class="table table-hover mb-0" style="width:100%">
-                    <thead>
-                        <tr>
-                            <th>Region</th>
-                            <th>Area</th>
-                            <th>Program</th>
-                            <th class="text-center">Sessions</th>
-                            <th class="text-center">Schools</th>
-                            <th class="text-center">Exposure</th>
-                            <th class="text-center">Demo</th>
-                            <th class="text-center">Hands-on</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+    <!-- ═══ TAB: State Summary ═══ -->
+    <div class="tab-pane" id="tab-state">
+        <div class="card premium-card white-chart-card shadow-sm mb-3">
+            <div class="card-header card-header-premium d-flex align-items-center">
+                <i class="fas fa-flag mr-2" style="color: #f59e0b;"></i>
+                <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">State Wise Exposures / Ignator &mdash; Exposures/Program</h3>
+            </div>
+            <div class="card-body p-0">
+                <div id="statePaginationBar">
+                    <div class="dt-top-bar" style="display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;justify-content:space-between !important;align-items:center !important;width:100% !important;box-sizing:border-box !important;">
+                        <div class="length-wrapper" style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                            <span>Show</span>
+                            <select id="statePageSize" class="form-control form-control-sm" style="width:auto;display:inline-flex !important;">
+                                <option value="10">10</option>
+                                <option value="15" selected>15</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="-1">All</option>
+                            </select>
+                            <span>entries</span>
+                        </div>
+                        <input type="search" id="stateSearchInput" class="dt-search-input" placeholder="Filter records..." style="margin-left:auto !important;flex-shrink:0;">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="stateSummaryTable" class="table table-hover mb-0" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-col="state" data-type="string">State <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="total_exposures" data-type="number">Total Exposures <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="no_of_session" data-type="number">No of Session <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="exp_pgm" data-type="number">Exp/Pgm <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="expo_ign" data-type="number">Expo/Ignator <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="expo_session" data-type="number">Expo/Session <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="no_of_pgm" data-type="number">No of Pgm <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="no_of_ign" data-type="number">No of Ign <i class="fas fa-sort sort-icon"></i></th>
+                                <th class="text-center sortable" data-col="wd" data-type="number">WD <i class="fas fa-sort sort-icon"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot id="stateSummaryFooter"></tfoot>
+                    </table>
+                </div>
+                <div class="dt-bottom-bar">
+                    <div id="statePaginationInfo" class="pagination-info">Showing 0 to 0 of 0 entries</div>
+                    <div class="pagination-controls-wrapper">
+                        <button id="statePrevPage" class="pagination-btn" disabled><i class="fas fa-chevron-left mr-1"></i> Previous</button>
+                        <span id="statePageInfo" class="page-indicator">Page 1 of 1</span>
+                        <button id="stateNextPage" class="pagination-btn" disabled>Next <i class="fas fa-chevron-right ml-1"></i></button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -161,7 +414,7 @@
 <div class="filter-drawer-overlay" id="filterDrawerOverlay"></div>
 <div class="filter-drawer shadow-lg" id="filterDrawer">
     <div class="fd-header">
-        <h3 class="fd-title"><i class="fas fa-sliders-h mr-2" style="color: #3b82f6;"></i>Filters</h3>
+        <h3 class="fd-title"><i class="fas fa-filter mr-2" style="color:#3b82f6;"></i>Filters</h3>
         <button type="button" class="fd-close" id="closeDrawer"><i class="fas fa-times"></i></button>
     </div>
     <div class="fd-body">
@@ -172,6 +425,10 @@
         <div class="fd-section">
             <label class="fd-label">Area</label>
             <select id="areaFilter" class="form-control select2 filter-multi" data-filter="area" multiple data-placeholder="Select Area"></select>
+        </div>
+        <div class="fd-section" id="programFilterSection" style="display:none;">
+            <label class="fd-label">Program</label>
+            <select id="programFilter" class="form-control select2 filter-multi" data-filter="program" multiple data-placeholder="Select Program"></select>
         </div>
         <div class="fd-section">
             <label class="fd-label">Fiscal Year</label>
@@ -206,23 +463,59 @@
         </button>
     </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+if (window.ChartDataLabels) { Chart.register(ChartDataLabels); }
 $(function () {
-    const pagination = window.PramanaPagination;
-    let acronymMapping = {};
-    let drilldownProgram = null;
-
     if ($.fn.select2) {
-        $('.select2').select2({ 
-            theme: 'bootstrap4',
-            dropdownParent: $('#filterDrawer'),
-            width: '100%',
-            allowClear: true,
-            multiple: true
-        });
+        $('.select2').select2({ theme: 'bootstrap4', dropdownParent: $('#filterDrawer'), width: '100%', allowClear: true, multiple: true });
+    }
+    let activeTab = 'tab-regional';
+    let regionalSummaryData = [];
+    let sortState = { col: 'total_exposures', dir: 'desc' };
+    let acronymMapping = {};
+    let svAcronymMapping = {};
+    let svDataLoaded = false;
+    let stateDataLoaded = false;
+
+    // ── Tab switching ──
+    $('.tab-nav-btn').click(function() {
+        const tab = $(this).data('tab');
+        $('.tab-nav-btn').removeClass('active');
+        $(this).addClass('active');
+        $('.tab-pane').removeClass('active');
+        $('#' + tab).addClass('active');
+        activeTab = tab;
+        updateExportBtn();
+        if (tab === 'tab-sitevisits' && !svDataLoaded) {
+            loadSVFilters();
+            loadSVData();
+            svDataLoaded = true;
+        }
+        if (tab === 'tab-regional') loadData();
+        if (tab === 'tab-state' && !stateDataLoaded) { loadStateSummary(); stateDataLoaded = true; }
+    });
+
+    function updateExportBtn() {
+        if (activeTab === 'tab-sitevisits') {
+            $('#exportXlsx').off('click').on('click', () => {
+                const q = $.param(collectFilters(), true);
+                window.exportToXLSX(`/school-visit/export?${q}`, 'school_visit_report.xlsx');
+            });
+        } else if (activeTab === 'tab-state') {
+            $('#exportXlsx').off('click').on('click', () => {
+                const q = $.param(collectFilters(), true);
+                window.exportToXLSX(`/regionwise-dashboard/state-summary?${q}`, 'state_summary.xlsx');
+            });
+        } else {
+            $('#exportXlsx').off('click').on('click', () => {
+                const q = $.param(collectFilters(), true);
+                window.exportToXLSX(`/regionwise-dashboard/export?${q}`, 'regionwise_dashboard.xlsx');
+            });
+        }
     }
 
     // ── Drawer Logic ──
@@ -233,14 +526,20 @@ $(function () {
         $('#filterDrawerOverlay, #filterDrawer').removeClass('open');
     });
 
-    const BAR_PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
+    function updateFilterPill() {
+        const filters = collectFilters();
+        let count = 0;
+        if (filters.region?.length) count += filters.region.length;
+        if (filters.area?.length) count += filters.area.length;
+        if (filters.program?.length) count += filters.program.length;
+        if (filters.years?.length) count += filters.years.length;
+        if (filters.month?.length) count += filters.month.length;
+        if (filters.quarter?.length) count += filters.quarter.length;
+        $('#activeFilterCount').text(count > 0 ? count + ' filter' + (count > 1 ? 's' : '') + ' applied' : 'All Data');
+    }
 
-    $('.acronym-legend-trigger').popover({
-        html: true,
-        sanitize: false,
-        trigger: 'click',
-        placement: 'bottom'
-    });
+    const BAR_PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
+    const PIE_PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
 
     function getAcronym(str) {
         if (!str) return '';
@@ -251,32 +550,28 @@ $(function () {
         return acronym.length > 1 ? acronym : str.substring(0, 3).toUpperCase();
     }
 
-    function updateLegendPopover() {
+    function updateLegendPopover(mapping, selector) {
         let content = '<div class="acronym-mapping-popover"><table class="table table-sm pb-0 mb-0" style="font-size:11px">';
-        const sortedKeys = Object.keys(acronymMapping).sort();
+        const sortedKeys = Object.keys(mapping).sort();
         if (sortedKeys.length === 0) {
             content = "No data available";
         } else {
             sortedKeys.forEach(code => {
-                const names = acronymMapping[code];
+                const names = mapping[code];
                 const displayName = Array.isArray(names) ? names[0] + (names.length > 1 ? ` (+${names.length-1} more)` : '') : names;
                 content += `<tr><td class="font-weight-bold pr-2" style="border-top:0">${code}</td><td style="border-top:0">: ${displayName}</td></tr>`;
             });
             content += '</table></div>';
         }
-        $('.acronym-legend-trigger').attr('data-content', content);
+        $(selector).attr('data-content', content);
     }
 
     function updateFilterSummary() {
-        const r = $('#regionFilter').val() || [], a = $('#areaFilter').val() || [], y = $('#yearFilter').val() || [], m = $('#monthFilter').val() || [], q = $('#quarterFilter').val() || [];
-        const total = r.length + a.length + y.length + m.length + q.length;
-        $('#activeFilterCount').text(total ? total + ' Filter' + (total>1?'s':'') + ' Applied' : 'All Data');
+        updateFilterPill();
     }
 
     function collectFilters() {
-        const f = window.PramanaDashboard.collectFilters();
-        if (drilldownProgram) f.program = [drilldownProgram];
-        return f;
+        return window.PramanaDashboard.collectFilters();
     }
 
     function computeTrendLine(values) {
@@ -292,7 +587,8 @@ $(function () {
         return values.map((_, i) => Math.round(intercept + slope * i));
     }
 
-    function loadFilters(regions = null) {
+    // ── Regional Filters ──
+    function loadFilters(regions = null, triggerLoad = false) {
         const query = regions && regions.length > 0 ? `?region=${regions.join(',')}` : '';
         fetch(`/regionwise-dashboard/filters${query}`)
             .then(r => r.json())
@@ -300,13 +596,10 @@ $(function () {
                 if (!regions || regions.length === 0) {
                     data.regions.forEach(r => $('#regionFilter').append(new Option(r, r)));
                     data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
-                    
-                    // Default to current year if available and nothing is selected
                     const currentYear = new Date().getFullYear();
                     if (!$('#yearFilter').val()?.length && data.years.some(y => String(y).startsWith(String(currentYear)))) {
                         $('#yearFilter').val([currentYear]);
                     }
-                    
                     data.months.forEach(m => $('#monthFilter').append(new Option(m.name, m.id)));
                 }
                 const af = $('#areaFilter');
@@ -319,15 +612,120 @@ $(function () {
                 } else {
                     af.prop('disabled', true);
                 }
+                if (triggerLoad) loadData();
             });
     }
 
-    loadFilters();
-    $('#regionFilter').on('change', function(e, opts) { 
+    $('#regionFilter').on('change', function(e, opts) {
         if (opts && opts.internal) return;
-        loadFilters($(this).val()); 
+        loadFilters($(this).val());
     });
 
+    // ── Regional Summary Table ──
+    let regionalFullData = [];
+    let regionalCurrentPage = 1;
+    let regionalPageSize = 15;
+    let regionalSearchText = '';
+
+    function renderRegionalSummaryTable(data) {
+        regionalFullData = data || [];
+        regionalCurrentPage = 1;
+        regionalPageSize = parseInt($('#regionalPageSize').val()) || 15;
+        regionalSearchText = '';
+        $('#regionalSearchInput').val('');
+        renderRegionalPage();
+    }
+
+    function renderRegionalPage() {
+        const tbody = $('#regionalSummaryTable tbody').empty();
+        const tfoot = $('#regionalSummaryFooter').empty();
+        if (!regionalFullData.length) { tbody.html('<tr><td colspan="10" class="text-center text-muted py-3">No data available</td></tr>'); $('#regionalPaginationBar').hide(); return; }
+        $('#regionalPaginationBar').show();
+
+        let filtered = regionalFullData;
+        if (regionalSearchText) {
+            const q = regionalSearchText.toLowerCase();
+            filtered = regionalFullData.filter(row => Object.values(row).some(v => String(v).toLowerCase().includes(q)));
+        }
+
+        const sorted = filtered.slice().sort((a, b) => {
+            let va = a[sortState.col], vb = b[sortState.col];
+            if (sortState.col === 'region') {
+                va = (va || '').toLowerCase(); vb = (vb || '').toLowerCase();
+                return sortState.dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+            }
+            va = Number(va) || 0; vb = Number(vb) || 0;
+            return sortState.dir === 'asc' ? va - vb : vb - va;
+        });
+
+        const total = sorted.length;
+        const totalPages = regionalPageSize === -1 ? 1 : Math.ceil(total / regionalPageSize);
+        if (regionalCurrentPage > totalPages) regionalCurrentPage = totalPages;
+        const startIdx = regionalPageSize === -1 ? 0 : (regionalCurrentPage - 1) * regionalPageSize;
+        const endIdx = regionalPageSize === -1 ? total : Math.min(startIdx + regionalPageSize, total);
+        const pageData = sorted.slice(startIdx, endIdx);
+
+        let totals = { exposures: 0, sessions: 0, programs: 0, ignators: 0, wd: 0 };
+        regionalFullData.forEach(row => {
+            totals.exposures += Number(row.total_exposures) || 0;
+            totals.sessions += Number(row.no_of_session) || 0;
+            totals.programs += Number(row.no_of_programs) || 0;
+            totals.ignators += Number(row.no_of_ignator) || 0;
+            totals.wd = Math.max(totals.wd, Number(row.wd) || 0);
+        });
+
+        pageData.forEach(row => {
+            tbody.append(`
+                <tr>
+                    <td class="font-weight-600">${row.region}</td>
+                    <td class="text-center">${(Number(row.total_exposures)||0).toLocaleString()}</td>
+                    <td class="text-center">${(Number(row.no_of_session)||0).toLocaleString()}</td>
+                    <td class="text-center">${Number(row.exp_pgm||0).toLocaleString()}</td>
+                    <td class="text-center">${Number(row.expo_ign||0).toLocaleString()}</td>
+                    <td class="text-center">${Number(row.expo_session||0).toLocaleString()}</td>
+                    <td class="text-center">${Number(row.session_ignator||0).toLocaleString()}</td>
+                    <td class="text-center">${Number(row.no_of_programs||0).toLocaleString()}</td>
+                    <td class="text-center">${Number(row.no_of_ignator||0).toLocaleString()}</td>
+                    <td class="text-center">${Number(row.wd||0).toLocaleString()}</td>
+                </tr>
+            `);
+        });
+
+        const avgExpPgm = totals.programs > 0 ? Math.round(totals.exposures / totals.programs) : 0;
+        const avgExpoIgn = totals.ignators > 0 ? Math.round(totals.exposures / totals.ignators) : 0;
+        const avgExpoSess = totals.sessions > 0 ? Math.round(totals.exposures / totals.sessions) : 0;
+        const avgSessIgn = totals.ignators > 0 ? Math.round(totals.sessions / totals.ignators) : 0;
+
+        tfoot.append(`
+            <tr style="background:#fef3c7;font-weight:700;">
+                <td>Grand Total</td>
+                <td class="text-center">${totals.exposures.toLocaleString()}</td>
+                <td class="text-center">${totals.sessions.toLocaleString()}</td>
+                <td class="text-center">${avgExpPgm.toLocaleString()}</td>
+                <td class="text-center">${avgExpoIgn.toLocaleString()}</td>
+                <td class="text-center">${avgExpoSess.toLocaleString()}</td>
+                <td class="text-center">${avgSessIgn.toLocaleString()}</td>
+                <td class="text-center">${totals.programs.toLocaleString()}</td>
+                <td class="text-center">${totals.ignators.toLocaleString()}</td>
+                <td class="text-center">${totals.wd}</td>
+            </tr>
+        `);
+
+        $('#regionalPaginationInfo').text(`Showing ${total > 0 ? startIdx + 1 : 0} to ${endIdx} of ${total} entries`);
+        $('#regionalPageInfo').text(`Page ${regionalCurrentPage} of ${totalPages}`);
+        $('#regionalPrevPage').prop('disabled', regionalCurrentPage <= 1);
+        $('#regionalNextPage').prop('disabled', regionalCurrentPage >= totalPages);
+
+        $('#regionalSummaryTable thead th').removeClass('asc desc');
+        $(`#regionalSummaryTable thead th[data-col="${sortState.col}"]`).addClass(sortState.dir);
+    }
+
+    $('#regionalPageSize').on('change', function() { regionalPageSize = parseInt($(this).val()) || 15; regionalCurrentPage = 1; renderRegionalPage(); });
+    $('#regionalPrevPage').on('click', function() { if (regionalCurrentPage > 1) { regionalCurrentPage--; renderRegionalPage(); } });
+    $('#regionalNextPage').on('click', function() { const tp = regionalPageSize === -1 ? 1 : Math.ceil(regionalFullData.length / regionalPageSize); if (regionalCurrentPage < tp) { regionalCurrentPage++; renderRegionalPage(); } });
+    $('#regionalSearchInput').on('input', function() { regionalSearchText = $(this).val(); regionalCurrentPage = 1; renderRegionalPage(); });
+
+    // ── Regional Charts ──
     function renderBarChart(canvasId, chartData, chartRef) {
         const el = document.getElementById(canvasId);
         if (!el) return;
@@ -337,13 +735,9 @@ $(function () {
         const aggregated = {};
         chartData.forEach(d => {
             const code = getAcronym(d.label);
-            if (!aggregated[code]) {
-                aggregated[code] = { value: 0, labels: [] };
-            }
+            if (!aggregated[code]) aggregated[code] = { value: 0, labels: [] };
             aggregated[code].value += d.value;
-            if (!aggregated[code].labels.includes(d.label)) {
-                aggregated[code].labels.push(d.label);
-            }
+            if (!aggregated[code].labels.includes(d.label)) aggregated[code].labels.push(d.label);
             acronymMapping[code] = aggregated[code].labels;
         });
 
@@ -352,66 +746,19 @@ $(function () {
 
         window[chartRef] = new Chart(ctx, {
             type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Sessions',
-                    data: values,
-                    backgroundColor: BAR_PALETTE.slice(0, labels.length),
-                    borderRadius: 4,
-                    borderSkipped: false,
-                    barThickness: 25
-                }]
-            },
+            data: { labels, datasets: [{ label: 'Sessions', data: values, backgroundColor: BAR_PALETTE.slice(0, labels.length), borderRadius: 4, borderSkipped: false, barThickness: 25 }] },
             options: {
                 maintainAspectRatio: false,
                 layout: { padding: { top: 30 } },
-                onClick: (evt, elements) => {
-                    if (elements.length > 0) {
-                        const idx = elements[0].index;
-                        const code = labels[idx];
-                        const fullName = acronymMapping[code][0];
-                        setDrilldown(fullName);
-                    }
-                },
                 plugins: {
                     legend: { display: false },
-                    datalabels: { 
-                        display: function(context) {
-                            return $('#toggleDataLabels').is(':checked');
-                        },
-                        anchor: 'end',
-                        align: 'end',
-                        color: '#64748b',
-                        font: { weight: 'bold', size: 10 },
-                        formatter: function(value) {
-                            return value > 0 ? value.toLocaleString() : '';
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(15,23,42,0.9)',
-                        padding: 12,
-                        cornerRadius: 8,
-                        callbacks: {
-                            title: function(context) {
-                                const code = context[0].label;
-                                return (acronymMapping[code] || []).join(', ');
-                            },
-                            label: function(context) {
-                                const total = context.dataset.data.reduce((s, v) => s + v, 0);
-                                const pct = total ? Math.round((context.parsed / total) * 100) : 0;
-                                return ` Sessions: ${context.parsed.toLocaleString()} (${pct}%)`;
-                            }
-                        }
-                    }
+                    datalabels: { display: function(ctx) { return $('#toggleDataLabels').is(':checked'); }, anchor: 'end', align: 'end', color: '#64748b', font: { weight: 'bold', size: 10 }, formatter: v => v > 0 ? v.toLocaleString() : '' },
+                    tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', padding: 12, cornerRadius: 8, callbacks: { title: c => (acronymMapping[c[0].label] || []).join(', '), label: c => { const t = c.dataset.data.reduce((s,v)=>s+v,0); const p = t?Math.round((c.parsed/t)*100):0; return ` Sessions: ${c.parsed.toLocaleString()} (${p}%)`; } } }
                 },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', font: { size: 10 } } },
-                    x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } }
-                }
+                scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', font: { size: 10 } } }, x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } } }
             }
         });
-        updateLegendPopover();
+        updateLegendPopover(acronymMapping, '.acronym-legend-trigger');
     }
 
     function renderLineChartWithTrend(canvasId, chartData, chartRef) {
@@ -427,29 +774,10 @@ $(function () {
         window[chartRef] = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: labels,
+                labels,
                 datasets: [
-                    {
-                        label: 'Exposure',
-                        data: values,
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16,185,129,0.12)',
-                        pointBackgroundColor: '#10b981',
-                        pointRadius: 3,
-                        tension: 0.35,
-                        fill: true,
-                        borderWidth: 2
-                    },
-                    {
-                        label: 'Trend',
-                        data: trend,
-                        borderColor: '#ef4444',
-                        borderDash: [6, 3],
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0
-                    }
+                    { label: 'Exposure', data: values, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.12)', pointBackgroundColor: '#10b981', pointRadius: 3, tension: 0.35, fill: true, borderWidth: 2 },
+                    { label: 'Trend', data: trend, borderColor: '#ef4444', borderDash: [6,3], borderWidth: 2, pointRadius: 0, fill: false, tension: 0 }
                 ]
             },
             options: {
@@ -457,101 +785,411 @@ $(function () {
                 layout: { padding: { top: 30 } },
                 plugins: {
                     legend: { display: true, position: 'bottom', labels: { color: '#64748b', usePointStyle: true, boxWidth: 8, padding: 12, font: { size: 10 } } },
-                    datalabels: { 
-                        display: function(context) {
-                            if (!$('#toggleDataLabels').is(':checked')) return false;
-                            return context.datasetIndex === 0;
-                        },
-                        align: 'top',
-                        anchor: 'end',
-                        color: '#10b981',
-                        font: { weight: 'bold', size: 10 },
-                        offset: 4,
-                        formatter: function(value) {
-                            return value.toLocaleString();
-                        }
-                    }
+                    datalabels: { display: c => { if (!$('#toggleDataLabels').is(':checked')) return false; return c.datasetIndex === 0; }, align: 'top', anchor: 'end', color: '#10b981', font: { weight: 'bold', size: 10 }, offset: 4, formatter: v => v.toLocaleString() }
                 },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', font: { size: 10 } } },
-                    x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 }, maxRotation: 45 } }
-                }
+                scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', font: { size: 10 } } }, x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 }, maxRotation: 45 } } }
             }
         });
     }
 
-    window.setDrilldown = function(program) {
-        drilldownProgram = program;
-        $('#drilldownTitle').text('Program: ' + program);
-        $('#drilldownPanel').slideDown(200);
-        $('#regionwiseTable').DataTable().ajax.reload();
-        $('html, body').animate({ scrollTop: $("#drilldownPanel").offset().top - 100 }, 500);
-    };
+    function renderRegionalComparisonChart(summaryData) {
+        const el = document.getElementById('regionalComparisonChart');
+        if (!el) return;
+        const ctx = el.getContext('2d');
+        if (window.regionalComparisonInst) window.regionalComparisonInst.destroy();
 
-    window.clearDrilldown = function() {
-        drilldownProgram = null;
-        $('#drilldownPanel').slideUp(200);
-        $('#regionwiseTable').DataTable().ajax.reload();
-    };
+        const sorted = summaryData.slice().sort((a, b) => (Number(b.total_exposures)||0) - (Number(a.total_exposures)||0));
+        const labels = sorted.map(r => r.region);
+        const exposures = sorted.map(r => Number(r.total_exposures) || 0);
+        const expoIgn = sorted.map(r => Number(r.expo_ign) || 0);
 
+        window.regionalComparisonInst = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Total Exposures', data: exposures, backgroundColor: '#f97316', borderRadius: 4, borderSkipped: false, barThickness: 18 },
+                    { label: 'Expo/Ign', data: expoIgn, backgroundColor: '#3b82f6', borderRadius: 4, borderSkipped: false, barThickness: 18 }
+                ]
+            },
+            options: {
+                indexAxis: 'y', maintainAspectRatio: false, layout: { padding: { right: 20 } },
+                scales: { x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', font: { size: 11 }, callback: v => v >= 1000 ? (v/1000).toFixed(1)+'K' : v } }, y: { grid: { display: false }, ticks: { color: '#334155', font: { size: 11, weight: '600' } } } },
+                plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 20 } }, datalabels: { display: true, color: '#fff', font: { size: 10, weight: 'bold' }, anchor: 'center', align: 'center', formatter: v => v >= 1000 ? (v/1000).toFixed(1)+'K' : v } }
+            }
+        });
+    }
+
+    // ── Load Regional Data ──
     function loadData() {
         window.loadReportData = loadData;
-        window.PramanaDashboard.initDataTable('#regionwiseTable', {
-            ajaxUrl: '/regionwise-dashboard/data',
-            getFilters: collectFilters,
-            onDataLoad: function(data) {
+        if (activeTab !== 'tab-regional') return;
+        const filters = collectFilters();
+        const query = $.param(filters, true);
+
+        fetch(`/regionwise-dashboard/data?${query}`)
+            .then(r => r.json())
+            .then(data => {
                 if (data.kpis && data.kpis.length >= 4) {
                     $('#kpiSessions').text(data.kpis[0].value.toLocaleString());
                     $('#kpiSchools').text(data.kpis[1].value.toLocaleString());
                     $('#kpiExposure').text(data.kpis[2].value.toLocaleString());
                     $('#kpiAvgDuration').text(data.kpis[3].value.toLocaleString());
-
                     if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
                         window.PramanaInsights.enhanceAllKpiCards(data.kpis);
                     }
                 }
-                if (data.charts && !drilldownProgram) {
+                if (data.regional_summary) {
+                    regionalSummaryData = data.regional_summary;
+                    renderRegionalSummaryTable(regionalSummaryData);
+                    renderRegionalComparisonChart(data.regional_summary);
+                }
+                if (data.charts) {
                     acronymMapping = {};
                     renderBarChart('sessionsProgramChart', data.charts.sessions_by_program || [], 'sessionsProgramInst');
                     renderLineChartWithTrend('exposureTrendChart', data.charts.exposure_by_month || [], 'exposureTrendInst');
                 }
-            },
-            columns: [
-                { data: 'region_name', render: d => `<span class="font-weight-600 text-navy">${d}</span>` },
-                { data: 'area_name', render: d => `<span class="text-muted small">${d}</span>` },
-                { data: 'program_name', className: 'small font-weight-bold' },
-                { data: 'sessions', className: 'text-center font-weight-bold', render: $.fn.dataTable.render.number(',', '.', 0) },
-                { data: 'schools', className: 'text-center', render: $.fn.dataTable.render.number(',', '.', 0) },
-                { data: 'exposure', className: 'text-center', render: d => `<span class="badge badge-success px-2 py-1">${(d||0).toLocaleString()}</span>` },
-                { data: 'demo_sessions', className: 'text-center', render: $.fn.dataTable.render.number(',', '.', 0) },
-                { data: 'hands_on_sessions', className: 'text-center', render: $.fn.dataTable.render.number(',', '.', 0) }
-            ]
+            });
+    }
+
+    $('#regionalSummaryTable thead').on('click', 'th.sortable', function() {
+        const col = $(this).data('col');
+        if (sortState.col === col) {
+            sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortState.col = col;
+            sortState.dir = $(this).data('type') === 'string' ? 'asc' : 'desc';
+        }
+        renderRegionalPage();
+    });
+
+    // ── Site Visits Logic ──
+    function loadSVFilters() {
+        fetch('/school-visit/filters')
+            .then(res => res.json())
+            .then(data => {
+                if ($('#programFilter option').length === 0) {
+                    data.programs.forEach(p => $('#programFilter').append(new Option(p, p)));
+                }
+            });
+    }
+
+    function renderSVPieChart(canvasId, chartData, chartRef) {
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+        const ctx = el.getContext('2d');
+        if (window[chartRef]) window[chartRef].destroy();
+
+        const aggregated = {};
+        chartData.forEach(d => {
+            const code = getAcronym(d.label);
+            if (!aggregated[code]) aggregated[code] = { value: 0, labels: [] };
+            aggregated[code].value += d.value;
+            if (!aggregated[code].labels.includes(d.label)) aggregated[code].labels.push(d.label);
+            svAcronymMapping[code] = aggregated[code].labels;
+        });
+
+        const sorted = Object.entries(aggregated).sort((a, b) => b[1].value - a[1].value);
+        const topN = 8;
+        const topItems = sorted.slice(0, topN);
+        const otherValue = sorted.slice(topN).reduce((s, e) => s + e[1].value, 0);
+        if (otherValue > 0) topItems.push(['Other', { value: otherValue, labels: ['Other'] }]);
+
+        const labels = topItems.map(e => e[0]);
+        const values = topItems.map(e => e[1].value);
+
+        window[chartRef] = new Chart(ctx, {
+            type: 'pie',
+            data: { labels, datasets: [{ data: values, backgroundColor: PIE_PALETTE.slice(0, labels.length), borderWidth: 2, borderColor: '#ffffff' }] },
+            plugins: [ChartDataLabels],
+            options: {
+                maintainAspectRatio: false, layout: { padding: { top: 20, bottom: 10, left: 10, right: 10 } },
+                plugins: {
+                    legend: { display: true, position: 'right', labels: { color: '#64748b', usePointStyle: true, boxWidth: 10, padding: 16, font: { size: 10, family: 'Arial, sans-serif' }, generateLabels: function(chart) { const data = chart.data; return data.labels.map(function(label, i) { const fullNames = svAcronymMapping[label] || [label]; const name = fullNames[0] || label; const truncated = name.length > 22 ? name.substring(0, 20) + '...' : name; const suffix = fullNames.length > 1 ? ' (+' + (fullNames.length - 1) + ')' : ''; const display = truncated + suffix; return { text: display + '  ' + data.datasets[0].data[i].toLocaleString(), fillStyle: data.datasets[0].backgroundColor[i], hidden: false, index: i, strokeStyle: '#fff', pointStyle: 'circle' }; }); } } },
+                    datalabels: {
+                        display: function(ctx) {
+                            if (!$('#toggleDataLabels').is(':checked')) return false;
+                            const t = ctx.dataset.data.reduce((s,v)=>s+v,0);
+                            const p = t ? Math.round((ctx.dataset.data[ctx.dataIndex]/t)*100) : 0;
+                            return p >= 14;
+                        },
+                        anchor: 'end', align: 'end', offset: 6, color: '#1e293b',
+                        font: { weight: 'bold', size: 9 },
+                        formatter: function(v, ctx) {
+                            const t = ctx.dataset.data.reduce((s,v)=>s+v,0);
+                            const p = t ? Math.round((v/t)*100) : 0;
+                            return p >= 14 ? v.toLocaleString() + ' (' + p + '%)' : '';
+                        }
+                    },
+                    tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', padding: 12, cornerRadius: 8, callbacks: { title: c => (svAcronymMapping[c[0].label] || []).join(', '), label: c => { const t = c.dataset.data.reduce((s,v)=>s+v,0); const p = t?Math.round((c.parsed/t)*100):0; return ` Sessions: ${c.parsed.toLocaleString()} (${p}%)`; } } }
+                }
+            }
+        });
+        updateLegendPopover(svAcronymMapping, '.sv-acronym-legend-trigger');
+    }
+
+    function renderSVBarChart(canvasId, chartData, chartRef) {
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+        const ctx = el.getContext('2d');
+        if (window[chartRef]) window[chartRef].destroy();
+
+        const labels = chartData.map(d => d.label.length > 22 ? d.label.substring(0, 20) + '...' : d.label);
+        const values = chartData.map(d => d.value);
+
+        window[chartRef] = new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Exposure', data: values, backgroundColor: BAR_PALETTE.slice(0, labels.length), borderRadius: 4, borderSkipped: false }] },
+            options: {
+                indexAxis: 'y', maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    datalabels: { display: c => $('#toggleDataLabels').is(':checked'), anchor: 'end', align: 'end', color: '#1e293b', font: { weight: 'bold', size: 10 }, offset: 4, formatter: v => v.toLocaleString() },
+                    tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', padding: 12, cornerRadius: 8, callbacks: { title: c => chartData[c[0].dataIndex]?.label || c[0].label, label: c => ` Exposure: ${c.parsed.x.toLocaleString()}` } }
+                },
+                scales: {
+                    x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 } } },
+                    y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                }
+            }
         });
     }
+
+    function loadSVData() {
+        const q = $.param(collectFilters(), true);
+        fetch(`/school-visit/data?${q}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.kpis && data.kpis.length >= 4) {
+                    $('#kpiTotalSchools').text(data.kpis[0].value.toLocaleString());
+                    $('#kpiTotalStudents').text(data.kpis[1].value.toLocaleString());
+                    $('#kpiSVTotalSessions').text(data.kpis[2].value.toLocaleString());
+                    $('#kpiSVMonthlySessions').text(data.kpis[3].value.toLocaleString());
+                    if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
+                        window.PramanaInsights.enhanceAllKpiCards(data.kpis);
+                    }
+                }
+                if (data.charts) {
+                    svAcronymMapping = {};
+                    renderSVBarChart('topSchoolsBar', data.charts.top_schools || [], 'svTopSchoolsInst');
+                    renderSVPieChart('sessionsAreaPie', data.charts.sessions_by_area || [], 'svAreaPieInst');
+                }
+                renderSchoolSummaryTable(data.school_summary || []);
+            });
+    }
+
+    let schoolFullData = [];
+    let schoolCurrentPage = 1;
+    let schoolPageSize = 15;
+    let schoolSearchText = '';
+
+    function renderSchoolSummaryTable(data) {
+        schoolFullData = data || [];
+        schoolCurrentPage = 1;
+        schoolPageSize = parseInt($('#schoolPageSize').val()) || 15;
+        schoolSearchText = '';
+        $('#schoolSearchInput').val('');
+        renderSchoolPage();
+    }
+
+    function renderSchoolPage() {
+        const tbody = $('#schoolSummaryTable tbody');
+        const tfoot = $('#schoolSummaryFooter');
+        tbody.empty();
+        tfoot.empty();
+        if (!schoolFullData.length) { tbody.html('<tr><td colspan="6" class="text-center text-muted py-3">No data available</td></tr>'); $('#schoolPaginationBar').hide(); return; }
+        $('#schoolPaginationBar').show();
+        const fmt = v => (v || 0).toLocaleString();
+
+        let filtered = schoolFullData;
+        if (schoolSearchText) {
+            const q = schoolSearchText.toLowerCase();
+            filtered = schoolFullData.filter(row => Object.values(row).some(v => String(v).toLowerCase().includes(q)));
+        }
+
+        const total = filtered.length;
+        const totalPages = schoolPageSize === -1 ? 1 : Math.ceil(total / schoolPageSize);
+        if (schoolCurrentPage > totalPages) schoolCurrentPage = totalPages;
+        const startIdx = schoolPageSize === -1 ? 0 : (schoolCurrentPage - 1) * schoolPageSize;
+        const endIdx = schoolPageSize === -1 ? total : Math.min(startIdx + schoolPageSize, total);
+        const pageData = filtered.slice(startIdx, endIdx);
+
+        let tot = { total_exposure: 0, sessions: 0, programs: 0 };
+        schoolFullData.forEach(r => { tot.total_exposure += r.total_exposure; tot.sessions += r.sessions; tot.programs += r.programs; });
+
+        pageData.forEach(r => {
+            tbody.append(`<tr>
+                <td class="font-weight-600 text-navy">${r.region}</td>
+                <td class="text-muted small">${r.area}</td>
+                <td>${r.school_name}</td>
+                <td class="text-center"><span class="badge badge-success px-2 py-1">${fmt(r.total_exposure)}</span></td>
+                <td class="text-center">${fmt(r.sessions)}</td>
+                <td class="text-center">${fmt(r.programs)}</td>
+            </tr>`);
+        });
+        tfoot.html(`<tr class="font-weight-bold" style="background:#f0f4f8;">
+            <td colspan="3">Grand Total (${total} schools)</td>
+            <td class="text-center"><span class="badge badge-success px-2 py-1">${fmt(tot.total_exposure)}</span></td>
+            <td class="text-center">${fmt(tot.sessions)}</td>
+            <td class="text-center">${fmt(tot.programs)}</td>
+        </tr>`);
+
+        $('#schoolPaginationInfo').text(`Showing ${total > 0 ? startIdx + 1 : 0} to ${endIdx} of ${total} entries`);
+        $('#schoolPageInfo').text(`Page ${schoolCurrentPage} of ${totalPages}`);
+        $('#schoolPrevPage').prop('disabled', schoolCurrentPage <= 1);
+        $('#schoolNextPage').prop('disabled', schoolCurrentPage >= totalPages);
+    }
+
+    $('#schoolPageSize').on('change', function() { schoolPageSize = parseInt($(this).val()) || 15; schoolCurrentPage = 1; renderSchoolPage(); });
+    $('#schoolPrevPage').on('click', function() { if (schoolCurrentPage > 1) { schoolCurrentPage--; renderSchoolPage(); } });
+    $('#schoolNextPage').on('click', function() { const tp = schoolPageSize === -1 ? 1 : Math.ceil(schoolFullData.length / schoolPageSize); if (schoolCurrentPage < tp) { schoolCurrentPage++; renderSchoolPage(); } });
+    $('#schoolSearchInput').on('input', function() { schoolSearchText = $(this).val(); schoolCurrentPage = 1; renderSchoolPage(); });
+
+    $('#schoolSummaryTable thead').on('click', 'th.sortable', function() {
+        const col = $(this).data('col'), type = $(this).data('type');
+        const asc = $(this).hasClass('sort-asc');
+        $('#schoolSummaryTable thead th').removeClass('sort-asc sort-desc');
+        $(this).addClass(asc ? 'sort-desc' : 'sort-asc');
+        schoolFullData.sort((a, b) => {
+            let va = a[col], vb = b[col];
+            if (type === 'number') return asc ? va - vb : vb - va;
+            return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+        });
+        renderSchoolPage();
+    });
+
+    let stateFullData = [];
+    let stateCurrentPage = 1;
+    let statePageSize = 15;
+    let stateSearchText = '';
+
+    function loadStateSummary() {
+        const q = $.param(collectFilters(), true);
+        fetch(`/regionwise-dashboard/state-summary?${q}`)
+            .then(r => r.json())
+            .then(data => {
+                stateFullData = data || [];
+                stateCurrentPage = 1;
+                statePageSize = parseInt($('#statePageSize').val()) || 15;
+                stateSearchText = '';
+                $('#stateSearchInput').val('');
+                renderStatePage();
+            });
+    }
+
+    function renderStatePage() {
+        const tbody = $('#stateSummaryTable tbody').empty();
+        const tfoot = $('#stateSummaryFooter').empty();
+        if (!stateFullData.length) { tbody.html('<tr><td colspan="9" class="text-center text-muted py-3">No data available</td></tr>'); $('#statePaginationBar').hide(); return; }
+        $('#statePaginationBar').show();
+        const fmt = v => (v || 0).toLocaleString();
+
+        let filtered = stateFullData;
+        if (stateSearchText) {
+            const q = stateSearchText.toLowerCase();
+            filtered = stateFullData.filter(row => Object.values(row).some(v => String(v).toLowerCase().includes(q)));
+        }
+
+        const sortCol = 'total_exposures';
+        const sorted = filtered.slice().sort((a, b) => (b[sortCol] || 0) - (a[sortCol] || 0));
+
+        const total = sorted.length;
+        const totalPages = statePageSize === -1 ? 1 : Math.ceil(total / statePageSize);
+        if (stateCurrentPage > totalPages) stateCurrentPage = totalPages;
+        const startIdx = statePageSize === -1 ? 0 : (stateCurrentPage - 1) * statePageSize;
+        const endIdx = statePageSize === -1 ? total : Math.min(startIdx + statePageSize, total);
+        const pageData = sorted.slice(startIdx, endIdx);
+
+        let tot = { total_exposures: 0, no_of_session: 0, no_of_pgm: 0, no_of_ign: 0, wd: 0 };
+        stateFullData.forEach(r => {
+            tot.total_exposures += r.total_exposures; tot.no_of_session += r.no_of_session;
+            tot.no_of_pgm += r.no_of_pgm; tot.no_of_ign += r.no_of_ign; tot.wd = Math.max(tot.wd, r.wd);
+        });
+
+        pageData.forEach(r => {
+            tbody.append(`<tr>
+                <td class="font-weight-600 text-navy">${r.state}</td>
+                <td class="text-center">${fmt(r.total_exposures)}</td>
+                <td class="text-center">${fmt(r.no_of_session)}</td>
+                <td class="text-center">${fmt(r.exp_pgm)}</td>
+                <td class="text-center">${fmt(r.expo_ign)}</td>
+                <td class="text-center">${fmt(r.expo_session)}</td>
+                <td class="text-center">${fmt(r.no_of_pgm)}</td>
+                <td class="text-center">${fmt(r.no_of_ign)}</td>
+                <td class="text-center">${fmt(r.wd)}</td>
+            </tr>`);
+        });
+
+        const avgExpPgm = tot.no_of_pgm ? Math.round(tot.total_exposures / tot.no_of_pgm) : 0;
+        const avgExpoIgn = tot.no_of_ign ? Math.round(tot.total_exposures / tot.no_of_ign) : 0;
+        const avgExpoSess = tot.no_of_session ? Math.round(tot.total_exposures / tot.no_of_session) : 0;
+        tfoot.html(`<tr class="font-weight-bold" style="background:#f0f4f8;">
+            <td>Grand Total</td>
+            <td class="text-center">${fmt(tot.total_exposures)}</td>
+            <td class="text-center">${fmt(tot.no_of_session)}</td>
+            <td class="text-center">${fmt(avgExpPgm)}</td>
+            <td class="text-center">${fmt(avgExpoIgn)}</td>
+            <td class="text-center">${fmt(avgExpoSess)}</td>
+            <td class="text-center">${fmt(tot.no_of_pgm)}</td>
+            <td class="text-center">${fmt(tot.no_of_ign)}</td>
+            <td class="text-center">${fmt(tot.wd)}</td>
+        </tr>`);
+
+        $('#statePaginationInfo').text(`Showing ${total > 0 ? startIdx + 1 : 0} to ${endIdx} of ${total} entries`);
+        $('#statePageInfo').text(`Page ${stateCurrentPage} of ${totalPages}`);
+        $('#statePrevPage').prop('disabled', stateCurrentPage <= 1);
+        $('#stateNextPage').prop('disabled', stateCurrentPage >= totalPages);
+    }
+
+    $('#statePageSize').on('change', function() { statePageSize = parseInt($(this).val()) || 15; stateCurrentPage = 1; renderStatePage(); });
+    $('#statePrevPage').on('click', function() { if (stateCurrentPage > 1) { stateCurrentPage--; renderStatePage(); } });
+    $('#stateNextPage').on('click', function() { const tp = statePageSize === -1 ? 1 : Math.ceil(stateFullData.length / statePageSize); if (stateCurrentPage < tp) { stateCurrentPage++; renderStatePage(); } });
+    $('#stateSearchInput').on('input', function() { stateSearchText = $(this).val(); stateCurrentPage = 1; renderStatePage(); });
+
+    $('#stateSummaryTable thead').on('click', 'th.sortable', function() {
+        const col = $(this).data('col'), type = $(this).data('type');
+        const asc = $(this).hasClass('sort-asc');
+        $('#stateSummaryTable thead th').removeClass('sort-asc sort-desc');
+        $(this).addClass(asc ? 'sort-desc' : 'sort-asc');
+        stateFullData.sort((a, b) => {
+            let va = a[col], vb = b[col];
+            if (type === 'number') return asc ? va - vb : vb - va;
+            return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+        });
+        renderStatePage();
+    });
+    $('.acronym-legend-trigger, .sv-acronym-legend-trigger').popover({
+        html: true, sanitize: false, trigger: 'click', placement: 'bottom'
+    });
 
     $('.select2').on('change', function(e, opts) {
         if (opts && opts.internal) return;
         updateFilterSummary();
-        clearDrilldown();
-        loadData();
+        updateFilterPill();
+        if (activeTab === 'tab-sitevisits') {
+            loadSVData();
+        } else if (activeTab === 'tab-state') {
+            loadStateSummary();
+        } else {
+            loadData();
+        }
     });
 
     $('#resetFilters').click(function() {
         $('.select2').val(null).trigger('change');
-        clearDrilldown();
     });
 
-    $('#exportXlsx').click(() => {
-        const q = $.param(collectFilters(), true);
-        window.exportToXLSX(`/regionwise-dashboard/export?${q}`, 'regionwise_dashboard.xlsx');
-    });
+    updateExportBtn();
 
     $('#toggleDataLabels').change(function() {
         if (window.sessionsProgramInst) window.sessionsProgramInst.update();
         if (window.exposureTrendInst) window.exposureTrendInst.update();
+        if (window.svTopSchoolsInst) window.svTopSchoolsInst.update();
+        if (window.svAreaPieInst) window.svAreaPieInst.update();
     });
 
-    setTimeout(loadData, 300);
+    // Initial data load after filters are populated
+    loadFilters(null, true);
 });
 </script>
 {% endblock %}

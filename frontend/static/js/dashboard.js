@@ -76,6 +76,9 @@
         if (window.ChartDataLabels) {
             Chart.register(ChartDataLabels);
         }
+        if (window.Chart && Chart.defaults && Chart.defaults.elements && Chart.defaults.elements.arc) {
+            Chart.defaults.elements.arc.hoverOffset = 0;
+        }
 
         // Dynamically standardize filter labels and placeholders globally
         standardizeFilters();
@@ -956,7 +959,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     layout: {
-                        padding: usePieConnectors ? 30 : 0
+                        padding: (type === 'pie' || type === 'doughnut') ? 10 : 0
                     },
                     plugins: {
                         legend: {
@@ -998,10 +1001,10 @@
                                 const toggle = document.getElementById('toggleDataLabels');
                                 return toggle ? toggle.checked : (datasetOptions && datasetOptions.showLabels !== false);
                             },
-                            anchor: usePieConnectors ? 'end' : 'center',
-                            align: usePieConnectors ? 'end' : 'center',
-                            offset: usePieConnectors ? 12 : 0,
-                            color: usePieConnectors ? '#000000' : (type === 'pie' || type === 'doughnut' ? '#ffffff' : '#000000'),
+                            anchor: 'center',
+                            align: 'center',
+                            offset: 0,
+                            color: (type === 'pie' || type === 'doughnut') ? '#ffffff' : '#000000',
                             font: { weight: 'bold', size: 10 },
                             formatter: function(value, context) {
                                 if (value === 0) return '';
@@ -1036,11 +1039,7 @@
 
             const activePlugins = [];
             if (type === 'pie' || type === 'doughnut') {
-                if (usePieConnectors) {
-                    activePlugins.push(window.PieConnectorPlugin);
-                } else {
-                    activePlugins.push(internalDataLabelPlugin);
-                }
+                activePlugins.push(internalDataLabelPlugin);
             }
             
             charts[id] = new Chart(canvas, { ...chartConfig, plugins: activePlugins });

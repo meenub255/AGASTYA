@@ -8,7 +8,7 @@ PROGRAM_EXPRESSION = "p.program_name"
 # Default ignator roles — matches Looker's definition to yield 528 Programs / 717 Ignators
 # for FY 2026-27 (April 2026). Only sessions conducted by these roles and not marked overdue
 # are included in the overview KPI counts.
-DEFAULT_IGNATOR_ROLES = ['AREA LEAD', 'INSTRUCTOR']
+DEFAULT_IGNATOR_ROLES = ['AREA LEAD', 'IGNATOR']
 
 from backend.config import DEFAULT_YEAR
 
@@ -216,10 +216,10 @@ def generate_insights_dict(curr_vals, prev_vals, trends, single_year, prev_year,
             "name": f"Total Exposures{region_text}"
         },
         "total_states": {
-            "title": f"Count of Sessions Insights{region_text}",
+            "title": f"Total Sessions Insights{region_text}",
             "icon": "fas fa-chalkboard-teacher",
             "color": "linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)",
-            "name": f"Count of Sessions{region_text}"
+            "name": f"Total Sessions{region_text}"
         },
         "total_programs": {
             "title": f"Number of Programs Insights{region_text}",
@@ -763,7 +763,14 @@ def get_overview_charts(
     )
 
     
-    # 2. Programs per region
+    # 2. Programs per region (no role filter — show all programs)
+    prog_where, prog_params = build_dimension_filters(
+        year=years, region=region, program=None,
+        year_expression="d.year_actual", location_expression=LOCATION_EXPRESSION,
+    )
+    prog_where, prog_params = _apply_ytd_filter(
+        prog_where, prog_params, years, region, program, month=month, month_year=month_year
+    )
     programs_rows = fetch_all(
         f"""
         SELECT
@@ -773,12 +780,12 @@ def get_overview_charts(
         LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
         LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
         LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
-        {where_clause} AND g.region_name IS NOT NULL
+        {prog_where} AND g.region_name IS NOT NULL
         GROUP BY g.region_name
         ORDER BY value DESC
-        LIMIT 10
+        LIMIT 15
         """,
-        params,
+        prog_params,
     )
 
     # 3. Drivers per region
@@ -1086,3 +1093,181 @@ def get_drilldown_data(
         },
         "programs": programs,
     }
+
+
+def get_programs_by_type(
+    years=None, region=None, program=None, month=None, month_year=None,
+    program_type=None, engagement_mode=None
+):
+    where_clause, params = build_dimension_filters(
+        year=years, region=region, program=None,
+        year_expression="d.year_actual", location_expression=LOCATION_EXPRESSION,
+    )
+    where_clause, params = _apply_ytd_filter(
+        where_clause, params, years, region, program, month=month, month_year=month_year
+    )
+    rows = fetch_all(f"""
+        SELECT (CASE
+            WHEN pt.name = 'Mobile Lab' THEN 'MSL'
+            WHEN pt.name = 'Lab on a Bike' THEN 'LOB'
+            WHEN pt.name = 'Lab On A Bike - Maths' THEN 'LOB-Maths'
+            WHEN pt.name = 'Science Center' THEN 'SC'
+            WHEN pt.name = 'Mobile Innovation Lab' THEN 'MLH'
+            WHEN pt.name = 'Young Instructor Leader' THEN 'YL'
+            WHEN pt.name = 'I Mobile Science Lab' THEN 'IML'
+            WHEN pt.name = 'Innovation Hub' THEN 'ELOB'
+            WHEN pt.name = 'Operation Vasantha' THEN 'OV'
+            WHEN pt.name = 'Lab in a Box' THEN 'LIB'
+            WHEN pt.name = 'STEM Clubs' THEN 'SClubs'
+            ELSE 'Other'
+        END) AS label,
+        SUM(COALESCE(e.total_exposure_count, 0)) AS value
+        FROM dw.fact_session f
+        LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
+        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+        LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+        LEFT JOIN dw.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+        LEFT JOIN source.txn_program tp ON tp.txn_program_id::TEXT = p.nk_program_id::TEXT
+        LEFT JOIN source.mst_program_type pt ON (CASE WHEN tp.program_type_id ~ '^[0-9]+$' THEN tp.program_type_id::BIGINT ELSE NULL END) = (CASE WHEN pt.mst_program_type_id ~ '^[0-9]+$' THEN pt.mst_program_type_id::BIGINT ELSE NULL END)
+        {where_clause}
+        GROUP BY label
+        ORDER BY value DESC
+        LIMIT 15
+    """, params)
+    return [{"label": r["label"] or "Other", "value": float(r["value"])} for r in rows]
+
+
+def get_mode_of_engagement(
+    years=None, region=None, program=None, month=None, month_year=None,
+    program_type=None, engagement_mode=None
+):
+    where_clause, params = build_dimension_filters(
+        year=years, region=region, program=None,
+        year_expression="d.year_actual", location_expression=LOCATION_EXPRESSION,
+    )
+    where_clause, params = _apply_ytd_filter(
+        where_clause, params, years, region, program, month=month, month_year=month_year
+    )
+    rows = fetch_all(f"""
+        SELECT (CASE
+            WHEN rf.mode_of_engagement::INT = 201 THEN 'Physical'
+            WHEN rf.mode_of_engagement::INT = 202 THEN 'Digital (IML)'
+            WHEN rf.mode_of_engagement::INT = 203 THEN 'Phygital (wELearn)'
+            WHEN rf.mode_of_engagement::INT = 206 THEN 'Other Activity'
+            ELSE 'Digital (wELearn)'
+        END) AS label,
+        COUNT(*) AS value
+        FROM dw.fact_session f
+        LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
+        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+        LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+        LEFT JOIN source.rpt_feedback rf ON rf.session_id::TEXT = f.session_nk_id::TEXT
+        {where_clause}
+        GROUP BY label
+        ORDER BY value DESC
+    """, params)
+    return [{"label": r["label"] or "Unknown", "value": float(r["value"])} for r in rows]
+
+
+def get_mode_of_engagement_summary(
+    years=None, region=None, program=None, month=None, month_year=None,
+    program_type=None, engagement_mode=None
+):
+    where_clause, params = build_dimension_filters(
+        year=years, region=region, program=None,
+        year_expression="d.year_actual", location_expression=LOCATION_EXPRESSION,
+    )
+    where_clause, params = _apply_ytd_filter(
+        where_clause, params, years, region, program, month=month, month_year=month_year
+    )
+    rows = fetch_all(f"""
+        SELECT
+            (CASE
+                WHEN rf.mode_of_engagement::INT = 201 THEN 'Physical'
+                WHEN rf.mode_of_engagement::INT = 202 THEN 'Digital (IML)'
+                WHEN rf.mode_of_engagement::INT = 203 THEN 'Phygital (wELearn)'
+                WHEN rf.mode_of_engagement::INT = 206 THEN 'Other Activity'
+                ELSE 'Digital (wELearn)'
+            END) AS mode_of_engagement,
+            COALESCE(SUM(exp.exposure_sum), 0) + COALESCE(SUM(f.community_men_count + f.community_women_count), 0) AS total_exposures,
+            COUNT(DISTINCT f.sk_fact_session_id) AS no_of_session,
+            ROUND((COALESCE(SUM(exp.exposure_sum), 0) + COALESCE(SUM(f.community_men_count + f.community_women_count), 0)) / NULLIF(COUNT(DISTINCT p.program_name), 0), 0) AS exp_pgm,
+            ROUND((COALESCE(SUM(exp.exposure_sum), 0) + COALESCE(SUM(f.community_men_count + f.community_women_count), 0)) / NULLIF(COUNT(DISTINCT f.sk_user_id), 0), 0) AS expo_instructor,
+            ROUND((COALESCE(SUM(exp.exposure_sum), 0) + COALESCE(SUM(f.community_men_count + f.community_women_count), 0)) / NULLIF(COUNT(DISTINCT f.sk_fact_session_id), 0), 0) AS expo_session,
+            COUNT(DISTINCT p.program_name) AS no_of_pgm,
+            COUNT(DISTINCT f.sk_user_id) AS no_of_ins,
+            COUNT(DISTINCT f.date_id) AS wd
+        FROM dw.fact_session f
+        LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
+        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+        LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+        LEFT JOIN dw.dim_user u ON u.sk_user_id = f.sk_user_id
+        LEFT JOIN source.rpt_feedback rf ON rf.session_id::TEXT = f.session_nk_id::TEXT
+        LEFT JOIN (
+            SELECT session_nk_id, SUM(total_exposure_count) AS exposure_sum
+            FROM dw.fact_attendance_exposure
+            GROUP BY session_nk_id
+        ) exp ON f.session_nk_id = exp.session_nk_id
+        {where_clause}
+        GROUP BY mode_of_engagement
+        ORDER BY total_exposures DESC
+    """, params)
+    return rows
+
+
+def get_exposure_by_activity(
+    years=None, region=None, program=None, month=None, month_year=None,
+    program_type=None, engagement_mode=None
+):
+    where_clause, params = build_dimension_filters(
+        year=years, region=region, program=None,
+        year_expression="d.year_actual", location_expression=LOCATION_EXPRESSION,
+    )
+    where_clause, params = _apply_ytd_filter(
+        where_clause, params, years, region, program, month=month, month_year=month_year
+    )
+    rows = fetch_all(f"""
+        SELECT a.activity_name AS label,
+               SUM(COALESCE(e.total_exposure_count, 0)) AS value
+        FROM dw.fact_session f
+        LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
+        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+        LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+        LEFT JOIN dw.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
+        LEFT JOIN dw.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+        {where_clause}
+        GROUP BY a.activity_name
+        ORDER BY value DESC
+        LIMIT 15
+    """, params)
+    return [{"label": r["label"] or "Unknown", "value": float(r["value"])} for r in rows]
+
+
+def get_exposure_by_activity_and_program(
+    years=None, region=None, program=None, month=None, month_year=None,
+    program_type=None, engagement_mode=None
+):
+    where_clause, params = build_dimension_filters(
+        year=years, region=region, program=None,
+        year_expression="d.year_actual", location_expression=LOCATION_EXPRESSION,
+    )
+    where_clause, params = _apply_ytd_filter(
+        where_clause, params, years, region, program, month=month, month_year=month_year
+    )
+    rows = fetch_all(f"""
+        SELECT a.activity_name AS activity,
+               COALESCE(pt.code, 'Other') AS program_type,
+               COALESCE(SUM(e.total_exposure_count), 0) AS exposure
+        FROM dw.fact_session f
+        LEFT JOIN dw.dim_date d ON d.date_id = f.date_id
+        LEFT JOIN dw.dim_geography g ON g.sk_geography_id = f.sk_geography_id
+        LEFT JOIN dw.dim_program p ON p.sk_program_id = f.sk_program_id
+        LEFT JOIN dw.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
+        LEFT JOIN dw.fact_attendance_exposure e ON f.session_nk_id = e.session_nk_id
+        LEFT JOIN source.txn_program tp ON p.nk_program_id::TEXT = tp.txn_program_id
+        LEFT JOIN source.mst_program_type pt ON tp.program_type_id = pt.mst_program_type_id
+        {where_clause}
+        GROUP BY a.activity_name, pt.code
+        ORDER BY exposure DESC
+    """, params)
+    return rows
