@@ -1308,7 +1308,11 @@
                 language: {
                     search: "_INPUT_",
                     searchPlaceholder: "Filter records...",
-                    lengthMenu: "Show _MENU_ entries"
+                    lengthMenu: "Show _MENU_ entries",
+                    paginate: {
+                        previous: '<i class="fas fa-chevron-left"></i>',
+                        next: '<i class="fas fa-chevron-right"></i>'
+                    }
                 },
                 order: [], // Disable initial sort to respect server-side default
                 columnDefs: [
