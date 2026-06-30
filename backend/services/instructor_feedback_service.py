@@ -1,5 +1,5 @@
 import logging
-from backend.services.query_utils import fetch_all, fetch_one
+from backend.services.query_utils import fetch_all, fetch_one, build_standard_filters, get_list_filter_clause
 from backend.config import DATAMART_SCHEMA_NAME
 
 logger = logging.getLogger(__name__)
@@ -134,3 +134,143 @@ def get_instructor_feedback_data(instructor_name=None, years=None, month=None, q
     except Exception as e:
         logger.error(f"instructor feedback data error: {e}", exc_info=True)
         return {"kpis": [], "table": [], "total_count": 0}
+
+
+def get_instructor_feedback_insights(instructor_name=None, years=None, month=None, quarter=None):
+    try:
+        where_sql, params, _ = build_standard_filters(years=years, month=month, quarter=quarter)
+
+        if instructor_name:
+            c, p = get_list_filter_clause("u.user_name", instructor_name)
+            if c != "TRUE":
+                where_sql = f"{where_sql} AND {c}" if where_sql != "TRUE" else c
+                params.extend(p)
+
+        base_join = f"""
+            {DW}.fact_session f
+            LEFT JOIN {DW}.dim_user u ON f.sk_user_id = u.sk_user_id
+            LEFT JOIN {DW}.dim_date d ON f.date_id = d.date_id
+            LEFT JOIN {DW}.dim_school sc ON f.sk_school_id = sc.sk_school_id
+            LEFT JOIN {DW}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
+        """
+
+        def _q(sql, extra_params=None):
+            return fetch_all(sql, params + (extra_params or []))
+
+        kpis_row = _q(f"""
+            SELECT
+                COUNT(DISTINCT f.sk_fact_session_id) AS total_sessions,
+                COUNT(DISTINCT f.sk_user_id) AS total_ignators,
+                COUNT(DISTINCT f.sk_school_id) AS total_schools,
+                SUM(COALESCE(f.demo_session_count, 0)) AS demo_sessions,
+                SUM(COALESCE(f.hands_on_session_count, 0)) AS hands_on_sessions,
+                ROUND(AVG(NULLIF(COALESCE(f.session_duration_minutes, 0), 0)), 0) AS avg_duration,
+                SUM(COALESCE(f.no_of_teachers_participated, 0)) AS total_teachers,
+                SUM(COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0)) AS total_community
+            FROM {base_join}
+            WHERE {where_sql}
+        """)
+        k = dict(kpis_row[0]) if kpis_row else {}
+
+        demo = int(k.get("demo_sessions") or 0)
+        hands_on = int(k.get("hands_on_sessions") or 0)
+        total_act = demo + hands_on
+        k["demo_pct"] = round(demo / total_act * 100, 1) if total_act else 0
+        k["hands_on_pct"] = round(hands_on / total_act * 100, 1) if total_act else 0
+
+        monthly = _q(f"""
+            SELECT
+                d.year_actual, d.month_actual,
+                TO_CHAR(d.full_date, 'Mon YYYY') AS label,
+                COUNT(DISTINCT f.sk_fact_session_id) AS sessions,
+                SUM(COALESCE(f.demo_session_count, 0)) AS demos,
+                SUM(COALESCE(f.hands_on_session_count, 0)) AS hands_on,
+                COUNT(DISTINCT f.sk_user_id) AS active_ignators
+            FROM {base_join}
+            WHERE {where_sql}
+            GROUP BY d.year_actual, d.month_actual, TO_CHAR(d.full_date, 'Mon YYYY')
+            ORDER BY d.year_actual, d.month_actual
+        """)
+
+        top_ignators = _q(f"""
+            SELECT
+                COALESCE(u.user_name, 'Unknown') AS name,
+                COUNT(DISTINCT f.sk_fact_session_id) AS sessions,
+                COUNT(DISTINCT f.sk_school_id) AS schools,
+                SUM(COALESCE(f.demo_session_count, 0) + COALESCE(f.hands_on_session_count, 0)) AS activities,
+                ROUND(AVG(NULLIF(COALESCE(f.session_duration_minutes, 0), 0)), 0) AS avg_duration,
+                SUM(COALESCE(f.no_of_teachers_participated, 0)) AS teachers
+            FROM {base_join}
+            WHERE {where_sql} AND u.user_name IS NOT NULL
+            GROUP BY u.user_name
+            ORDER BY sessions DESC
+            LIMIT 10
+        """)
+
+        activity_mix = _q(f"""
+            SELECT
+                COALESCE(a.activity_name, 'Unknown') AS name,
+                COUNT(*) AS count
+            FROM {base_join}
+            WHERE {where_sql}
+            GROUP BY a.activity_name
+            ORDER BY count DESC
+        """)
+
+        school_top = _q(f"""
+            SELECT
+                COALESCE(sc.school_name, 'N/A') AS name,
+                COUNT(DISTINCT f.sk_fact_session_id) AS sessions,
+                COUNT(DISTINCT f.sk_user_id) AS ignators,
+                SUM(COALESCE(f.no_of_teachers_participated, 0)) AS teachers
+            FROM {base_join}
+            WHERE {where_sql}
+              AND COALESCE(NULLIF(sc.school_name, 'NULL'), 'Unknown') NOT IN ('Unknown', 'N/A')
+            GROUP BY sc.school_name
+            ORDER BY sessions DESC
+            LIMIT 10
+        """)
+
+        region_data = _q(f"""
+            SELECT
+                COALESCE(g.region_name, 'Unknown') AS name,
+                COUNT(DISTINCT f.sk_fact_session_id) AS sessions,
+                COUNT(DISTINCT f.sk_school_id) AS schools,
+                COUNT(DISTINCT f.sk_user_id) AS ignators
+            FROM {DW}.fact_session f
+            LEFT JOIN {DW}.dim_user u ON f.sk_user_id = u.sk_user_id
+            LEFT JOIN {DW}.dim_date d ON f.date_id = d.date_id
+            LEFT JOIN {DW}.dim_school sc ON f.sk_school_id = sc.sk_school_id
+            LEFT JOIN {DW}.dim_activity_type a ON f.sk_activity_type_id = a.sk_activity_type_id
+            LEFT JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            WHERE {where_sql}
+            GROUP BY g.region_name
+            ORDER BY sessions DESC
+        """)
+
+        ignator_deep = _q(f"""
+            SELECT
+                COALESCE(u.user_name, 'Unknown') AS name,
+                COUNT(DISTINCT f.sk_fact_session_id) AS sessions,
+                COUNT(DISTINCT f.sk_school_id) AS schools,
+                ROUND(AVG(NULLIF(COALESCE(f.session_duration_minutes, 0), 0)), 0) AS avg_duration,
+                SUM(COALESCE(f.no_of_teachers_participated, 0)) AS teachers,
+                SUM(COALESCE(f.community_men_count, 0) + COALESCE(f.community_women_count, 0)) AS community
+            FROM {base_join}
+            WHERE {where_sql} AND u.user_name IS NOT NULL
+            GROUP BY u.user_name
+            ORDER BY sessions DESC
+        """)
+
+        return {
+            "kpis": k,
+            "monthly": monthly,
+            "top_ignators": top_ignators,
+            "activity_mix": activity_mix,
+            "school_top": school_top,
+            "region_data": region_data,
+            "ignator_deep": ignator_deep,
+        }
+    except Exception as e:
+        logger.error(f"instructor feedback insights error: {e}", exc_info=True)
+        return {"kpis": {}, "monthly": [], "top_ignators": [], "activity_mix": [], "school_top": [], "region_data": [], "ignator_deep": []}

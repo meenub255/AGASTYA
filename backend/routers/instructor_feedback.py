@@ -26,6 +26,15 @@ def get_data(
 
     return instructor_feedback_service.get_instructor_feedback_data(instructor_name, years, month, quarter, limit, offset, dt_params)
 
+@router.get("/insights")
+def get_insights(
+    instructor_name: list[str] | None = Query(None),
+    years: list[str] | None = Query(None),
+    month: list[str] | None = Query(None),
+    quarter: list[str] | None = Query(None),
+):
+    return instructor_feedback_service.get_instructor_feedback_insights(instructor_name, years, month, quarter)
+
 @router.get("/export")
 def export_data(
     instructor_name: list[str] | None = Query(None),
