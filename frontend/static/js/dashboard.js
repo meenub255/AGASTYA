@@ -1385,6 +1385,22 @@
                             });
                         }
                     });
+                    // Push filter to extreme right
+                    var tbl = document.getElementById(settings.sTableId);
+                    if (tbl) {
+                        var wrapper = tbl.closest('.dataTables_wrapper');
+                        if (wrapper) {
+                            var row = wrapper.querySelector('.row');
+                            if (row) {
+                                row.style.cssText = 'display:flex!important;justify-content:space-between!important;align-items:center!important';
+                                var children = row.children;
+                                if (children.length >= 2) {
+                                    children[0].style.cssText = 'flex:0 0 auto!important;width:auto!important;max-width:none!important';
+                                    children[children.length - 1].style.cssText = 'flex:1 1 0!important;width:100%!important;max-width:none!important;text-align:right!important';
+                                }
+                            }
+                        }
+                    }
                 }
             };
 
