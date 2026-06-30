@@ -620,11 +620,7 @@ $(function(){
             (data.table||[]).forEach(r=>{
                 tb.append(`<tr><td class="font-weight-600">${r.name}</td><td>${r.region}</td><td class="text-right">${Number(r.sessions||0).toLocaleString()}</td><td class="text-right">${Number(r.students||0).toLocaleString()}</td><td class="text-right">${Number(r.schools||0).toLocaleString()}</td></tr>`);
             });
-            dt=PramanaDashboard.initDataTable('#overviewTable',{paging:true,searching:true,pageLength:15,order:[[2,'desc']]});
-            try {
-                var w=document.getElementById('overviewTable_wrapper');
-                if(w){var row=w.querySelector('.row');if(row){row.style.cssText='display:flex;justify-content:space-between;align-items:center';var cols=row.children;for(var i=0;i<cols.length;i++){cols[i].style.cssText='flex:0 0 auto;width:auto;max-width:none'}if(cols.length>1){cols[cols.length-1].style.cssText='flex:1 1 0;width:100%;max-width:none;text-align:right'}}}
-            } catch(e) {}
+            dt=PramanaDashboard.initDataTable('#overviewTable',{paging:true,searching:true,pageLength:15,order:[[2,'desc']],drawCallback:function(){try{var w=document.getElementById('overviewTable_wrapper');if(w){var s=w.style;s.display='flex';s.flexDirection='column';var row=w.querySelector('.row');if(row){row.style.display='flex';row.style.justifyContent='space-between';row.style.alignItems='center';var c=row.children;if(c.length>=2){c[0].style.cssText='flex:0 0 auto;width:auto;max-width:none!important';c[1].style.cssText='flex:1 1 0;width:100%;max-width:none!important;text-align:right'}}}}catch(e){}}});
         });
     }
 
