@@ -1385,34 +1385,32 @@
                             });
                         }
                     });
-                    // Push filter to extreme right
-                    try {
-                        var tbl = settings.nTable || document.getElementById(settings.sTableId);
-                        if (tbl) {
-                            var wrapper = tbl.parentNode;
-                            while (wrapper && !wrapper.classList.contains('dataTables_wrapper')) wrapper = wrapper.parentNode;
-                            if (wrapper) {
-                                var row = wrapper.querySelector('.row');
-                                if (row) {
-                                    row.style.display = 'flex';
-                                    row.style.justifyContent = 'space-between';
-                                    row.style.alignItems = 'center';
-                                    var ch = row.children;
-                                    if (ch.length >= 2) {
-                                        ch[0].style.flex = '0 0 auto';
-                                        ch[0].style.width = 'auto';
-                                        ch[0].style.maxWidth = 'none';
-                                        ch[ch.length-1].style.flex = '1 1 0';
-                                        ch[ch.length-1].style.width = '100%';
-                                        ch[ch.length-1].style.maxWidth = 'none';
-                                        ch[ch.length-1].style.textAlign = 'right';
-                                    }
-                                }
-                            }
-                        }
-                    } catch(e) {}
                 }
             };
+
+            // Global: Push all DataTables filters to extreme right
+            $(document).on('draw.dt', 'table.dataTable', function() {
+                var wrapper = this.parentNode;
+                while (wrapper && !wrapper.classList.contains('dataTables_wrapper')) wrapper = wrapper.parentNode;
+                if (wrapper) {
+                    var row = wrapper.querySelector('.row');
+                    if (row) {
+                        row.style.display = 'flex';
+                        row.style.justifyContent = 'space-between';
+                        row.style.alignItems = 'center';
+                        var ch = row.children;
+                        if (ch.length >= 2) {
+                            ch[0].style.flex = '0 0 auto';
+                            ch[0].style.width = 'auto';
+                            ch[0].style.maxWidth = 'none';
+                            ch[ch.length-1].style.flex = '1 1 0';
+                            ch[ch.length-1].style.width = '100%';
+                            ch[ch.length-1].style.maxWidth = 'none';
+                            ch[ch.length-1].style.textAlign = 'right';
+                        }
+                    }
+                }
+            });
 
             // Setup Custom Sort Dropdown Interactions (Run Once)
             if (!window._pramanaCustomSortInitialized) {
