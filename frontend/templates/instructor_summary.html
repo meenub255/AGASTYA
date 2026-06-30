@@ -123,6 +123,20 @@
                     <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Ignator Performance Breakdown</h3>
                 </div>
                 <div class="card-body p-0">
+                    <div class="dt-top-bar" style="display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;justify-content:space-between !important;align-items:center !important;width:100% !important;box-sizing:border-box !important;padding:12px 16px !important;">
+                        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                            <span>Show</span>
+                            <select id="summaryPageSize" style="width:auto;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;">
+                                <option value="10">10</option>
+                                <option value="15" selected>15</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="-1">All</option>
+                            </select>
+                            <span>entries</span>
+                        </div>
+                        <input type="search" id="summarySearch" placeholder="Filter records..." style="margin-left:auto !important;flex-shrink:0;padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;">
+                    </div>
                     <div class="table-responsive">
                         <table id="summaryTable" class="table table-hover mb-0" style="width: 100%;">
                             <thead>
@@ -314,6 +328,10 @@ $(function() {
                 { data: 'cv_exposures', className: 'text-center' }
             ]
         });
+        $('#summaryTable_wrapper .dataTables_length').hide();
+        $('#summaryTable_wrapper .dataTables_filter').hide();
+        $('#summarySearch').off('input').on('input',function(){summaryDt.search(this.value).draw();});
+        $('#summaryPageSize').off('change').on('change',function(){var v=parseInt(this.value);summaryDt.page.len(v).draw();});
     }
 
     // ── Load Exposure Summary Table ──
