@@ -717,4 +717,22 @@ $(function(){
     setTimeout(applyAll, 300);
 });
 </script>
+<style>
+#overviewTable_wrapper .row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+#overviewTable_wrapper .row > div {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: none !important;
+}
+#overviewTable_wrapper .row > div:last-child {
+    flex: 1 1 0% !important;
+    width: auto !important;
+    max-width: none !important;
+    text-align: right !important;
+}
+</style>
 {% endblock %}
