@@ -266,6 +266,7 @@ $(function(){
     }
 
     fetch('/instructor-feedback/filters').then(r=>r.json()).then(data=>{
+        console.log('[Feedback] filters loaded',data);
         data.instructors.forEach(i=>$('#instructorFilter').append(new Option(i,i)));
         data.years.forEach(y=>$('#yearFilter').append(new Option(y,y)));
         data.months.forEach(m=>$('#monthFilter').append(new Option(m.name,m.id)));
@@ -274,24 +275,36 @@ $(function(){
         $('.select2').trigger('change.select2',{internal:true});
         updateFilterSummary();
         loadAll();
-    });
+    }).catch(e=>console.error('[Feedback] filter load error',e));
 
     function destroyCharts(){Object.values(charts).forEach(c=>{if(c&&c.destroy)c.destroy();});charts={};}
 
     function loadAll(){
-        const query=$.param(collectFilters(),true);
-        fetch('/instructor-feedback/insights?'+query).then(r=>r.json()).then(d=>{
-            animateNum('#kpiTotalSessions',d.kpis.total_sessions||0);
-            animateNum('#kpiTotalInstructors',d.kpis.total_ignators||0);
-            animateNum('#kpiTotalSchools',d.kpis.total_schools||0);
-            animateNum('#kpiTotalTeachers',d.kpis.total_teachers||0);
-            renderMonthlyTrend(d.monthly);
-            renderDonut(d.activity_mix);
-            renderRegion(d.region_data);
-            renderIgnatorDeep(d.ignator_deep);
-            loadIgnatorTable(d.ignator_deep);
-            loadSchoolTable(d.school_top);
-        });
+        var params = new URLSearchParams();
+        var iVals = $('#instructorFilter').val() || [];
+        var yVals = $('#yearFilter').val() || [];
+        var mVals = $('#monthFilter').val() || [];
+        var qVals = $('#quarterFilter').val() || [];
+        iVals.forEach(function(v){ if(v) params.append('instructor_name', v); });
+        yVals.forEach(function(v){ if(v) params.append('years', v); });
+        mVals.forEach(function(v){ if(v) params.append('month', v); });
+        qVals.forEach(function(v){ if(v) params.append('quarter', v); });
+        var qs = params.toString();
+        console.log('[Feedback] calling /instructor-feedback/insights with:', qs || '(no filters)');
+        fetch('/instructor-feedback/insights' + (qs ? '?' + qs : '')).then(function(r){ return r.json(); }).then(function(d){
+            console.log('[Feedback] response:', d);
+            if(d && d.kpis){
+                $('#kpiTotalSessions').text((d.kpis.total_sessions||0).toLocaleString());
+                $('#kpiTotalInstructors').text((d.kpis.total_ignators||0).toLocaleString());
+                $('#kpiTotalSchools').text((d.kpis.total_schools||0).toLocaleString());
+                $('#kpiTotalTeachers').text((d.kpis.total_teachers||0).toLocaleString());
+            }
+            if(d.monthly && d.monthly.length) renderMonthlyTrend(d.monthly);
+            if(d.activity_mix && d.activity_mix.length) renderDonut(d.activity_mix);
+            if(d.region_data && d.region_data.length) renderRegion(d.region_data);
+            if(d.ignator_deep && d.ignator_deep.length){ renderIgnatorDeep(d.ignator_deep); loadIgnatorTable(d.ignator_deep); }
+            if(d.school_top && d.school_top.length) loadSchoolTable(d.school_top);
+        }).catch(function(e){ console.error('[Feedback] error:', e); });
     }
 
     function animateNum(el,target){
@@ -359,7 +372,7 @@ $(function(){
             ]},
             options:{responsive:true,maintainAspectRatio:false,
                 plugins:{legend:{display:true,position:'bottom',labels:{color:'#475569',usePointStyle:true,pointStyle:'circle',padding:20}},datalabels:{display:false},
-                    tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8}}},
+                    tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8}},
                 scales:{x:{grid:{display:false},ticks:{color:'#334155',font:{size:10},maxRotation:45}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#334155',font:{size:11}}}}}});
     }
 
