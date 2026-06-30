@@ -621,13 +621,6 @@ $(function(){
                 tb.append(`<tr><td class="font-weight-600">${r.name}</td><td>${r.region}</td><td class="text-right">${Number(r.sessions||0).toLocaleString()}</td><td class="text-right">${Number(r.students||0).toLocaleString()}</td><td class="text-right">${Number(r.schools||0).toLocaleString()}</td></tr>`);
             });
             dt=PramanaDashboard.initDataTable('#overviewTable',{paging:true,searching:true,pageLength:15,order:[[2,'desc']]});
-            (function(){
-                var w=$('#overviewTable_wrapper');
-                var row=w.find('.row:first');
-                row.css({display:'flex',justifyContent:'space-between',alignItems:'center'});
-                row.children('div:first').css({flex:'0 0 auto',width:'auto',maxWidth:'none'});
-                row.children('div:last').css({flex:'1 1 auto',width:'auto',maxWidth:'none'});
-            })();
         });
     }
 
