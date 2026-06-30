@@ -366,24 +366,6 @@
     body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_paginate {
         color: #111827 !important;
     }
-    body[data-page="instructor-overview"] .dataTables_wrapper {
-        display: flex !important;
-        flex-direction: column !important;
-    }
-    body[data-page="instructor-overview"] .dataTables_wrapper .row:first-child {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-    }
-    body[data-page="instructor-overview"] .dataTables_wrapper .row:first-child > [class*="col"]:first-child {
-        flex: 0 0 auto !important;
-        width: auto !important;
-    }
-    body[data-page="instructor-overview"] .dataTables_wrapper .row:first-child > [class*="col"]:last-child {
-        flex: 1 1 auto !important;
-        width: auto !important;
-        text-align: right !important;
-    }
     body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_length label,
     body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_filter label {
         display: flex !important;
@@ -639,6 +621,13 @@ $(function(){
                 tb.append(`<tr><td class="font-weight-600">${r.name}</td><td>${r.region}</td><td class="text-right">${Number(r.sessions||0).toLocaleString()}</td><td class="text-right">${Number(r.students||0).toLocaleString()}</td><td class="text-right">${Number(r.schools||0).toLocaleString()}</td></tr>`);
             });
             dt=PramanaDashboard.initDataTable('#overviewTable',{paging:true,searching:true,pageLength:15,order:[[2,'desc']]});
+            (function(){
+                var w=$('#overviewTable_wrapper');
+                var row=w.find('.row:first');
+                row.css({display:'flex',justifyContent:'space-between',alignItems:'center'});
+                row.children('div:first').css({flex:'0 0 auto',width:'auto',maxWidth:'none'});
+                row.children('div:last').css({flex:'1 1 auto',width:'auto',maxWidth:'none'});
+            })();
         });
     }
 
