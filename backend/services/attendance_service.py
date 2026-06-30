@@ -1,4 +1,4 @@
-from backend.services.query_utils import fetch_all, fetch_one
+from backend.services.query_utils import fetch_all, fetch_one, build_standard_filters, get_list_filter_clause
 from backend.config import DATAMART_SCHEMA_NAME
 
 
@@ -178,5 +178,111 @@ def get_attendance_data(region=None, area=None, years=None, month=None, quarter=
             "region": {"labels": region_labels, "data": region_data}
         }
     }
+
+
+def get_attendance_insights(region=None, area=None, years=None, month=None, quarter=None):
+    try:
+        where_sql, params, _ = build_standard_filters(years=years, region=region, area=area, month=month, quarter=quarter)
+
+        base_join = f"""
+            {DATAMART_SCHEMA_NAME}.fact_session f
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_date d ON f.date_id = d.date_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            LEFT JOIN {DATAMART_SCHEMA_NAME}.dim_user u ON f.sk_user_id = u.sk_user_id
+        """
+
+        def _q(sql, extra_params=None):
+            return fetch_all(sql, params + (extra_params or []))
+
+        kpis_row = _q(f"""
+            SELECT
+                COUNT(DISTINCT f.sk_user_id) AS total_staff,
+                COUNT(DISTINCT CONCAT(f.sk_user_id, '_', f.date_id)) AS total_days,
+                COUNT(DISTINCT f.sk_fact_session_id) AS total_sessions,
+                ROUND(COUNT(DISTINCT f.sk_fact_session_id)::numeric / NULLIF(COUNT(DISTINCT CONCAT(f.sk_user_id, '_', f.date_id)), 0), 2) AS avg_per_day,
+                COUNT(DISTINCT f.sk_school_id) AS total_schools,
+                SUM(COALESCE(f.no_of_teachers_participated, 0)) AS total_teachers
+            FROM {base_join}
+            WHERE {where_sql}
+        """)
+        k = dict(kpis_row[0]) if kpis_row else {}
+
+        monthly = _q(f"""
+            SELECT
+                d.year_actual, d.month_actual,
+                TO_CHAR(d.full_date, 'Mon YYYY') AS label,
+                COUNT(DISTINCT f.sk_user_id) AS staff,
+                COUNT(DISTINCT f.sk_fact_session_id) AS sessions,
+                COUNT(DISTINCT f.sk_school_id) AS schools
+            FROM {base_join}
+            WHERE {where_sql}
+            GROUP BY d.year_actual, d.month_actual, TO_CHAR(d.full_date, 'Mon YYYY')
+            ORDER BY d.year_actual, d.month_actual
+        """)
+
+        region_data = _q(f"""
+            SELECT
+                COALESCE(g.region_name, 'Unknown') AS name,
+                COUNT(DISTINCT f.sk_user_id) AS staff,
+                COUNT(DISTINCT f.sk_fact_session_id) AS sessions,
+                COUNT(DISTINCT CONCAT(f.sk_user_id, '_', f.date_id)) AS days
+            FROM {base_join}
+            WHERE {where_sql}
+            GROUP BY g.region_name
+            ORDER BY sessions DESC
+        """)
+
+        top_ignators = _q(f"""
+            SELECT
+                COALESCE(u.user_name, 'Unknown') AS name,
+                COUNT(DISTINCT f.sk_fact_session_id) AS sessions,
+                COUNT(DISTINCT CONCAT(f.sk_user_id, '_', f.date_id)) AS days_present,
+                COUNT(DISTINCT f.sk_school_id) AS schools,
+                ROUND(COUNT(DISTINCT f.sk_fact_session_id)::numeric / NULLIF(COUNT(DISTINCT CONCAT(f.sk_user_id, '_', f.date_id)), 0), 1) AS avg_per_day
+            FROM {base_join}
+            WHERE {where_sql} AND u.user_name IS NOT NULL
+            GROUP BY u.user_name
+            ORDER BY sessions DESC
+            LIMIT 15
+        """)
+
+        area_data = _q(f"""
+            SELECT
+                COALESCE(g.area_name, 'Unknown') AS name,
+                COUNT(DISTINCT f.sk_user_id) AS staff,
+                COUNT(DISTINCT f.sk_fact_session_id) AS sessions,
+                COUNT(DISTINCT f.sk_school_id) AS schools
+            FROM {base_join}
+            WHERE {where_sql}
+            GROUP BY g.area_name
+            ORDER BY sessions DESC
+            LIMIT 10
+        """)
+
+        staff_productivity = _q(f"""
+            SELECT
+                COALESCE(u.user_name, 'Unknown') AS name,
+                COUNT(DISTINCT f.sk_fact_session_id) AS sessions,
+                COUNT(DISTINCT CONCAT(f.sk_user_id, '_', f.date_id)) AS days_present,
+                COUNT(DISTINCT f.sk_school_id) AS schools,
+                ROUND(COUNT(DISTINCT f.sk_fact_session_id)::numeric / NULLIF(COUNT(DISTINCT CONCAT(f.sk_user_id, '_', f.date_id)), 0), 1) AS sessions_per_day
+            FROM {base_join}
+            WHERE {where_sql} AND u.user_name IS NOT NULL
+            GROUP BY u.user_name
+            ORDER BY sessions DESC
+        """)
+
+        return {
+            "kpis": k,
+            "monthly": monthly,
+            "region_data": region_data,
+            "top_ignators": top_ignators,
+            "area_data": area_data,
+            "staff_productivity": staff_productivity,
+        }
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"attendance insights error: {e}", exc_info=True)
+        return {"kpis": {}, "monthly": [], "region_data": [], "top_ignators": [], "area_data": [], "staff_productivity": []}
 
 

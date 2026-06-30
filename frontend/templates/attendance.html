@@ -1,51 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>
-    .content-header { display: none !important; }
-    .card-header-premium {
-        background: #f1f5f9;
-        border-bottom: 1px solid #e2e8f0 !important;
-        padding: 15px 20px;
-    }
-    #attendanceTable th {
-        background: #f1f5f9 !important;
-        color: #475569 !important;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        padding: 15px;
-        border-bottom: 1px solid #e2e8f0 !important;
-    }
-    #attendanceTable td { 
-        padding: 12px 15px; 
-        vertical-align: middle; 
-        color: #1e293b !important;
-        font-size: 0.9rem;
-    }
-    .premium-card {
-        border-radius: 15px;
-        border: none;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-        overflow: hidden;
-    }
-    .small-box {
-        border-radius: 12px;
-        transition: transform 0.2s;
-        overflow: hidden;
-    }
-    .small-box:hover { transform: translateY(-3px); }
-</style>
-
 <div class="col-md-12">
-    <!-- Top Action Bar -->
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-            <h1 class="m-0 font-weight-bold" style="font-size: 1.8rem; color: #1e293b;">Attendance</h1>
-            <p class="text-muted small mb-0">Field staff attendance and session overview</p>
+            <h1 class="m-0 font-weight-bold" style="font-size: 1.5rem; color: #1e293b; font-family: Arial, sans-serif !important;">Attendance</h1>
+            <p class="text-muted small mb-0">Field staff attendance and session analytics</p>
         </div>
-        
         <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
             <div class="fl-content">
                 <div class="fl-icon"><i class="fas fa-sliders-h"></i></div>
@@ -58,13 +19,12 @@
         </div>
     </div>
 
-    <!-- KPI Cards -->
-    <div id="kpiContainer" class="row mb-4">
-        <!-- Card 1: Total Field Staff -->
+    <!-- KPIs -->
+    <div class="row mb-3">
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardTotalStaff">
                 <div class="kpi-bitcoin-header">
-                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
                         <i class="fas fa-users-cog"></i>
                     </div>
                     <div class="kpi-bitcoin-title-box">
@@ -73,18 +33,13 @@
                     </div>
                 </div>
                 <div class="kpi-bitcoin-value" id="kpiTotalStaff">0</div>
-                <div class="d-flex align-items-center mb-2" id="trendWrapperTotalStaff" style="display: none !important;">
-                    <div id="trendTotalStaff"></div>
-                    <span class="kpi-bitcoin-footer">vs previous period</span>
-                </div>
                 <div class="kpi-mini-chart"><canvas id="miniChartTotalStaff"></canvas></div>
             </div>
         </div>
-        <!-- Card 2: Cumulative Days Present -->
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardTotalDays">
                 <div class="kpi-bitcoin-header">
-                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%);">
                         <i class="fas fa-calendar-check"></i>
                     </div>
                     <div class="kpi-bitcoin-title-box">
@@ -93,14 +48,9 @@
                     </div>
                 </div>
                 <div class="kpi-bitcoin-value" id="kpiTotalDays">0</div>
-                <div class="d-flex align-items-center mb-2" id="trendWrapperTotalDays" style="display: none !important;">
-                    <div id="trendTotalDays"></div>
-                    <span class="kpi-bitcoin-footer">vs previous period</span>
-                </div>
                 <div class="kpi-mini-chart"><canvas id="miniChartTotalDays"></canvas></div>
             </div>
         </div>
-        <!-- Card 3: Total Sessions -->
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardTotalSessions">
                 <div class="kpi-bitcoin-header">
@@ -108,19 +58,14 @@
                         <i class="fas fa-chalkboard-teacher"></i>
                     </div>
                     <div class="kpi-bitcoin-title-box">
-                        <span class="kpi-bitcoin-label">Sessions</span>
-                        <span class="kpi-bitcoin-sublabel">Total Conducted</span>
+                        <span class="kpi-bitcoin-label">Total Sessions</span>
+                        <span class="kpi-bitcoin-sublabel">Conducted</span>
                     </div>
                 </div>
                 <div class="kpi-bitcoin-value" id="kpiTotalSessions">0</div>
-                <div class="d-flex align-items-center mb-2" id="trendWrapperTotalSessions" style="display: none !important;">
-                    <div id="trendTotalSessions"></div>
-                    <span class="kpi-bitcoin-footer">vs previous period</span>
-                </div>
-                <div class="kpi-mini-chart"><canvas id="miniChartTotalSessions"></canvas></div>
+                <div class="kpi-mini-chart"><canvas id="miniChartSessions"></canvas></div>
             </div>
         </div>
-        <!-- Card 4: Avg Sessions / Day -->
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardAvgSessions">
                 <div class="kpi-bitcoin-header">
@@ -133,90 +78,142 @@
                     </div>
                 </div>
                 <div class="kpi-bitcoin-value" id="kpiAvgSessions">0</div>
-                <div class="d-flex align-items-center mb-2" id="trendWrapperAvgSessions" style="display: none !important;">
-                    <div id="trendAvgSessions"></div>
-                    <span class="kpi-bitcoin-footer">vs previous period</span>
-                </div>
-                <div class="kpi-mini-chart"><canvas id="miniChartAvgSessions"></canvas></div>
+                <div class="kpi-mini-chart"><canvas id="miniChartAvg"></canvas></div>
             </div>
         </div>
     </div>
 
-    <!-- Charts -->
+    <!-- Charts Row 1 -->
     <div class="row">
-        <div class="col-xl-7 col-lg-7">
-            <div class="card mb-4 white-chart-card premium-card">
-                <div class="card-header d-flex align-items-center justify-content-between" style="background:#f1f5f9;border-bottom:1px solid #e2e8f0 !important;">
+        <div class="col-xl-6 col-lg-6 mb-3">
+            <div class="card h-100 white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header border-0 pb-1 d-flex align-items-center justify-content-between" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
                     <div>
-                        <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-chart-line mr-2" style="color:#3b82f6;"></i>Attendance Trend</h3>
-                        <small class="text-muted">Total sessions conducted over time</small>
+                        <h3 class="card-title text-sm text-uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-chart-line mr-2" style="color:#3b82f6;"></i>Monthly Trend</h3>
+                        <small class="text-muted">Sessions & active staff over time</small>
                     </div>
                 </div>
-                <div class="card-body" style="padding:16px;">
-                    <div style="position:relative;height:350px;"><canvas id="trendChart"></canvas></div>
-                </div>
+                <div class="card-body" style="padding:16px;"><div style="height:320px;"><canvas id="chartMonthly"></canvas></div></div>
             </div>
         </div>
-        <div class="col-xl-5 col-lg-5">
-            <div class="card mb-4 white-chart-card premium-card">
-                <div class="card-header d-flex align-items-center justify-content-between" style="background:#f1f5f9;border-bottom:1px solid #e2e8f0 !important;">
-                    <div>
-                        <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-map-marked-alt mr-2" style="color:#8b5cf6;"></i>Sessions by Region</h3>
-                        <small class="text-muted">Click a region to drill into table data</small>
-                    </div>
+        <div class="col-xl-6 col-lg-6 mb-3">
+            <div class="card h-100 white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header border-0 pb-1 d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-map-marked-alt mr-2" style="color:#8b5cf6;"></i>Sessions by Region</h3>
                 </div>
-                <div class="card-body" style="padding:16px;">
-                    <div style="position:relative;height:350px;"><canvas id="regionChart"></canvas></div>
-                </div>
+                <div class="card-body" style="padding:16px;"><div style="height:320px;"><canvas id="chartRegion"></canvas></div></div>
             </div>
         </div>
     </div>
 
-    <!-- Drilldown Panel -->
-    <div id="drilldownPanel" style="display:none;margin-top:8px;margin-bottom:15px;">
-        <div class="d-flex align-items-center px-1" style="gap:8px;">
-            <span class="text-muted" style="font-size:13px;cursor:pointer;" onclick="clearDrilldown()"><i class="fas fa-chart-bar mr-1"></i>All Data</span>
-            <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
-            <span id="drilldownTitle" style="font-size:13px;font-weight:600;color:#1e3a8a;"></span>
-            <button onclick="clearDrilldown()" class="btn btn-sm ml-auto" style="background:#991b1b;border:none;color:#fff;font-size:12px;padding:5px 14px;border-radius:20px;font-weight:600;">
-                <i class="fas fa-times mr-1"></i>Clear Drilldown
-            </button>
+    <!-- Charts Row 2 -->
+    <div class="row">
+        <div class="col-xl-6 col-lg-6 mb-3">
+            <div class="card h-100 white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header border-0 pb-1 d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-chart-bar mr-2" style="color:#10b981;"></i>Top Areas</h3>
+                </div>
+                <div class="card-body" style="padding:16px;"><div style="height:320px;"><canvas id="chartArea"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-xl-6 col-lg-6 mb-3">
+            <div class="card h-100 white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header border-0 pb-1 d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-trophy mr-2" style="color:#f59e0b;"></i>Top Staff by Sessions</h3>
+                </div>
+                <div class="card-body" style="padding:16px;"><div style="height:320px;"><canvas id="chartTopStaff"></canvas></div></div>
+            </div>
         </div>
     </div>
 
-    <!-- Table -->
-    <div class="card premium-card white-chart-card shadow-sm">
-        <div class="card-header card-header-premium d-flex align-items-center">
-            <i class="fas fa-list-alt mr-2" style="color: #3b82f6;"></i>
-            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Detailed Attendance Log</h3>
+    <!-- Charts Row 3 -->
+    <div class="row">
+        <div class="col-xl-6 col-lg-6 mb-3">
+            <div class="card h-100 white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header border-0 pb-1 d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-project-diagram mr-2" style="color:#ec4899;"></i>Productivity Map</h3>
+                </div>
+                <div class="card-body" style="padding:16px;"><div style="height:320px;"><canvas id="chartProductivity"></canvas></div></div>
+            </div>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table id="attendanceTable" class="table table-hover mb-0" style="width: 100%;">
-                    <thead>
-                        <tr>
-                            <th>Ignator</th>
-                            <th>Region</th>
-                            <th>Area</th>
-                            <th class="text-center">Days Present</th>
-                            <th class="text-center">Total Sessions</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+        <div class="col-xl-6 col-lg-6 mb-3">
+            <div class="card h-100 white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header border-0 pb-1 d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-balance-scale mr-2" style="color:#06b6d4;"></i>Region Staff vs Sessions</h3>
+                </div>
+                <div class="card-body" style="padding:16px;"><div style="height:320px;"><canvas id="chartRegionCompare"></canvas></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Tab -->
+    <ul class="nav nav-tabs-custom mb-3" id="attendanceTabs">
+        <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#tabAttendance" id="tabBtnAttendance">
+                <i class="fas fa-table mr-1"></i> Attendance Log
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#tabStaffPerf" id="tabBtnStaffPerf">
+                <i class="fas fa-user-tie mr-1"></i> Staff Performance
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="tabAttendance">
+            <div class="card white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <i class="fas fa-table mr-2" style="color:#6366f1;"></i>
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;">Detailed Attendance Log</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="attendanceTable" class="table table-hover mb-0 high-contrast-table" style="width:100%">
+                            <thead><tr>
+                                <th>Ignator</th>
+                                <th>Region</th>
+                                <th>Area</th>
+                                <th class="text-center">Days Present</th>
+                                <th class="text-center">Total Sessions</th>
+                            </tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="tabStaffPerf">
+            <div class="card white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <i class="fas fa-user-tie mr-2" style="color:#10b981;"></i>
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;">Staff Performance Breakdown</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="staffTable" class="table table-hover mb-0 high-contrast-table" style="width:100%">
+                            <thead><tr>
+                                <th>Ignator</th>
+                                <th class="text-center">Sessions</th>
+                                <th class="text-center">Days Present</th>
+                                <th class="text-center">Schools</th>
+                                <th class="text-center">Avg / Day</th>
+                            </tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Filter Drawer -->
-<div class="filter-drawer-overlay" id="filterDrawerOverlay"></div>
-<div class="filter-drawer shadow-lg" id="filterDrawer">
+<div id="filterDrawerOverlay" class="filter-drawer-overlay"></div>
+<div id="filterDrawer" class="filter-drawer">
     <div class="fd-header">
-        <h3 class="fd-title"><i class="fas fa-sliders-h mr-2" style="color: #3b82f6;"></i>Filters</h3>
-        <button type="button" class="fd-close" id="closeDrawer">
-            <i class="fas fa-times"></i>
-        </button>
+        <h3 class="fd-title"><i class="fas fa-filter mr-2" style="color:#3b82f6;"></i>Filters</h3>
+        <button id="closeDrawer" class="fd-close"><i class="fas fa-times"></i></button>
     </div>
     <div class="fd-body">
         <div class="fd-section">
@@ -246,235 +243,226 @@
         </div>
     </div>
     <div class="fd-footer">
-        <button class="btn btn-outline-secondary btn-block shadow-sm" id="resetFilters" style="border-radius: 10px;">
+        <button id="resetFilters" class="btn btn-outline-secondary btn-block" style="border-radius:10px;">
             <i class="fas fa-undo mr-2"></i>Reset All Filters
-        </button>
-        <button class="btn btn-success btn-block mt-2 shadow-sm" id="exportXlsx" style="border-radius: 10px; background: #10b981; border: none;">
-            <i class="fas fa-file-excel mr-2"></i>Export XLSX
         </button>
     </div>
 </div>
+
+<style>
+    .content-header { display: none !important; }
+    .nav-tabs-custom .nav-link { border: none; color: #64748b; font-weight: 600; font-size: 0.9rem; padding: 10px 20px; border-bottom: 3px solid transparent; transition: all 0.2s; }
+    .nav-tabs-custom .nav-link.active { color: #3b82f6; border-bottom-color: #3b82f6; background: transparent; }
+    .nav-tabs-custom .nav-link:hover { color: #1e293b; }
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-$(function () {
-    let trendChart = null;
-    let regionChart = null;
-    let drilldownRegion = null;
+$(function(){
+    if(typeof Chart!=='undefined'){Chart.defaults.font.family='Arial, Helvetica, sans-serif';}
+    var PALETTE=['#6366f1','#10b981','#3b82f6','#f59e0b','#ec4899','#8b5cf6','#14b8a6','#f97316','#ef4444','#06b6d4'];
+    var charts={};
+    var attendanceDt=null, staffDt=null;
+    var drilldownRegion=null;
 
-    // ── Select2 Init ──
-    if ($.fn.select2) {
-        $('.select2').select2({ 
-            theme: 'bootstrap4', 
-            dropdownParent: $('#filterDrawer'), 
-            width: '100%', 
-            allowClear: true, 
-            multiple: true 
-        });
-    }
+    $('#filterLauncher').click(function(){$('#filterDrawer, #filterDrawerOverlay').addClass('open');});
+    var closeDrawer=function(){$('#filterDrawer, #filterDrawerOverlay').removeClass('open');};
+    $('#closeDrawer').click(closeDrawer);$('#filterDrawerOverlay').click(closeDrawer);
+    if($.fn.select2){$('.select2').select2({theme:'bootstrap4',dropdownParent:$('#filterDrawer'),width:'100%',allowClear:true,multiple:true});}
 
-    // ── Drawer Logic ──
-    $('#filterLauncher').click(() => {
-        $('#filterDrawerOverlay, #filterDrawer').addClass('open');
-    });
-    $('#closeDrawer, #filterDrawerOverlay').click(() => {
-        $('#filterDrawerOverlay, #filterDrawer').removeClass('open');
-    });
-
-    function updateFilterSummary() {
-        const r = $('#regionFilter').val() || [], a = $('#areaFilter').val() || [], y = $('#yearFilter').val() || [], m = $('#monthFilter').val() || [], q = $('#quarterFilter').val() || [];
-        const total = r.length + a.length + y.length + m.length + q.length;
-        $('#activeFilterCount').text(total ? total + ' Filter' + (total>1?'s':'') + ' Applied' : 'All Data');
-    }
-
-    function collectFilters() {
-        const f = window.PramanaDashboard.collectFilters();
-        if (drilldownRegion) f.region = [drilldownRegion];
+    function collectFilters(){
+        var f=window.PramanaDashboard.collectFilters();
+        if(drilldownRegion)f.region=[drilldownRegion];
         return f;
     }
 
-    fetch('/attendance/filters')
-        .then(res => res.json())
-        .then(data => {
-            const regionSelect = $('#regionFilter');
-            const areaSelect = $('#areaFilter');
-            const yearSelect = $('#yearFilter');
-            const monthSelect = $('#monthFilter');
-
-            data.regions.forEach(r => regionSelect.append(new Option(r, r)));
-            data.areas.forEach(a => areaSelect.append(new Option(a, a)));
-            data.years.forEach(y => yearSelect.append(new Option(y, y)));
-            
-            // Default to current year if available and nothing is selected
-            const currentYear = new Date().getFullYear();
-            if (!$('#yearFilter').val()?.length && data.years.some(y => String(y).startsWith(String(currentYear)))) {
-                $('#yearFilter').val([currentYear]);
-            }
-            
-            data.months.forEach(m => monthSelect.append(new Option(m.name, m.id)));
-            $('.select2').trigger('change.select2', { internal: true });
-            updateFilterSummary();
-        });
-
-    function renderCharts(chartData) {
-        if (!chartData) return;
-
-        // Trend Chart
-        const trendCtx = document.getElementById('trendChart').getContext('2d');
-        if (trendChart) trendChart.destroy();
-        trendChart = new Chart(trendCtx, {
-            type: 'line',
-            data: {
-                labels: chartData.trend.labels,
-                datasets: [{
-                    label: 'Total Sessions',
-                    data: chartData.trend.data,
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-                    x: { grid: { display: false } }
-                }
-            }
-        });
-
-        // Region Chart
-        const regionCtx = document.getElementById('regionChart').getContext('2d');
-        if (regionChart) regionChart.destroy();
-        
-        // Colors array
-        const bgColors = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#6366f1','#ec4899'];
-        const chartBg = chartData.region.labels.map((_, i) => bgColors[i % bgColors.length]);
-
-        regionChart = new Chart(regionCtx, {
-            type: 'bar',
-            data: {
-                labels: chartData.region.labels.map(l => {
-                    const parts = l.split(/[_ \-]/);
-                    let a = ''; parts.forEach(p => { if (p.length > 0) a += p[0].toUpperCase(); });
-                    return a.length > 1 ? a : l.substring(0, 3).toUpperCase();
-                }),
-                fullLabels: chartData.region.labels, // Store full labels for click event
-                datasets: [{
-                    label: 'Sessions',
-                    data: chartData.region.data,
-                    backgroundColor: chartBg,
-                    borderWidth: 0,
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { 
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            title: function(context) {
-                                return context[0].chart.data.fullLabels[context[0].dataIndex];
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-                    x: { grid: { display: false } }
-                },
-                onClick: (e, activeEls) => {
-                    if (activeEls.length > 0) {
-                        const idx = activeEls[0].index;
-                        const region = regionChart.data.fullLabels[idx];
-                        setDrilldown(region);
-                    }
-                }
-            }
-        });
+    function updateFilterSummary(){
+        var r=$('#regionFilter').val()||[],a=$('#areaFilter').val()||[],y=$('#yearFilter').val()||[],m=$('#monthFilter').val()||[],q=$('#quarterFilter').val()||[];
+        var total=r.length+a.length+y.length+m.length+q.length;
+        $('#activeFilterCount').text(total?total+' Filter'+(total>1?'s':'')+' Applied':'All Data');
     }
 
-    window.setDrilldown = function(region) {
-        drilldownRegion = region;
-        $('#drilldownTitle').text('Region: ' + region);
-        $('#drilldownPanel').slideDown(200);
-        
-        // Reload table
-        $('#attendanceTable').DataTable().ajax.reload();
-        
-        // Scroll to table smoothly
-        $('html, body').animate({
-            scrollTop: $("#drilldownPanel").offset().top - 100
-        }, 500);
-    };
-
-    window.clearDrilldown = function() {
-        drilldownRegion = null;
-        $('#drilldownPanel').slideUp(200);
-        $('#attendanceTable').DataTable().ajax.reload();
-    };
-
-    function loadData() {
-        window.loadReportData = loadData;
-        window.PramanaDashboard.initDataTable('#attendanceTable', {
-            ajaxUrl: '/attendance/data',
-            getFilters: collectFilters,
-            onDataLoad: function(data) {
-                if (data.kpis && data.kpis.length >= 4) {
-                    $('#kpiTotalStaff').text(data.kpis[0].value.toLocaleString());
-                    $('#kpiTotalDays').text(data.kpis[1].value.toLocaleString());
-                    $('#kpiTotalSessions').text(data.kpis[2].value.toLocaleString());
-                    $('#kpiAvgSessions').text(data.kpis[3].value);
-
-                    if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
-                        window.PramanaInsights.enhanceAllKpiCards(data.kpis);
-                    }
-                }
-                if (data.charts && !drilldownRegion) {
-                    renderCharts(data.charts);
-                }
-            },
-            columns: [
-                { data: 'instructor_name', render: function(data) {
-                    return `<span class="font-weight-600 text-navy">${data}</span>`;
-                }},
-                { data: 'region', render: function(data) {
-                    return `<small class="text-muted"><i class="fas fa-globe mr-1"></i> ${data}</small>`;
-                }},
-                { data: 'area' },
-                { data: 'days_present', className: 'text-center', render: function(data) {
-                    return `<span class="badge badge-success px-2 py-1">${data}</span>`;
-                }},
-                { data: 'total_sessions', className: 'text-center font-weight-bold' }
-            ]
-        });
-    }
-
-    // ── Events ──
-    $('.select2').on('change', function(e, opts) {
-        if (opts && opts.internal) return;
+    fetch('/attendance/filters').then(function(r){return r.json();}).then(function(data){
+        data.regions.forEach(function(r){$('#regionFilter').append(new Option(r,r));});
+        data.areas.forEach(function(a){$('#areaFilter').append(new Option(a,a));});
+        data.years.forEach(function(y){$('#yearFilter').append(new Option(y,y));});
+        var currentYear=new Date().getFullYear();
+        if(!($('#yearFilter').val()||[]).length&&data.years.some(function(y){return String(y).startsWith(String(currentYear));})){$('#yearFilter').val([currentYear]);}
+        data.months.forEach(function(m){$('#monthFilter').append(new Option(m.name,m.id));});
+        $('.select2').trigger('change.select2',{internal:true});
         updateFilterSummary();
-        clearDrilldown(); // Filter change resets drilldown
-        loadData();
+        loadAll();
     });
 
-    $('#resetFilters').click(function() {
-        $('.select2').val(null).trigger('change');
-        clearDrilldown();
+    function destroyCharts(){Object.keys(charts).forEach(function(k){if(charts[k]&&charts[k].destroy)charts[k].destroy();});charts={};}
+
+    function buildParams(){
+        var params=new URLSearchParams();
+        var r=$('#regionFilter').val()||[];
+        var a=$('#areaFilter').val()||[];
+        var y=$('#yearFilter').val()||[];
+        var m=$('#monthFilter').val()||[];
+        var q=$('#quarterFilter').val()||[];
+        r.forEach(function(v){if(v)params.append('region',v);});
+        a.forEach(function(v){if(v)params.append('area',v);});
+        y.forEach(function(v){if(v)params.append('years',v);});
+        m.forEach(function(v){if(v)params.append('month',v);});
+        q.forEach(function(v){if(v)params.append('quarter',v);});
+        return params.toString();
+    }
+
+    function loadAll(){
+        var qs=buildParams();
+        fetch('/attendance/insights'+(qs?'?'+qs:'')).then(function(r){return r.json();}).then(function(d){
+            if(d&&d.kpis){
+                $('#kpiTotalStaff').text((d.kpis.total_staff||0).toLocaleString());
+                $('#kpiTotalDays').text((d.kpis.total_days||0).toLocaleString());
+                $('#kpiTotalSessions').text((d.kpis.total_sessions||0).toLocaleString());
+                $('#kpiAvgSessions').text(d.kpis.avg_per_day||0);
+            }
+            renderMonthly(d.monthly||[]);
+            renderRegion(d.region_data||[]);
+            renderArea(d.area_data||[]);
+            renderTopStaff(d.top_ignators||[]);
+            renderProductivity(d.staff_productivity||[]);
+            renderRegionCompare(d.region_data||[]);
+            loadStaffTable(d.top_ignators||[]);
+        }).catch(function(e){console.error('[Attendance] error',e);});
+    }
+
+    function renderMonthly(rows){
+        if(charts.monthly)charts.monthly.destroy();
+        if(!rows.length)return;
+        var ctx=document.getElementById('chartMonthly').getContext('2d');
+        var grad1=ctx.createLinearGradient(0,0,0,320);grad1.addColorStop(0,'rgba(59,130,246,0.2)');grad1.addColorStop(1,'rgba(59,130,246,0.01)');
+        charts.monthly=new Chart(ctx,{type:'line',
+            data:{labels:rows.map(function(r){return r.label;}),datasets:[
+                {label:'Sessions',data:rows.map(function(r){return r.sessions;}),borderColor:'#3b82f6',backgroundColor:grad1,fill:true,tension:0.4,pointBackgroundColor:'#3b82f6',pointBorderColor:'#fff',pointBorderWidth:2,pointRadius:5,pointHoverRadius:8,borderWidth:3},
+                {label:'Staff',data:rows.map(function(r){return r.staff;}),borderColor:'#10b981',backgroundColor:'transparent',borderDash:[6,4],tension:0.4,pointRadius:0,borderWidth:2,yAxisID:'y1'}
+            ]},
+            options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},
+                plugins:{legend:{display:true,position:'bottom',labels:{color:'#475569',usePointStyle:true,pointStyle:'circle',padding:20}},datalabels:{display:false},
+                    tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8}},
+                scales:{x:{grid:{display:false},ticks:{color:'#334155',font:{size:11,weight:600},maxRotation:45}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#334155',font:{size:11}}},
+                    y1:{position:'right',beginAtZero:true,grid:{display:false},ticks:{color:'#10b981',font:{size:11}},title:{display:true,text:'Staff',font:{size:10},color:'#10b981'}}}}});
+    }
+
+    function renderRegion(rows){
+        if(charts.region)charts.region.destroy();
+        if(!rows.length)return;
+        var ctx=document.getElementById('chartRegion').getContext('2d');
+        charts.region=new Chart(ctx,{type:'bar',
+            data:{labels:rows.map(function(r){return r.name||'Unknown';}),datasets:[{label:'Sessions',data:rows.map(function(r){return r.sessions;}),backgroundColor:rows.map(function(_,i){return PALETTE[i%PALETTE.length];}),borderRadius:6,barThickness:20}]},
+            options:{indexAxis:'y',maintainAspectRatio:false,
+                plugins:{legend:{display:false},datalabels:{display:true,anchor:'end',align:'start',color:'#fff',font:{weight:'bold',size:11},formatter:function(v){return v.toLocaleString();},offset:4},
+                    tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8}},
+                scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{color:'#334155',font:{size:11,weight:'600'}}}}}});
+    }
+
+    function renderArea(rows){
+        if(charts.area)charts.area.destroy();
+        if(!rows.length)return;
+        var ctx=document.getElementById('chartArea').getContext('2d');
+        charts.area=new Chart(ctx,{type:'bar',
+            data:{labels:rows.map(function(r){return r.name||'Unknown';}),datasets:[
+                {label:'Sessions',data:rows.map(function(r){return r.sessions;}),backgroundColor:'rgba(99,102,241,0.85)',borderRadius:4,barPercentage:0.6},
+                {label:'Schools',data:rows.map(function(r){return r.schools;}),backgroundColor:'rgba(16,185,129,0.85)',borderRadius:4,barPercentage:0.6}
+            ]},
+            options:{responsive:true,maintainAspectRatio:false,
+                plugins:{legend:{display:true,position:'bottom',labels:{color:'#475569',usePointStyle:true,pointStyle:'circle',padding:20}},datalabels:{display:false},
+                    tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8}},
+                scales:{x:{grid:{display:false},ticks:{color:'#334155',font:{size:10},maxRotation:45}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#334155',font:{size:11}}}}}});
+    }
+
+    function renderTopStaff(rows){
+        if(charts.topStaff)charts.topStaff.destroy();
+        var top10=rows.slice(0,10);
+        if(!top10.length)return;
+        var ctx=document.getElementById('chartTopStaff').getContext('2d');
+        charts.topStaff=new Chart(ctx,{type:'bar',
+            data:{labels:top10.map(function(r){return r.name;}),datasets:[{label:'Sessions',data:top10.map(function(r){return r.sessions;}),backgroundColor:top10.map(function(_,i){return PALETTE[i%PALETTE.length];}),borderRadius:6,barThickness:18}]},
+            options:{indexAxis:'y',maintainAspectRatio:false,
+                plugins:{legend:{display:false},datalabels:{display:true,anchor:'end',align:'start',color:'#fff',font:{weight:'bold',size:11},formatter:function(v){return v.toLocaleString();},offset:4},
+                    tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8}},
+                scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{color:'#334155',font:{size:10}}}}}});
+    }
+
+    function renderProductivity(rows){
+        if(charts.productivity)charts.productivity.destroy();
+        if(!rows.length)return;
+        var ctx=document.getElementById('chartProductivity').getContext('2d');
+        charts.productivity=new Chart(ctx,{type:'scatter',
+            data:{datasets:[{label:'Staff',data:rows.map(function(r){return{x:r.days_present,y:r.sessions,r:Math.max(4,Math.min(16,r.avg_per_day*2||4));};}),backgroundColor:'rgba(99,102,241,0.5)',borderColor:'#6366f1',borderWidth:1}]},
+            options:{responsive:true,maintainAspectRatio:false,
+                plugins:{legend:{display:false},
+                    tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8,callbacks:{label:function(ctx){var r=rows[ctx.dataIndex];return r.name+': '+r.days_present+' days, '+r.sessions+' sessions';}}}},
+                scales:{x:{title:{display:true,text:'Days Present',font:{size:11}},grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},
+                    y:{title:{display:true,text:'Sessions',font:{size:11}},grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}}}}});
+    }
+
+    function renderRegionCompare(rows){
+        if(charts.regionCompare)charts.regionCompare.destroy();
+        if(!rows.length)return;
+        var ctx=document.getElementById('chartRegionCompare').getContext('2d');
+        charts.regionCompare=new Chart(ctx,{type:'bar',
+            data:{labels:rows.map(function(r){return r.name||'Unknown';}),datasets:[
+                {label:'Staff',data:rows.map(function(r){return r.staff;}),backgroundColor:'rgba(245,158,11,0.85)',borderRadius:4,barPercentage:0.6},
+                {label:'Sessions',data:rows.map(function(r){return r.sessions;}),backgroundColor:'rgba(59,130,246,0.85)',borderRadius:4,barPercentage:0.6}
+            ]},
+            options:{responsive:true,maintainAspectRatio:false,
+                plugins:{legend:{display:true,position:'bottom',labels:{color:'#475569',usePointStyle:true,pointStyle:'circle',padding:20}},datalabels:{display:false},
+                    tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8}},
+                scales:{x:{grid:{display:false},ticks:{color:'#334155',font:{size:10},maxRotation:45}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#334155',font:{size:11}}}}}});
+    }
+
+    function loadAttendanceTable(){
+        if(attendanceDt){attendanceDt.destroy();attendanceDt=null;}
+        attendanceDt=PramanaDashboard.initDataTable('#attendanceTable',{ajaxUrl:'/attendance/data',getFilters:collectFilters,
+            columns:[
+                {data:'instructor_name',render:function(d){return '<span class="font-weight-600">'+d+'</span>';}},
+                {data:'region',render:function(d){return '<small class="text-muted"><i class="fas fa-globe mr-1"></i> '+d+'</small>';}},
+                {data:'area'},
+                {data:'days_present',className:'text-center',render:function(d){return '<span class="badge badge-success px-2 py-1">'+d+'</span>';}},
+                {data:'total_sessions',className:'text-center font-weight-bold'}
+            ]});
+    }
+
+    function loadStaffTable(rows){
+        if(staffDt){staffDt.destroy();staffDt=null;}
+        var tbody=$('#staffTable tbody').empty();
+        (rows||[]).forEach(function(r){
+            tbody.append('<tr><td class="font-weight-600">'+r.name+'</td>'
+                +'<td class="text-center">'+(r.sessions||0).toLocaleString()+'</td>'
+                +'<td class="text-center">'+(r.days_present||0).toLocaleString()+'</td>'
+                +'<td class="text-center">'+(r.schools||0).toLocaleString()+'</td>'
+                +'<td class="text-center">'+(r.avg_per_day||0)+'</td></tr>');
+        });
+        staffDt=PramanaDashboard.initDataTable('#staffTable',{paging:true,searching:true,pageLength:15,order:[[1,'desc']]});
+    }
+
+    window.setDrilldown=function(region){
+        drilldownRegion=region;
+        destroyCharts();
+        loadAll();
+        loadAttendanceTable();
+    };
+    window.clearDrilldown=function(){
+        drilldownRegion=null;
+        destroyCharts();
+        loadAll();
+        loadAttendanceTable();
+    };
+
+    $('a[data-toggle="tab"]').on('shown.bs.tab',function(e){
+        var id=$(e.target).attr('id');
+        if(id==='tabBtnAttendance')loadAttendanceTable();
     });
 
-    $('#exportXlsx').click(function() {
-        const query = $.param(collectFilters(), true);
-        window.exportToXLSX(`/attendance/export?${query}`, 'attendance_report.xlsx');
-    });
+    $('.select2').on('change',function(e,opts){if(opts&&opts.internal)return;updateFilterSummary();clearDrilldown();destroyCharts();loadAll();loadAttendanceTable();});
+    $('#resetFilters').click(function(){$('.select2').val(null).trigger('change');});
 
-    // Auto-load
-    setTimeout(loadData, 300);
+    setTimeout(function(){loadAll();loadAttendanceTable();},300);
 });
 </script>
 {% endblock %}

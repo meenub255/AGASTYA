@@ -21,12 +21,21 @@ def get_data(
     from backend.services.query_utils import parse_datatables_params
     dt_params = parse_datatables_params(dict(request.query_params))
     
-    # If DataTables is driving the request (start/length are present), override limit/offset
     if "length" in request.query_params:
         limit = dt_params["length"]
         offset = dt_params["start"]
         
     return attendance_service.get_attendance_data(region, area, years, month, quarter, limit, offset, dt_params)
+
+@router.get("/insights")
+def get_insights(
+    region: list[str] | None = Query(None),
+    area: list[str] | None = Query(None),
+    years: list[str] | None = Query(None),
+    month: list[str] | None = Query(None),
+    quarter: list[str] | None = Query(None),
+):
+    return attendance_service.get_attendance_insights(region, area, years, month, quarter)
 
 @router.get("/export")
 def export_data(
