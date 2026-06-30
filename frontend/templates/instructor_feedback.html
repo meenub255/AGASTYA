@@ -1,19 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>
-    .content-header { display: none !important; }
-    .card-header-premium { background: #f1f5f9; border-bottom: 1px solid #e2e8f0 !important; padding: 15px 20px; }
-    .premium-card { border-radius: 15px; border: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); overflow: hidden; }
-    .nav-tabs-custom .nav-link { border: none; color: #64748b; font-weight: 600; font-size: 0.9rem; padding: 10px 20px; border-bottom: 3px solid transparent; transition: all 0.2s; }
-    .nav-tabs-custom .nav-link.active { color: #3b82f6; border-bottom-color: #3b82f6; background: transparent; }
-    .nav-tabs-custom .nav-link:hover { color: #1e293b; }
-</style>
-
 <div class="col-md-12">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-            <h1 class="m-0 font-weight-bold" style="font-size: 1.8rem; color: #1e293b;">Ignator Feedback</h1>
+            <h1 class="m-0 font-weight-bold" style="font-size: 1.5rem; color: #1e293b; font-family: Arial, sans-serif !important;">Ignator Feedback</h1>
             <p class="text-muted small mb-0">Session performance & coverage analytics</p>
         </div>
         <div class="filter-launcher shadow-sm" id="filterLauncher" title="Open Filters">
@@ -28,12 +19,12 @@
         </div>
     </div>
 
-    <!-- KPI Cards -->
-    <div class="row mb-4" id="kpiContainer">
+    <!-- KPIs -->
+    <div class="row mb-3">
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardSessions">
                 <div class="kpi-bitcoin-header">
-                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
                         <i class="fas fa-chalkboard-teacher"></i>
                     </div>
                     <div class="kpi-bitcoin-title-box">
@@ -48,7 +39,7 @@
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardInstructors">
                 <div class="kpi-bitcoin-header">
-                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%);">
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="kpi-bitcoin-title-box">
@@ -63,7 +54,7 @@
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="kpi-card-bitcoin" id="kpiCardSchools">
                 <div class="kpi-bitcoin-header">
-                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+                    <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #001f3f 0%, #001226 100%);">
                         <i class="fas fa-school"></i>
                     </div>
                     <div class="kpi-bitcoin-title-box">
@@ -79,7 +70,7 @@
             <div class="kpi-card-bitcoin" id="kpiCardTeachers">
                 <div class="kpi-bitcoin-header">
                     <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
-                        <i class="fas fa-users"></i>
+                        <i class="fas fa-user-graduate"></i>
                     </div>
                     <div class="kpi-bitcoin-title-box">
                         <span class="kpi-bitcoin-label">Teachers Engaged</span>
@@ -92,15 +83,53 @@
         </div>
     </div>
 
-    <!-- Tabs -->
-    <ul class="nav nav-tabs-custom mb-3" id="feedbackTabs">
+    <!-- Charts Row 1 -->
+    <div class="row">
+        <div class="col-xl-8 col-lg-7 mb-3">
+            <div class="card h-100 white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header border-0 pb-1 d-flex align-items-center justify-content-between" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <div>
+                        <h3 class="card-title text-sm text-uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-chart-line mr-2" style="color:#3b82f6;"></i>Session Trend</h3>
+                        <small class="text-muted">Monthly demo & hands-on sessions</small>
+                    </div>
+                </div>
+                <div class="card-body" style="padding:16px;"><div style="height:320px;"><canvas id="chartMonthlyTrend"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-5 mb-3">
+            <div class="card h-100 white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header border-0 pb-1 d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-chart-pie mr-2" style="color:#8b5cf6;"></i>Activity Distribution</h3>
+                </div>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center" style="padding:16px;"><div style="height:320px;width:100%;"><canvas id="chartActivityDonut"></canvas></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="row">
+        <div class="col-xl-5 col-lg-5 mb-3">
+            <div class="card h-100 white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header border-0 pb-1 d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-map-marked-alt mr-2" style="color:#06b6d4;"></i>Geographic Reach</h3>
+                </div>
+                <div class="card-body" style="padding:16px;"><div style="height:320px;"><canvas id="chartRegion"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-xl-7 col-lg-7 mb-3">
+            <div class="card h-100 white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header border-0 pb-1 d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-chart-bar mr-2" style="color:#ec4899;"></i>Ignator Deep Dive</h3>
+                </div>
+                <div class="card-body" style="padding:16px;"><div style="height:320px;"><canvas id="chartIgnatorDeep"></canvas></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs for Tables -->
+    <ul class="nav nav-tabs-custom mb-3" id="feedbackTabs" style="margin-top: 8px;">
         <li class="nav-item">
-            <a class="nav-link active" data-toggle="tab" href="#tabOverview" id="tabBtnOverview">
-                <i class="fas fa-chart-line mr-1"></i> Overview
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" data-toggle="tab" href="#tabIgnatorPerf" id="tabBtnIgnatorPerf">
+            <a class="nav-link active" data-toggle="tab" href="#tabIgnatorPerf" id="tabBtnIgnatorPerf">
                 <i class="fas fa-user-tie mr-1"></i> Ignator Performance
             </a>
         </li>
@@ -112,101 +141,26 @@
     </ul>
 
     <div class="tab-content">
-        <!-- Tab 1: Overview Charts -->
-        <div class="tab-pane fade show active" id="tabOverview">
-            <div class="row mb-4">
-                <div class="col-xl-8 mb-3">
-                    <div class="card premium-card white-chart-card shadow-sm">
-                        <div class="card-header card-header-premium d-flex align-items-center">
-                            <i class="fas fa-chart-area mr-2" style="color: #3b82f6;"></i>
-                            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Session Trend</h3>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="chartMonthlyTrend" style="width:100%; max-height:280px;"></canvas>
-                        </div>
-                    </div>
+        <!-- Tab 1: Ignator Performance Table -->
+        <div class="tab-pane fade show active" id="tabIgnatorPerf">
+            <div class="card white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <i class="fas fa-table mr-2" style="color:#6366f1;"></i>
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;">Ignator Performance Breakdown</h3>
                 </div>
-                <div class="col-xl-4 mb-3">
-                    <div class="card premium-card white-chart-card shadow-sm">
-                        <div class="card-header card-header-premium d-flex align-items-center">
-                            <i class="fas fa-chart-pie mr-2" style="color: #8b5cf6;"></i>
-                            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Activity Mix</h3>
-                        </div>
-                        <div class="card-body d-flex flex-column align-items-center justify-content-center">
-                            <div style="position: relative; width: 180px; height: 180px;">
-                                <canvas id="chartActivityDonut"></canvas>
-                                <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center;">
-                                    <div style="font-size:24px; font-weight:800; color:#1e293b;" id="donutTotal">0</div>
-                                    <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Total</div>
-                                </div>
-                            </div>
-                            <div id="donutLegend" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; justify-content:center;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row mb-4">
-                <div class="col-xl-5 mb-3">
-                    <div class="card premium-card white-chart-card shadow-sm">
-                        <div class="card-header card-header-premium d-flex align-items-center">
-                            <i class="fas fa-globe mr-2" style="color: #06b6d4;"></i>
-                            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Geographic Reach</h3>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="chartRegion" style="width:100%; max-height:280px;"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-7 mb-3">
-                    <div class="card premium-card white-chart-card shadow-sm">
-                        <div class="card-header card-header-premium d-flex align-items-center">
-                            <i class="fas fa-chart-bar mr-2" style="color: #ec4899;"></i>
-                            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Ignator Deep Dive</h3>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="chartIgnatorDeep" style="width:100%; max-height:280px;"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tab 2: Ignator Performance Table -->
-        <div class="tab-pane fade" id="tabIgnatorPerf">
-            <div class="card premium-card white-chart-card shadow-sm">
-                <div class="card-header card-header-premium d-flex align-items-center">
-                    <i class="fas fa-user-tie mr-2" style="color: #3b82f6;"></i>
-                    <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Ignator Performance Breakdown</h3>
-                </div>
-                <div class="card-body p-0">
-                    <div class="dt-top-bar" style="display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;justify-content:space-between !important;align-items:center !important;width:100% !important;box-sizing:border-box !important;padding:12px 16px !important;">
-                        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                            <span>Show</span>
-                            <select id="ignatorPageSize" style="width:auto;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;">
-                                <option value="10">10</option>
-                                <option value="15" selected>15</option>
-                                <option value="25">25</option>
-                                <option value="50">50</option>
-                                <option value="-1">All</option>
-                            </select>
-                            <span>entries</span>
-                        </div>
-                        <input type="search" id="ignatorSearch" placeholder="Filter records..." style="margin-left:auto !important;flex-shrink:0;padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;">
-                    </div>
+                <div class="card-body">
                     <div class="table-responsive">
-                        <table id="ignatorTable" class="table table-hover mb-0" style="width: 100%;">
-                            <thead>
-                                <tr>
-                                    <th>Ignator</th>
-                                    <th class="text-center">Sessions</th>
-                                    <th class="text-center">Schools</th>
-                                    <th class="text-center">Demo</th>
-                                    <th class="text-center">Hands-on</th>
-                                    <th class="text-center">Avg Duration (min)</th>
-                                    <th class="text-center">Teachers</th>
-                                    <th class="text-center">Community</th>
-                                </tr>
-                            </thead>
+                        <table id="ignatorTable" class="table table-hover mb-0 high-contrast-table" style="width:100%">
+                            <thead><tr>
+                                <th>Ignator</th>
+                                <th class="text-center">Sessions</th>
+                                <th class="text-center">Schools</th>
+                                <th class="text-center">Demo</th>
+                                <th class="text-center">Hands-on</th>
+                                <th class="text-center">Avg Duration</th>
+                                <th class="text-center">Teachers</th>
+                                <th class="text-center">Community</th>
+                            </tr></thead>
                             <tbody></tbody>
                         </table>
                     </div>
@@ -214,38 +168,22 @@
             </div>
         </div>
 
-        <!-- Tab 3: School Coverage Table -->
+        <!-- Tab 2: School Coverage Table -->
         <div class="tab-pane fade" id="tabSchoolCoverage">
-            <div class="card premium-card white-chart-card shadow-sm">
-                <div class="card-header card-header-premium d-flex align-items-center">
-                    <i class="fas fa-school mr-2" style="color: #10b981;"></i>
-                    <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">School Coverage Summary</h3>
+            <div class="card white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                    <i class="fas fa-school mr-2" style="color:#10b981;"></i>
+                    <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;">School Coverage Summary</h3>
                 </div>
-                <div class="card-body p-0">
-                    <div class="dt-top-bar" style="display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;justify-content:space-between !important;align-items:center !important;width:100% !important;box-sizing:border-box !important;padding:12px 16px !important;">
-                        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                            <span>Show</span>
-                            <select id="schoolPageSize" style="width:auto;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;">
-                                <option value="10">10</option>
-                                <option value="15" selected>15</option>
-                                <option value="25">25</option>
-                                <option value="50">50</option>
-                                <option value="-1">All</option>
-                            </select>
-                            <span>entries</span>
-                        </div>
-                        <input type="search" id="schoolSearch" placeholder="Filter records..." style="margin-left:auto !important;flex-shrink:0;padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;">
-                    </div>
+                <div class="card-body">
                     <div class="table-responsive">
-                        <table id="schoolTable" class="table table-hover mb-0" style="width: 100%;">
-                            <thead>
-                                <tr>
-                                    <th>School</th>
-                                    <th class="text-center">Sessions</th>
-                                    <th class="text-center">Ignators</th>
-                                    <th class="text-center">Teachers</th>
-                                </tr>
-                            </thead>
+                        <table id="schoolTable" class="table table-hover mb-0 high-contrast-table" style="width:100%">
+                            <thead><tr>
+                                <th>School</th>
+                                <th class="text-center">Sessions</th>
+                                <th class="text-center">Ignators</th>
+                                <th class="text-center">Teachers</th>
+                            </tr></thead>
                             <tbody></tbody>
                         </table>
                     </div>
@@ -256,11 +194,11 @@
 </div>
 
 <!-- Filter Drawer -->
-<div class="filter-drawer-overlay" id="filterDrawerOverlay"></div>
-<div class="filter-drawer shadow-lg" id="filterDrawer">
+<div id="filterDrawerOverlay" class="filter-drawer-overlay"></div>
+<div id="filterDrawer" class="filter-drawer">
     <div class="fd-header">
-        <h3 class="fd-title"><i class="fas fa-sliders-h mr-2" style="color: #3b82f6;"></i>Filters</h3>
-        <button type="button" class="fd-close" id="closeDrawer"><i class="fas fa-times"></i></button>
+        <h3 class="fd-title"><i class="fas fa-filter mr-2" style="color:#3b82f6;"></i>Filters</h3>
+        <button id="closeDrawer" class="fd-close"><i class="fas fa-times"></i></button>
     </div>
     <div class="fd-body">
         <div class="fd-section">
@@ -286,272 +224,177 @@
         </div>
     </div>
     <div class="fd-footer">
-        <button class="btn btn-outline-secondary btn-block shadow-sm" id="resetFilters" style="border-radius: 10px;">
+        <button id="resetFilters" class="btn btn-outline-secondary btn-block" style="border-radius:10px;">
             <i class="fas fa-undo mr-2"></i>Reset All Filters
-        </button>
-        <button class="btn btn-success btn-block mt-2 shadow-sm" id="exportXlsx" style="border-radius: 10px; background: #10b981; border: none;">
-            <i class="fas fa-file-excel mr-2"></i>Export to Excel
         </button>
     </div>
 </div>
+
+<style>
+    .content-header { display: none !important; }
+    .nav-tabs-custom .nav-link { border: none; color: #64748b; font-weight: 600; font-size: 0.9rem; padding: 10px 20px; border-bottom: 3px solid transparent; transition: all 0.2s; }
+    .nav-tabs-custom .nav-link.active { color: #3b82f6; border-bottom-color: #3b82f6; background: transparent; }
+    .nav-tabs-custom .nav-link:hover { color: #1e293b; }
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-$(function () {
-    let activeTab = 'overview';
-    let ignatorDt = null, schoolDt = null;
-    let charts = {};
+$(function(){
+    if(typeof Chart!=='undefined'){Chart.defaults.font.family='Arial, Helvetica, sans-serif';}
+    const PALETTE=['#6366f1','#10b981','#3b82f6','#f59e0b','#ec4899','#8b5cf6','#14b8a6','#f97316','#ef4444','#06b6d4'];
+    let activeTab='ignator';
+    let charts={}, chartInstances={};
+    let ignatorDt=null, schoolDt=null;
 
-    if ($.fn.select2) {
-        $('.select2').select2({ theme: 'bootstrap4', dropdownParent: $('#filterDrawer'), width: '100%', allowClear: true, multiple: true });
-    }
+    $('#filterLauncher').click(()=>{$('#filterDrawer, #filterDrawerOverlay').addClass('open');});
+    const closeDrawer=()=>{$('#filterDrawer, #filterDrawerOverlay').removeClass('open');};
+    $('#closeDrawer').click(closeDrawer);$('#filterDrawerOverlay').click(closeDrawer);
+    if($.fn.select2){$('.select2').select2({theme:'bootstrap4',dropdownParent:$('#filterDrawer'),width:'100%',allowClear:true,multiple:true});}
 
-    $('#filterLauncher').click(() => { $('#filterDrawerOverlay, #filterDrawer').addClass('open'); });
-    $('#closeDrawer, #filterDrawerOverlay').click(() => { $('#filterDrawerOverlay, #filterDrawer').removeClass('open'); });
-
-    $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
-        const id = $(e.target).attr('id');
-        if (id === 'tabBtnOverview') activeTab = 'overview';
-        else if (id === 'tabBtnIgnatorPerf') activeTab = 'ignator';
-        else activeTab = 'school';
+    $('a[data-toggle="tab"]').on('shown.bs.tab',function(e){
+        const id=$(e.target).attr('id');
+        if(id==='tabBtnIgnatorPerf')activeTab='ignator';else activeTab='school';
         loadCurrentTab();
     });
 
-    function collectFilters() { return window.PramanaDashboard.collectFilters(); }
-
-    function updateFilterSummary() {
-        const i = $('#instructorFilter').val() || [], y = $('#yearFilter').val() || [], m = $('#monthFilter').val() || [], q = $('#quarterFilter').val() || [];
-        const total = i.length + y.length + m.length + q.length;
-        $('#activeFilterCount').text(total ? total + ' Filter' + (total > 1 ? 's' : '') + ' Applied' : 'All Data');
+    function collectFilters(){return window.PramanaDashboard.collectFilters();}
+    function updateFilterSummary(){
+        const i=$('#instructorFilter').val()||[],y=$('#yearFilter').val()||[],m=$('#monthFilter').val()||[],q=$('#quarterFilter').val()||[];
+        const total=i.length+y.length+m.length+q.length;
+        $('#activeFilterCount').text(total?total+' Filter'+(total>1?'s':'')+' Applied':'All Data');
     }
 
-    fetch('/instructor-feedback/filters')
-        .then(r => r.json())
-        .then(data => {
-            data.instructors.forEach(i => $('#instructorFilter').append(new Option(i, i)));
-            data.years.forEach(y => $('#yearFilter').append(new Option(y, y)));
-            data.months.forEach(m => $('#monthFilter').append(new Option(m.name, m.id)));
-            const currentYear = new Date().getFullYear();
-            if (!$('#yearFilter').val()?.length && data.years.some(y => String(y).startsWith(String(currentYear)))) {
-                $('#yearFilter').val([currentYear]);
-            }
-            $('.select2').trigger('change.select2', { internal: true });
-            updateFilterSummary();
-            loadCurrentTab();
-        });
-
-    function destroyCharts() {
-        Object.values(charts).forEach(c => { if (c && c.destroy) c.destroy(); });
-        charts = {};
-    }
-
-    function loadCurrentTab() {
-        if (activeTab === 'overview') loadInsights();
-        else if (activeTab === 'ignator') loadIgnatorTable();
-        else loadSchoolTable();
-    }
-
-    function loadInsights() {
-        const query = $.param(collectFilters(), true);
-        fetch('/instructor-feedback/insights?' + query)
-            .then(r => r.json())
-            .then(d => {
-                $('#kpiTotalSessions').text((d.kpis.total_sessions || 0).toLocaleString());
-                $('#kpiTotalInstructors').text((d.kpis.total_ignators || 0).toLocaleString());
-                $('#kpiTotalSchools').text((d.kpis.total_schools || 0).toLocaleString());
-                $('#kpiTotalTeachers').text((d.kpis.total_teachers || 0).toLocaleString());
-                if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
-                    window.PramanaInsights.enhanceAllKpiCards([
-                        { key: 'total_sessions', value: d.kpis.total_sessions || 0 },
-                        { key: 'total_ignators', value: d.kpis.total_ignators || 0 },
-                        { key: 'total_schools', value: d.kpis.total_schools || 0 },
-                        { key: 'total_teachers', value: d.kpis.total_teachers || 0 }
-                    ]);
-                }
-                renderMonthlyTrend(d.monthly);
-                renderDonut(d.activity_mix);
-                renderRegion(d.region_data);
-                renderIgnatorDeep(d.ignator_deep);
-            });
-    }
-
-    function renderMonthlyTrend(rows) {
-        if (charts.monthlyTrend) charts.monthlyTrend.destroy();
-        const ctx = document.getElementById('chartMonthlyTrend').getContext('2d');
-        charts.monthlyTrend = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: rows.map(r => r.label),
-                datasets: [
-                    { label: 'Demo', data: rows.map(r => r.demos), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.08)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#3b82f6', borderWidth: 2 },
-                    { label: 'Hands-on', data: rows.map(r => r.hands_on), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#f59e0b', borderWidth: 2 },
-                    { label: 'Ignators', data: rows.map(r => r.active_ignators), borderColor: '#10b981', backgroundColor: 'transparent', borderDash: [5, 5], tension: 0.4, pointRadius: 2, borderWidth: 1.5, yAxisID: 'y1' }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 15, font: { size: 11 } } } },
-                scales: {
-                    x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
-                    y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
-                    y1: { position: 'right', beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } }, title: { display: true, text: 'Ignators', font: { size: 10 } } }
-                },
-                interaction: { intersect: false, mode: 'index' }
-            }
-        });
-    }
-
-    function renderDonut(rows) {
-        if (charts.donut) charts.donut.destroy();
-        const total = rows.reduce((s, r) => s + r.count, 0);
-        $('#donutTotal').text(total.toLocaleString());
-        const colors = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#ef4444', '#84cc16'];
-        const legendHtml = rows.map((r, i) => '<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;"><div style="width:10px;height:10px;border-radius:50%;background:' + colors[i % colors.length] + '"></div>' + r.name + ' (' + r.count + ')</div>').join('');
-        $('#donutLegend').html(legendHtml);
-        const ctx = document.getElementById('chartActivityDonut').getContext('2d');
-        charts.donut = new Chart(ctx, {
-            type: 'doughnut',
-            data: { labels: rows.map(r => r.name), datasets: [{ data: rows.map(r => r.count), backgroundColor: colors.slice(0, rows.length), borderWidth: 0 }] },
-            options: { responsive: true, maintainAspectRatio: true, cutout: '68%', plugins: { legend: { display: false } } }
-        });
-    }
-
-    function renderRegion(rows) {
-        if (charts.region) charts.region.destroy();
-        const ctx = document.getElementById('chartRegion').getContext('2d');
-        charts.region = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: rows.map(r => r.name || 'Unknown'),
-                datasets: [{ label: 'Sessions', data: rows.map(r => r.sessions), backgroundColor: 'rgba(6,182,212,0.7)', borderRadius: 6 }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-                plugins: { legend: { display: false } },
-                scales: { x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } }
-            }
-        });
-    }
-
-    function renderIgnatorDeep(rows) {
-        if (charts.ignatorDeep) charts.ignatorDeep.destroy();
-        const top10 = rows.slice(0, 10);
-        const ctx = document.getElementById('chartIgnatorDeep').getContext('2d');
-        charts.ignatorDeep = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: top10.map(r => r.name),
-                datasets: [
-                    { label: 'Sessions', data: top10.map(r => r.sessions), backgroundColor: 'rgba(59,130,246,0.75)', borderRadius: 4, barPercentage: 0.6 },
-                    { label: 'Schools', data: top10.map(r => r.schools), backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 4, barPercentage: 0.6 },
-                    { label: 'Avg Duration', data: top10.map(r => r.avg_duration), backgroundColor: 'rgba(236,72,153,0.75)', borderRadius: 4, barPercentage: 0.6, yAxisID: 'y1' }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 12, font: { size: 10 } } } },
-                scales: {
-                    x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } },
-                    y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
-                    y1: { position: 'right', beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } }, title: { display: true, text: 'Avg Min', font: { size: 9 } } }
-                }
-            }
-        });
-    }
-
-    function loadIgnatorTable() {
-        if (ignatorDt) { ignatorDt.destroy(); ignatorDt = null; }
-        ignatorDt = PramanaDashboard.initDataTable('#ignatorTable', {
-            ajaxUrl: '/instructor-feedback/insights',
-            getFilters: collectFilters,
-            serverSide: false,
-            onDataLoad: function(data) {
-                if (data.ignator_deep && data.ignator_deep.length) {
-                    const tbody = document.querySelector('#ignatorTable tbody');
-                    tbody.innerHTML = '';
-                    data.ignator_deep.forEach(r => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = '<td class="font-weight-bold">' + (r.name || 'Unknown') + '</td>'
-                            + '<td class="text-center">' + (r.sessions || 0).toLocaleString() + '</td>'
-                            + '<td class="text-center">' + (r.schools || 0).toLocaleString() + '</td>'
-                            + '<td class="text-center">' + (r.demo || 0).toLocaleString() + '</td>'
-                            + '<td class="text-center">' + (r.hands_on || 0).toLocaleString() + '</td>'
-                            + '<td class="text-center">' + (r.avg_duration || 0).toLocaleString() + '</td>'
-                            + '<td class="text-center">' + (r.teachers || 0).toLocaleString() + '</td>'
-                            + '<td class="text-center">' + (r.community || 0).toLocaleString() + '</td>';
-                        tbody.appendChild(tr);
-                    });
-                    return { data: data.ignator_deep, recordsTotal: data.ignator_deep.length, recordsFiltered: data.ignator_deep.length };
-                }
-                return { data: [], recordsTotal: 0, recordsFiltered: 0 };
-            },
-            columns: [
-                { data: 'name' },
-                { data: 'sessions', className: 'text-center' },
-                { data: 'schools', className: 'text-center' },
-                { data: 'demo', className: 'text-center' },
-                { data: 'hands_on', className: 'text-center' },
-                { data: 'avg_duration', className: 'text-center' },
-                { data: 'teachers', className: 'text-center' },
-                { data: 'community', className: 'text-center' }
-            ]
-        });
-        $('#ignatorTable_wrapper .dataTables_length').hide();
-        $('#ignatorTable_wrapper .dataTables_filter').hide();
-        $('#ignatorSearch').off('input').on('input', function() { ignatorDt.search(this.value).draw(); });
-        $('#ignatorPageSize').off('change').on('change', function() { var v = parseInt(this.value); ignatorDt.page.len(v).draw(); });
-    }
-
-    function loadSchoolTable() {
-        if (schoolDt) { schoolDt.destroy(); schoolDt = null; }
-        schoolDt = PramanaDashboard.initDataTable('#schoolTable', {
-            ajaxUrl: '/instructor-feedback/insights',
-            getFilters: collectFilters,
-            serverSide: false,
-            onDataLoad: function(data) {
-                if (data.school_top && data.school_top.length) {
-                    const tbody = document.querySelector('#schoolTable tbody');
-                    tbody.innerHTML = '';
-                    data.school_top.forEach(r => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = '<td class="font-weight-bold">' + (r.name || 'N/A') + '</td>'
-                            + '<td class="text-center">' + (r.sessions || 0).toLocaleString() + '</td>'
-                            + '<td class="text-center">' + (r.ignators || 0).toLocaleString() + '</td>'
-                            + '<td class="text-center">' + (r.teachers || 0).toLocaleString() + '</td>';
-                        tbody.appendChild(tr);
-                    });
-                    return { data: data.school_top, recordsTotal: data.school_top.length, recordsFiltered: data.school_top.length };
-                }
-                return { data: [], recordsTotal: 0, recordsFiltered: 0 };
-            },
-            columns: [
-                { data: 'name' },
-                { data: 'sessions', className: 'text-center' },
-                { data: 'ignators', className: 'text-center' },
-                { data: 'teachers', className: 'text-center' }
-            ]
-        });
-        $('#schoolTable_wrapper .dataTables_length').hide();
-        $('#schoolTable_wrapper .dataTables_filter').hide();
-        $('#schoolSearch').off('input').on('input', function() { schoolDt.search(this.value).draw(); });
-        $('#schoolPageSize').off('change').on('change', function() { var v = parseInt(this.value); schoolDt.page.len(v).draw(); });
-    }
-
-    $('.select2').on('change', function(e, opts) {
-        if (opts && opts.internal) return;
+    fetch('/instructor-feedback/filters').then(r=>r.json()).then(data=>{
+        data.instructors.forEach(i=>$('#instructorFilter').append(new Option(i,i)));
+        data.years.forEach(y=>$('#yearFilter').append(new Option(y,y)));
+        data.months.forEach(m=>$('#monthFilter').append(new Option(m.name,m.id)));
+        const currentYear=new Date().getFullYear();
+        if(!($('#yearFilter').val()||[]).length&&data.years.some(y=>String(y).startsWith(String(currentYear)))){$('#yearFilter').val([currentYear]);}
+        $('.select2').trigger('change.select2',{internal:true});
         updateFilterSummary();
-        destroyCharts();
-        if (activeTab === 'overview') loadInsights();
-        else loadCurrentTab();
+        loadAll();
     });
 
-    $('#resetFilters').click(function() { $('.select2').val(null).trigger('change'); });
+    function destroyCharts(){Object.values(charts).forEach(c=>{if(c&&c.destroy)c.destroy();});charts={};}
 
-    $('#exportXlsx').click(function() {
-        const query = $.param(collectFilters(), true);
-        window.exportToXLSX('/instructor-feedback/export?' + query, 'instructor_feedback.xlsx');
-    });
+    function loadAll(){
+        const query=$.param(collectFilters(),true);
+        fetch('/instructor-feedback/insights?'+query).then(r=>r.json()).then(d=>{
+            animateNum('#kpiTotalSessions',d.kpis.total_sessions||0);
+            animateNum('#kpiTotalInstructors',d.kpis.total_ignators||0);
+            animateNum('#kpiTotalSchools',d.kpis.total_schools||0);
+            animateNum('#kpiTotalTeachers',d.kpis.total_teachers||0);
+            renderMonthlyTrend(d.monthly);
+            renderDonut(d.activity_mix);
+            renderRegion(d.region_data);
+            renderIgnatorDeep(d.ignator_deep);
+            loadIgnatorTable(d.ignator_deep);
+            loadSchoolTable(d.school_top);
+        });
+    }
+
+    function animateNum(el,target){
+        const $el=$(el);const start=parseFloat(($el.text()||'0').replace(/,/g,''))||0;
+        const steps=20,inc=(target-start)/steps;let step=0;
+        const t=setInterval(()=>{step++;$el.text(Math.round(start+inc*step).toLocaleString());if(step>=steps){$el.text(target.toLocaleString());clearInterval(t);}},25);
+    }
+
+    function renderMonthlyTrend(rows){
+        if(charts.monthlyTrend)charts.monthlyTrend.destroy();
+        const ctx=document.getElementById('chartMonthlyTrend').getContext('2d');
+        const gradientFill=ctx.createLinearGradient(0,0,0,320);gradientFill.addColorStop(0,'rgba(59,130,246,0.2)');gradientFill.addColorStop(1,'rgba(59,130,246,0.01)');
+        const gradientFill2=ctx.createLinearGradient(0,0,0,320);gradientFill2.addColorStop(0,'rgba(245,158,11,0.2)');gradientFill2.addColorStop(1,'rgba(245,158,11,0.01)');
+        charts.monthlyTrend=new Chart(ctx,{type:'line',
+            data:{labels:rows.map(r=>r.label),datasets:[
+                {label:'Demo',data:rows.map(r=>r.demos),borderColor:'#3b82f6',backgroundColor:gradientFill,fill:true,tension:0.4,pointBackgroundColor:'#3b82f6',pointBorderColor:'#fff',pointBorderWidth:2,pointRadius:5,pointHoverRadius:8,borderWidth:3},
+                {label:'Hands-on',data:rows.map(r=>r.hands_on),borderColor:'#f59e0b',backgroundColor:gradientFill2,fill:true,tension:0.4,pointBackgroundColor:'#f59e0b',pointBorderColor:'#fff',pointBorderWidth:2,pointRadius:5,pointHoverRadius:8,borderWidth:3},
+                {label:'Ignators',data:rows.map(r=>r.active_ignators),borderColor:'#10b981',backgroundColor:'transparent',borderDash:[6,4],tension:0.4,pointRadius:0,borderWidth:2,yAxisID:'y1'}
+            ]},
+            options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},
+                plugins:{legend:{display:true,position:'bottom',labels:{color:'#475569',usePointStyle:true,pointStyle:'circle',padding:20}},datalabels:{display:false},
+                    tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8,callbacks:{label(ctx){return'  '+ctx.dataset.label+': '+(ctx.parsed.y||0).toLocaleString();}}}},
+                scales:{x:{grid:{display:false},ticks:{color:'#334155',font:{size:11,weight:600},maxRotation:45}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#334155',font:{size:11},callback(v){return v>=1000?(v/1000).toFixed(1)+'k':v;}}},
+                    y1:{position:'right',beginAtZero:true,grid:{display:false},ticks:{color:'#10b981',font:{size:11}},title:{display:true,text:'Ignators',font:{size:10},color:'#10b981'}}}}});
+    }
+
+    function renderDonut(rows){
+        if(charts.donut)charts.donut.destroy();
+        const sorted=[...rows].sort((a,b)=>b.count-a.count);
+        const topN=6;
+        let main=sorted.slice(0,topN);
+        const otherCount=sorted.slice(topN).reduce((s,r)=>s+r.count,0);
+        if(otherCount>0)main.push({name:'Other',count:otherCount});
+        const total=rows.reduce((s,r)=>s+r.count,0);
+        const colors=['#3b82f6','#f59e0b','#10b981','#8b5cf6','#ec4899','#06b6d4','#94a3b8'];
+        const ctx=document.getElementById('chartActivityDonut').getContext('2d');
+        charts.donut=new Chart(ctx,{type:'doughnut',
+            data:{labels:main.map(r=>r.name),datasets:[{data:main.map(r=>r.count),backgroundColor:colors.slice(0,main.length),borderWidth:2,borderColor:'#fff',hoverOffset:8}]},
+            options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
+                plugins:{legend:{display:true,position:'bottom',labels:{color:'#475569',usePointStyle:true,pointStyle:'circle',padding:14,font:{size:11},generateLabels:function(chart){const d=chart.data;return d.labels.map((l,i)=>({text:l+' ('+d.datasets[0].data[i].toLocaleString()+')',fillStyle:colors[i],strokeStyle:colors[i],lineWidth:0,pointStyle:'circle',hidden:false,index:i}));}}},
+                    tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8,callbacks:{label(ctx){const pct=((ctx.parsed/total)*100).toFixed(1);return' '+ctx.label+': '+ctx.parsed.toLocaleString()+' ('+pct+'%)';}}},
+                    datalabels:{display:false}}}});
+    }
+
+    function renderRegion(rows){
+        if(charts.region)charts.region.destroy();
+        const ctx=document.getElementById('chartRegion').getContext('2d');
+        const regions=rows.filter(r=>r.name&&r.name!=='Unknown');
+        charts.region=new Chart(ctx,{type:'bar',
+            data:{labels:regions.map(r=>r.name),datasets:[{label:'Sessions',data:regions.map(r=>r.sessions),backgroundColor:regions.map((_,i)=>PALETTE[i%PALETTE.length]),borderRadius:6,barThickness:20}]},
+            options:{indexAxis:'y',maintainAspectRatio:false,
+                plugins:{legend:{display:false},datalabels:{display:true,anchor:'end',align:'start',color:'#fff',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString(),offset:4},
+                    tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8,callbacks:{label(ctx){return' Sessions: '+ctx.raw.toLocaleString();}}}},
+                scales:{x:{display:false,grid:{display:false}},y:{grid:{display:false},ticks:{color:'#334155',font:{size:11,weight:'600'}}}}}});
+    }
+
+    function renderIgnatorDeep(rows){
+        if(charts.ignatorDeep)charts.ignatorDeep.destroy();
+        const top10=rows.slice(0,10);
+        const ctx=document.getElementById('chartIgnatorDeep').getContext('2d');
+        charts.ignatorDeep=new Chart(ctx,{type:'bar',
+            data:{labels:top10.map(r=>r.name),datasets:[
+                {label:'Sessions',data:top10.map(r=>r.sessions),backgroundColor:'rgba(99,102,241,0.85)',borderRadius:4,barPercentage:0.7},
+                {label:'Schools',data:top10.map(r=>r.schools),backgroundColor:'rgba(16,185,129,0.85)',borderRadius:4,barPercentage:0.7}
+            ]},
+            options:{responsive:true,maintainAspectRatio:false,
+                plugins:{legend:{display:true,position:'bottom',labels:{color:'#475569',usePointStyle:true,pointStyle:'circle',padding:20}},datalabels:{display:false},
+                    tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8}}},
+                scales:{x:{grid:{display:false},ticks:{color:'#334155',font:{size:10},maxRotation:45}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#334155',font:{size:11}}}}}});
+    }
+
+    function loadIgnatorTable(rows){
+        if(ignatorDt){ignatorDt.destroy();ignatorDt=null;}
+        const tbody=$('#ignatorTable tbody').empty();
+        (rows||[]).forEach(r=>{
+            tbody.append('<tr><td class="font-weight-600">'+(r.name||'Unknown')+'</td>'
+                +'<td class="text-center">'+(r.sessions||0).toLocaleString()+'</td>'
+                +'<td class="text-center">'+(r.schools||0).toLocaleString()+'</td>'
+                +'<td class="text-center">'+(r.demo||0).toLocaleString()+'</td>'
+                +'<td class="text-center">'+(r.hands_on||0).toLocaleString()+'</td>'
+                +'<td class="text-center">'+(r.avg_duration||0)+' min</td>'
+                +'<td class="text-center">'+(r.teachers||0).toLocaleString()+'</td>'
+                +'<td class="text-center">'+(r.community||0).toLocaleString()+'</td></tr>');
+        });
+        ignatorDt=PramanaDashboard.initDataTable('#ignatorTable',{paging:true,searching:true,pageLength:15,order:[[2,'desc']]});
+    }
+
+    function loadSchoolTable(rows){
+        if(schoolDt){schoolDt.destroy();schoolDt=null;}
+        const tbody=$('#schoolTable tbody').empty();
+        (rows||[]).forEach(r=>{
+            tbody.append('<tr><td class="font-weight-600">'+(r.name||'N/A')+'</td>'
+                +'<td class="text-center">'+(r.sessions||0).toLocaleString()+'</td>'
+                +'<td class="text-center">'+(r.ignators||0).toLocaleString()+'</td>'
+                +'<td class="text-center">'+(r.teachers||0).toLocaleString()+'</td></tr>');
+        });
+        schoolDt=PramanaDashboard.initDataTable('#schoolTable',{paging:true,searching:true,pageLength:15,order:[[1,'desc']]});
+    }
+
+    function loadCurrentTab(){/* tables already loaded via loadAll */}
+
+    $('.select2').on('change',function(e,opts){if(opts&&opts.internal)return;updateFilterSummary();destroyCharts();loadAll();});
+    $('#resetFilters').click(function(){$('.select2').val(null).trigger('change');});
 });
 </script>
 {% endblock %}
