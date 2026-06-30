@@ -1389,28 +1389,27 @@
             };
 
             // Global: Push all DataTables filters to extreme right
-            $(document).on('draw.dt', 'table.dataTable', function() {
-                var wrapper = this.parentNode;
-                while (wrapper && !wrapper.classList.contains('dataTables_wrapper')) wrapper = wrapper.parentNode;
-                if (wrapper) {
-                    var row = wrapper.querySelector('.row');
-                    if (row) {
-                        row.style.display = 'flex';
-                        row.style.justifyContent = 'space-between';
-                        row.style.alignItems = 'center';
-                        var ch = row.children;
-                        if (ch.length >= 2) {
-                            ch[0].style.flex = '0 0 auto';
-                            ch[0].style.width = 'auto';
-                            ch[0].style.maxWidth = 'none';
-                            ch[ch.length-1].style.flex = '1 1 0';
-                            ch[ch.length-1].style.width = '100%';
-                            ch[ch.length-1].style.maxWidth = 'none';
-                            ch[ch.length-1].style.textAlign = 'right';
-                        }
+            function _fixDtFilterFlex() {
+                document.querySelectorAll('.dataTables_wrapper .row').forEach(function(row) {
+                    if (row.children.length >= 2 && !row.dataset.flexFixed) {
+                        row.dataset.flexFixed = '1';
+                        row.style.setProperty('display', 'flex', 'important');
+                        row.style.setProperty('justify-content', 'space-between', 'important');
+                        row.style.setProperty('align-items', 'center', 'important');
+                        var first = row.children[0];
+                        var last = row.children[row.children.length - 1];
+                        first.style.setProperty('flex', '0 0 auto', 'important');
+                        first.style.setProperty('width', 'auto', 'important');
+                        first.style.setProperty('max-width', 'none', 'important');
+                        last.style.setProperty('flex', '1 1 0%', 'important');
+                        last.style.setProperty('width', 'auto', 'important');
+                        last.style.setProperty('max-width', 'none', 'important');
+                        last.style.setProperty('text-align', 'right', 'important');
                     }
-                }
-            });
+                });
+            }
+            $(document).on('draw.dt', function() { _fixDtFilterFlex(); });
+            $(document).ready(function() { setTimeout(_fixDtFilterFlex, 500); });
 
             // Setup Custom Sort Dropdown Interactions (Run Once)
             if (!window._pramanaCustomSortInitialized) {
