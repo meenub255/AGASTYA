@@ -360,6 +360,34 @@
         transform: scale(1.03); box-shadow: 0 4px 12px rgba(127, 29, 29, 0.3) !important;
     }
     .content-header { display: none !important; }
+    body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_length,
+    body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_filter,
+    body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_info,
+    body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_paginate {
+        color: #111827 !important;
+    }
+    body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_length label,
+    body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_filter label {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        margin-bottom: 0 !important;
+    }
+    body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_length select {
+        background: #fff !important;
+        color: #111827 !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+        padding: 4px 8px !important;
+        width: auto !important;
+    }
+    body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_filter input {
+        background: #fff !important;
+        color: #111827 !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+        padding: 6px 12px !important;
+    }
     .select2-container--open { z-index: 9999 !important; }
     .insight-modal-header {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
@@ -592,7 +620,7 @@ $(function(){
             (data.table||[]).forEach(r=>{
                 tb.append(`<tr><td class="font-weight-600">${r.name}</td><td>${r.region}</td><td class="text-right">${Number(r.sessions||0).toLocaleString()}</td><td class="text-right">${Number(r.students||0).toLocaleString()}</td><td class="text-right">${Number(r.schools||0).toLocaleString()}</td></tr>`);
             });
-            dt=PramanaDashboard.initDataTable('#overviewTable',{paging:true,searching:true,pageLength:10,order:[[2,'desc']]});
+            dt=PramanaDashboard.initDataTable('#overviewTable',{paging:true,searching:true,pageLength:15,order:[[2,'desc']]});
         });
     }
 

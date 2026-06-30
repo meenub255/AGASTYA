@@ -356,6 +356,115 @@
 
     <!-- ═══ TAB: State Summary ═══ -->
     <div class="tab-pane" id="tab-state">
+        <!-- State KPI Cards -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="kpi-card-bitcoin" id="stateKpiCardExposures">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Total Exposures</span>
+                            <span class="kpi-bitcoin-sublabel">Across all states</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="stateKpiExposures">0</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="kpi-card-bitcoin" id="stateKpiCardSessions">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                            <i class="fas fa-chalkboard"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Total Sessions</span>
+                            <span class="kpi-bitcoin-sublabel">Conducted nationwide</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="stateKpiSessions">0</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="kpi-card-bitcoin" id="stateKpiCardIgnators">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Total Ignators</span>
+                            <span class="kpi-bitcoin-sublabel">Active educators</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="stateKpiIgnators">0</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="kpi-card-bitcoin" id="stateKpiCardPrograms">
+                    <div class="kpi-bitcoin-header">
+                        <div class="kpi-bitcoin-icon-wrapper" style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div class="kpi-bitcoin-title-box">
+                            <span class="kpi-bitcoin-label">Total Programs</span>
+                            <span class="kpi-bitcoin-sublabel">Unique programs run</span>
+                        </div>
+                    </div>
+                    <div class="kpi-bitcoin-value" id="stateKpiPrograms">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- State Charts Row 1: Top States Bar + Exposure Donut -->
+        <div class="row mb-3">
+            <div class="col-xl-6 col-lg-6 mb-3">
+                <div class="card h-100 premium-card white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                    <div class="card-header card-header-premium border-0 pb-0 d-flex align-items-center justify-content-between">
+                        <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-chart-bar mr-2" style="color:#3b82f6;"></i>Top States by Exposures</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:300px;"><canvas id="stateTopStatesBar"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-6 col-lg-6 mb-3">
+                <div class="card h-100 premium-card white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                    <div class="card-header card-header-premium border-0 pb-0 d-flex align-items-center justify-content-between">
+                        <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-chart-pie mr-2" style="color:#8b5cf6;"></i>Exposure Share by State</h3>
+                    </div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <div style="height:300px;width:100%;"><canvas id="stateExposureDonut"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- State Charts Row 2: Efficiency Metrics + Scatter -->
+        <div class="row mb-3">
+            <div class="col-xl-6 col-lg-6 mb-3">
+                <div class="card h-100 premium-card white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                    <div class="card-header card-header-premium border-0 pb-0 d-flex align-items-center justify-content-between">
+                        <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-balance-scale mr-2" style="color:#10b981;"></i>Efficiency Metrics by State</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:300px;"><canvas id="stateEfficiencyChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-6 col-lg-6 mb-3">
+                <div class="card h-100 premium-card white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
+                    <div class="card-header card-header-premium border-0 pb-0 d-flex align-items-center justify-content-between">
+                        <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;"><i class="fas fa-project-diagram mr-2" style="color:#f59e0b;"></i>Working Days vs Exposures</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:300px;"><canvas id="stateScatterChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- State Summary Table -->
         <div class="card premium-card white-chart-card shadow-sm mb-3">
             <div class="card-header card-header-premium d-flex align-items-center">
                 <i class="fas fa-flag mr-2" style="color: #f59e0b;"></i>
@@ -1062,6 +1171,8 @@ $(function () {
     let stateCurrentPage = 1;
     let statePageSize = 15;
     let stateSearchText = '';
+    let stateChartInstances = {};
+    function destroyStateChart(id){ if(stateChartInstances[id]){stateChartInstances[id].destroy();delete stateChartInstances[id];} }
 
     function loadStateSummary() {
         const q = $.param(collectFilters(), true);
@@ -1074,7 +1185,128 @@ $(function () {
                 stateSearchText = '';
                 $('#stateSearchInput').val('');
                 renderStatePage();
+                renderStateKPIs(stateFullData);
+                renderStateTopBar(stateFullData);
+                renderStateDonut(stateFullData);
+                renderStateEfficiency(stateFullData);
+                renderStateScatter(stateFullData);
             });
+    }
+
+    function renderStateKPIs(data) {
+        let tot = { exposures: 0, sessions: 0, ign: 0, pgm: 0 };
+        data.forEach(r => { tot.exposures += r.total_exposures || 0; tot.sessions += r.no_of_session || 0; tot.ign += r.no_of_ign || 0; tot.pgm += r.no_of_pgm || 0; });
+        $('#stateKpiExposures').text(tot.exposures.toLocaleString());
+        $('#stateKpiSessions').text(tot.sessions.toLocaleString());
+        $('#stateKpiIgnators').text(tot.ign.toLocaleString());
+        $('#stateKpiPrograms').text(tot.pgm.toLocaleString());
+    }
+
+    function renderStateTopBar(data) {
+        const id = 'stateTopStatesBar';
+        destroyStateChart(id);
+        const el = document.getElementById(id); if (!el) return;
+        const sorted = data.slice().sort((a, b) => (b.total_exposures || 0) - (a.total_exposures || 0)).slice(0, 10);
+        const labels = sorted.map(r => r.state);
+        const values = sorted.map(r => r.total_exposures || 0);
+        stateChartInstances[id] = new Chart(el.getContext('2d'), {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Total Exposures', data: values, backgroundColor: BAR_PALETTE.slice(0, labels.length), borderRadius: 6, barThickness: 22 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                plugins: { legend: { display: false }, datalabels: { display: true, anchor: 'end', align: 'end', color: '#334155', font: { weight: 'bold', size: 11 }, formatter: v => v.toLocaleString() }, tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', padding: 12, cornerRadius: 8 } },
+                scales: { x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#64748b', callback: v => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v } }, y: { grid: { display: false }, ticks: { color: '#334155', font: { weight: '600' } } } }
+            }
+        });
+    }
+
+    function renderStateDonut(data) {
+        const id = 'stateExposureDonut';
+        destroyStateChart(id);
+        const el = document.getElementById(id); if (!el) return;
+        const sorted = data.slice().sort((a, b) => (b.total_exposures || 0) - (a.total_exposures || 0));
+        const topN = sorted.slice(0, 7);
+        const otherVal = sorted.slice(7).reduce((s, r) => s + (r.total_exposures || 0), 0);
+        const labels = topN.map(r => r.state);
+        const values = topN.map(r => r.total_exposures || 0);
+        const total = values.reduce((a, b) => a + b, 0) + otherVal;
+        if (otherVal > 0) { labels.push('Others'); values.push(otherVal); }
+        const colors = PIE_PALETTE.slice(0, labels.length);
+        stateChartInstances[id] = new Chart(el.getContext('2d'), {
+            type: 'doughnut',
+            data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '55%',
+                plugins: {
+                    legend: { display: true, position: 'right', labels: { boxWidth: 12, padding: 10, usePointStyle: true, pointStyle: 'circle', color: '#475569', font: { size: 11 } } },
+                    datalabels: { display: function(ctx) { return (ctx.dataset.data[ctx.dataIndex] / total) >= 0.04; }, color: '#fff', font: { weight: 'bold', size: 11 }, formatter: v => v.toLocaleString() },
+                    tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', padding: 12, cornerRadius: 8, callbacks: { label: function(ctx) { const pct = ((ctx.parsed / total) * 100).toFixed(1); return ctx.label + ': ' + ctx.parsed.toLocaleString() + ' (' + pct + '%)'; } } }
+                }
+            }
+        });
+    }
+
+    function renderStateEfficiency(data) {
+        const id = 'stateEfficiencyChart';
+        destroyStateChart(id);
+        const el = document.getElementById(id); if (!el) return;
+        const sorted = data.slice().sort((a, b) => (b.total_exposures || 0) - (a.total_exposures || 0)).slice(0, 10);
+        const labels = sorted.map(r => r.state.length > 12 ? r.state.substring(0, 12) + '...' : r.state);
+        const expIgn = sorted.map(r => r.expo_ign || 0);
+        const expSess = sorted.map(r => r.expo_session || 0);
+        const expPgm = sorted.map(r => r.exp_pgm || 0);
+        stateChartInstances[id] = new Chart(el.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Expo / Ignator', data: expIgn, backgroundColor: '#3b82f6', borderRadius: 4 },
+                    { label: 'Expo / Session', data: expSess, backgroundColor: '#10b981', borderRadius: 4 },
+                    { label: 'Exp / Program', data: expPgm, backgroundColor: '#f59e0b', borderRadius: 4 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 12, padding: 12, usePointStyle: true, pointStyle: 'circle', color: '#475569', font: { size: 11 } } }, datalabels: { display: false }, tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', padding: 12, cornerRadius: 8 } },
+                scales: { x: { grid: { display: false }, ticks: { color: '#334155', font: { size: 10 }, maxRotation: 45 } }, y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#64748b', callback: v => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v } } }
+            }
+        });
+    }
+
+    function renderStateScatter(data) {
+        const id = 'stateScatterChart';
+        destroyStateChart(id);
+        const el = document.getElementById(id); if (!el) return;
+        const points = data.map(r => ({ x: r.wd || 0, y: r.total_exposures || 0, label: r.state }));
+        stateChartInstances[id] = new Chart(el.getContext('2d'), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'States',
+                    data: points,
+                    backgroundColor: points.map((_, i) => BAR_PALETTE[i % BAR_PALETTE.length]),
+                    pointRadius: 8,
+                    pointHoverRadius: 11,
+                    pointBorderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    datalabels: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15,23,42,0.9)', padding: 12, cornerRadius: 8,
+                        callbacks: { label: function(ctx) { const p = ctx.raw; return p.label + ': ' + p.x + ' days, ' + p.y.toLocaleString() + ' exposures'; } }
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Working Days', color: '#64748b', font: { size: 12, weight: '600' } }, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#64748b' } },
+                    y: { title: { display: true, text: 'Total Exposures', color: '#64748b', font: { size: 12, weight: '600' } }, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#64748b', callback: v => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v } }
+                }
+            }
+        });
     }
 
     function renderStatePage() {

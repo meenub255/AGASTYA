@@ -1,7 +1,108 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>.content-header { display: none !important; }</style>
+<style>
+.content-header { display: none !important; }
+
+/* ── Map Popup ── */
+.nw-map-popup .leaflet-popup-content-wrapper { border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.2); border: none; }
+.nw-map-popup .leaflet-popup-content { margin: 0; min-width: 280px; font-family: 'Inter', Arial, sans-serif; }
+.nw-map-popup .leaflet-popup-tip { box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
+
+/* ── Region Tooltip ── */
+.nw-region-label {
+    background: rgba(255,255,255,0.92) !important;
+    border: none !important;
+    border-radius: 20px !important;
+    padding: 3px 10px !important;
+    font-family: 'Inter', Arial, sans-serif !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12) !important;
+    white-space: nowrap !important;
+}
+.nw-region-label::before { display: none !important; }
+
+/* ── Pulse Animation ── */
+@keyframes mapPulse {
+    0% { box-shadow: 0 0 0 0 rgba(59,130,246,0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(59,130,246,0); }
+    100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+}
+@keyframes mapGlow {
+    0%, 100% { filter: drop-shadow(0 0 4px rgba(52,211,153,0.4)); }
+    50% { filter: drop-shadow(0 0 10px rgba(52,211,153,0.7)); }
+}
+.leaflet-interactive.nw-bubble-pulse {
+    animation: mapPulse 2s infinite;
+}
+.leaflet-interactive.nw-bubble-glow {
+    animation: mapGlow 2.5s ease-in-out infinite;
+}
+
+/* ── Stats Overlay ── */
+.nw-stats-overlay {
+    position: absolute; top: 12px; left: 12px; z-index: 1000;
+    background: linear-gradient(135deg, rgba(15,23,42,0.88), rgba(30,41,59,0.92));
+    backdrop-filter: blur(12px);
+    border-radius: 14px; padding: 16px 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    font-family: 'Inter', Arial, sans-serif;
+    color: #fff; min-width: 240px;
+}
+.nw-stats-overlay .stat-row {
+    display: flex; align-items: center; gap: 10px; padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.nw-stats-overlay .stat-row:last-child { border-bottom: none; }
+.nw-stats-overlay .stat-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+}
+.nw-stats-overlay .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.6); }
+.nw-stats-overlay .stat-value { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+
+/* ── Metric Toggle ── */
+.nw-metric-toggle {
+    position: absolute; top: 12px; right: 12px; z-index: 1000;
+    display: flex; gap: 0;
+    background: rgba(255,255,255,0.95); border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    overflow: hidden;
+}
+.nw-metric-btn {
+    border: none; background: transparent; padding: 8px 14px;
+    font-family: 'Inter', Arial, sans-serif; font-size: 11px; font-weight: 600;
+    color: #64748b; cursor: pointer; transition: all 0.2s;
+    white-space: nowrap;
+}
+.nw-metric-btn:hover { color: #1e293b; background: #f1f5f9; }
+.nw-metric-btn.active { background: #3b82f6; color: #fff; }
+
+/* ── Gradient Legend ── */
+.nw-gradient-legend {
+    position: absolute; bottom: 12px; right: 12px; z-index: 1000;
+    background: rgba(255,255,255,0.95); border-radius: 12px;
+    padding: 14px 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    font-family: 'Inter', Arial, sans-serif;
+}
+.nw-gradient-bar {
+    width: 160px; height: 12px; border-radius: 6px;
+    background: linear-gradient(90deg, #f87171, #fbbf24, #34d399);
+    margin: 6px 0;
+}
+.nw-gradient-labels {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: #64748b; font-weight: 600;
+}
+
+/* ── Map Container ── */
+.nw-map-wrapper { position: relative; }
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <div class="col-md-12">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
@@ -240,70 +341,56 @@
                 </div>
             </div>
 
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <div class="card h-100 premium-card white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
-                        <div class="card-header card-header-premium border-0 pb-0">
-                            <h3 class="card-title text-sm uppercase">Monthly Sessions Trend</h3>
-                        </div>
-                        <div class="card-body"><div style="height:350px"><canvas id="sessionsTrendChart"></canvas></div></div>
+            <!-- Nationwide Interactive Map -->
+            <div class="card premium-card white-chart-card shadow-sm mb-3" style="border-radius:15px;overflow:hidden;">
+                <div class="card-header card-header-premium d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-map-marked-alt mr-2" style="color:#10b981;"></i>
+                        <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;">Regional Exposure Map</h3>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="card h-100 premium-card white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
-                        <div class="card-header card-header-premium border-0 pb-0">
-                            <h3 class="card-title text-sm uppercase">Exposure by Region</h3>
+                <div class="card-body p-0" style="position:relative;">
+                    <!-- Stats Overlay -->
+                    <div class="nw-stats-overlay" id="nwStatsOverlay">
+                        <div class="stat-row">
+                            <div class="stat-icon" style="background:rgba(59,130,246,0.2);"><i class="fas fa-eye" style="color:#60a5fa;"></i></div>
+                            <div><div class="stat-label">Total Exposures</div><div class="stat-value" id="nwStatExposures">-</div></div>
                         </div>
-                        <div class="card-body"><div style="height:350px"><canvas id="studentsRegionChart"></canvas></div></div>
+                        <div class="stat-row">
+                            <div class="stat-icon" style="background:rgba(34,197,94,0.2);"><i class="fas fa-chalkboard" style="color:#4ade80;"></i></div>
+                            <div><div class="stat-label">Total Sessions</div><div class="stat-value" id="nwStatSessions">-</div></div>
+                        </div>
+                        <div class="stat-row">
+                            <div class="stat-icon" style="background:rgba(168,85,247,0.2);"><i class="fas fa-map-pin" style="color:#c084fc;"></i></div>
+                            <div><div class="stat-label">Active Regions</div><div class="stat-value" id="nwStatRegions">-</div></div>
+                        </div>
+                        <div class="stat-row">
+                            <div class="stat-icon" style="background:rgba(249,115,22,0.2);"><i class="fas fa-trophy" style="color:#fb923c;"></i></div>
+                            <div><div class="stat-label">Top Region</div><div class="stat-value" id="nwStatTop" style="font-size:13px;">-</div></div>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <div class="card premium-card white-chart-card shadow-sm" style="border-radius:15px;overflow:hidden;">
-                <div class="card-header card-header-premium d-flex align-items-center">
-                    <i class="fas fa-table mr-2" style="color:#3b82f6;"></i>
-                    <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;">Regional Distribution Table</h3>
-                </div>
-                <div class="card-body p-0">
-                    <div id="nwPaginationBar">
-                        <div class="dt-top-bar" style="display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;justify-content:space-between !important;align-items:center !important;width:100% !important;box-sizing:border-box !important;">
-                            <div class="length-wrapper" style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                                <span>Show</span>
-                                <select id="nwPageSize" class="form-control form-control-sm" style="width:auto;display:inline-flex !important;">
-                                    <option value="10" selected>10</option>
-                                    <option value="15">15</option>
-                                    <option value="25">25</option>
-                                    <option value="50">50</option>
-                                    <option value="-1">All</option>
-                                </select>
-                                <span>entries</span>
-                            </div>
-                            <input type="search" id="nwSearchInput" class="dt-search-input" placeholder="Filter records..." style="margin-left:auto !important;flex-shrink:0;">
+                    <!-- Metric Toggle -->
+                    <div class="nw-metric-toggle" id="nwMetricToggle">
+                        <button class="nw-metric-btn active" data-metric="students_reached">Exposures</button>
+                        <button class="nw-metric-btn" data-metric="sessions">Sessions</button>
+                        <button class="nw-metric-btn" data-metric="schools_visited">Schools</button>
+                    </div>
+
+                    <div class="nw-map-wrapper">
+                        <div id="nationwideMap" style="height:520px;width:100%;"></div>
+                    </div>
+
+                    <!-- Gradient Legend -->
+                    <div class="nw-gradient-legend" id="nwGradientLegend">
+                        <div style="font-weight:700;color:#1e293b;font-size:12px;margin-bottom:4px;"><i class="fas fa-layer-group mr-1" style="color:#6366f1;"></i> Exposure Scale</div>
+                        <div class="nw-gradient-bar"></div>
+                        <div class="nw-gradient-labels">
+                            <span id="nwLegendMin">Low</span>
+                            <span id="nwLegendMax">High</span>
                         </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table id="nationwideTable" class="table table-hover mb-0" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>Region</th>
-                                    <th class="text-center">Sessions</th>
-                                    <th class="text-center">Schools</th>
-                                    <th class="text-center">Exposures</th>
-                                    <th class="text-center">Instructors</th>
-                                    <th class="text-center">Drivers</th>
-                                    <th class="text-center">Programs</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                            <tfoot id="nwSummaryFooter"></tfoot>
-                        </table>
-                    </div>
-                    <div class="dt-bottom-bar">
-                        <div id="nwPaginationInfo" class="pagination-info">Showing 0 to 0 of 0 entries</div>
-                        <div class="pagination-controls-wrapper">
-                            <button id="nwPrevPage" class="pagination-btn" disabled><i class="fas fa-chevron-left mr-1"></i> Previous</button>
-                            <span id="nwPageInfo" class="page-indicator">Page 1 of 1</span>
-                            <button id="nwNextPage" class="pagination-btn" disabled>Next <i class="fas fa-chevron-right ml-1"></i></button>
+                        <div style="margin-top:8px;padding-top:6px;border-top:1px solid #e2e8f0;">
+                            <div style="color:#64748b;font-size:10px;">Click a bubble to drilldown</div>
                         </div>
                     </div>
                 </div>
@@ -350,9 +437,7 @@
 if (window.ChartDataLabels) { Chart.register(ChartDataLabels); }
 $(function(){
     const PALETTE = ['#8b5cf6','#10b981','#3b82f6','#f59e0b','#ec4899','#6366f1','#14b8a6','#f97316'];
-    const PIE_PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
     let activeTab = 'overview';
-    let regionMapping = {};
     let nwDrilldownRegion = null;
 
     if($.fn.select2){ $('.select2').select2({ theme:'bootstrap4', dropdownParent:$('#filterDrawer'), width:'100%', allowClear:true, multiple:true }); }
@@ -363,6 +448,9 @@ $(function(){
     $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
         activeTab = $(e.target).attr('id') === 'tabBtnOverview' ? 'overview' : 'nationwide';
         loadCurrentTab();
+        if (activeTab === 'nationwide' && nwMapInstance) {
+            setTimeout(function() { nwMapInstance.invalidateSize(); }, 200);
+        }
     });
 
     function collectFilters() {
@@ -557,25 +645,275 @@ $(function(){
     }
     function getAcronym(str){if(!str)return'';const parts=str.split(/[ \-_]/);if(parts.length===1&&str.length>8)return str.substring(0,3).toUpperCase();let a='';parts.forEach(p=>{if(p.length>0)a+=p[0].toUpperCase();});return a.length>1?a:str.substring(0,3).toUpperCase();}
 
-    let nwSessionsChartInst, nwRegionChartInst;
-    function renderNwLineChart(canvasId, chartData) {
-        const el = document.getElementById(canvasId); if(!el) return;
-        if(nwSessionsChartInst) nwSessionsChartInst.destroy();
-        const labels=chartData.map(d=>d.label), values=chartData.map(d=>d.value), trend=computeTrendLine(values);
-        nwSessionsChartInst = new Chart(el.getContext('2d'),{type:'line',data:{labels,datasets:[{label:'Sessions',data:values,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.12)',pointBackgroundColor:'#3b82f6',pointRadius:3,tension:0.35,fill:true,borderWidth:2},{label:'Trend',data:trend,borderColor:'#ef4444',borderDash:[6,3],borderWidth:2,pointRadius:0,fill:false,tension:0}]},
-            options:{maintainAspectRatio:false,layout:{padding:{top:30}},plugins:{legend:{display:true,position:'bottom',labels:{color:'#64748b',usePointStyle:true,boxWidth:8,padding:12,font:{size:10}}},datalabels:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#f1f5f9'},ticks:{color:'#64748b',font:{size:10}}},x:{grid:{display:false},ticks:{color:'#64748b',font:{size:10},maxRotation:45}}}}});
+    // ── Region → Coordinates Mapping for India Map ──
+    const REGION_COORDS = {
+        'SOUTH_KARNATAKA_1': { lat: 12.97, lng: 77.59, state: 'Karnataka' },
+        'SOUTH_KARNATAKA_2': { lat: 13.33, lng: 76.55, state: 'Karnataka' },
+        'NORTH_KARNATAKA_1': { lat: 15.85, lng: 75.72, state: 'Karnataka' },
+        'NORTH_KARNATAKA_2': { lat: 16.83, lng: 75.90, state: 'Karnataka' },
+        'Kuppam':            { lat: 12.75, lng: 78.34, state: 'Karnataka' },
+        'MAHARASHTRA_1':     { lat: 19.08, lng: 73.05, state: 'Maharashtra' },
+        'MAHARASHTRA_2':     { lat: 20.90, lng: 77.75, state: 'Maharashtra' },
+        'AP_AND_TELANGANA':  { lat: 17.12, lng: 79.20, state: 'Telangana' },
+        'GUJARAT':           { lat: 22.30, lng: 70.80, state: 'Gujarat' },
+        'NORTH_1':           { lat: 27.50, lng: 79.50, state: 'Uttar Pradesh' },
+        'NORTH_2':           { lat: 26.45, lng: 80.35, state: 'Uttar Pradesh' },
+        'TAMIL NADU':        { lat: 11.13, lng: 78.65, state: 'Tamil Nadu' },
+        'TAMIL_NADU':        { lat: 11.13, lng: 78.65, state: 'Tamil Nadu' },
+        'BTR':               { lat: 26.45, lng: 90.80, state: 'Assam' },
+    };
+    const DEFAULT_COORDS = { lat: 20.59, lng: 78.96 };
+
+    function getRegionCoords(regionName) {
+        if (REGION_COORDS[regionName]) return REGION_COORDS[regionName];
+        const upper = (regionName || '').toUpperCase().replace(/ /g, '_');
+        for (const [key, val] of Object.entries(REGION_COORDS)) {
+            if (upper.includes(key) || key.includes(upper)) return val;
+        }
+        if (upper.includes('KARNATAKA')) return REGION_COORDS['SOUTH_KARNATAKA_1'];
+        if (upper.includes('MAHARASHTRA')) return REGION_COORDS['MAHARASHTRA_1'];
+        if (upper.includes('GUJARAT')) return REGION_COORDS['GUJARAT'];
+        if (upper.includes('NORTH')) return REGION_COORDS['NORTH_1'];
+        if (upper.includes('SOUTH')) return REGION_COORDS['SOUTH_KARNATAKA_1'];
+        if (upper.includes('EAST')) return { lat: 22.57, lng: 88.36, state: 'West Bengal' };
+        if (upper.includes('WEST')) return { lat: 19.08, lng: 73.05, state: 'Maharashtra' };
+        if (upper.includes('TAMIL')) return REGION_COORDS['TAMIL NADU'];
+        if (upper.includes('ASSAM') || upper.includes('BTR')) return REGION_COORDS['BTR'];
+        if (upper.includes('TELANGANA') || upper.includes('ANDHRA')) return REGION_COORDS['AP_AND_TELANGANA'];
+        return { ...DEFAULT_COORDS, state: regionName };
     }
-    function renderNwPieChart(canvasId, chartData) {
-        const el = document.getElementById(canvasId); if(!el) return;
-        if(nwRegionChartInst) nwRegionChartInst.destroy();
-        regionMapping={};
-        const aggregated={};
-        chartData.forEach(d=>{const code=getAcronym(d.label);if(!aggregated[code])aggregated[code]={value:0,labels:[]};aggregated[code].value+=d.value;if(!aggregated[code].labels.includes(d.label))aggregated[code].labels.push(d.label);regionMapping[code]=aggregated[code].labels;});
-        const labels=Object.keys(aggregated), values=labels.map(l=>aggregated[l].value);
-        nwRegionChartInst = new Chart(el.getContext('2d'),{type:'pie',data:{labels,datasets:[{data:values,backgroundColor:PIE_PALETTE.slice(0,labels.length),borderWidth:2,borderColor:'#fff'}]},
-            plugins:[ChartDataLabels],options:{maintainAspectRatio:false,layout:{padding:25},onClick:(evt,elements)=>{if(elements.length>0){const code=labels[elements[0].index];setNwDrilldown(regionMapping[code][0]);}},
-                plugins:{legend:{display:true,position:'bottom',labels:{color:'#64748b',usePointStyle:true,boxWidth:8,padding:20,font:{size:10}}},datalabels:{display:function(ctx){const total=ctx.dataset.data.reduce((s,v)=>s+v,0);const pct=total?Math.round((ctx.parsed/total)*100):0;return pct>=2?`${ctx.parsed.toLocaleString()} (${pct}%)`:'';},anchor:'end',align:'end',offset:12,color:'#1e293b',font:{weight:'bold',size:9}},tooltip:{backgroundColor:'rgba(15,23,42,0.9)',padding:12,cornerRadius:8,callbacks:{title:function(ctx){return(regionMapping[ctx[0].label]||[]).join(', ');},label:function(ctx){const total=ctx.dataset.data.reduce((s,v)=>s+v,0);const pct=total?Math.round((ctx.parsed/total)*100):0;return` Exposure: ${ctx.parsed.toLocaleString()} (${pct}%)`;}}}}}});
+
+    let nwMapInstance = null;
+    let nwMapMarkers = null;
+    let nwMapData = [];
+    let nwCurrentMetric = 'students_reached';
+
+    const METRIC_CONFIG = {
+        students_reached: { label: 'Exposures', icon: 'fas fa-eye', color: '#3b82f6', fmt: v => v.toLocaleString() },
+        sessions: { label: 'Sessions', icon: 'fas fa-chalkboard', color: '#10b981', fmt: v => v.toLocaleString() },
+        schools_visited: { label: 'Schools', icon: 'fas fa-school', color: '#f59e0b', fmt: v => v.toLocaleString() }
+    };
+
+    function nwGetValue(r, metric) { return Number(r[metric] || 0); }
+
+    function nwGetGradientColor(value, min, max) {
+        if (max === min) return 'hsl(152, 68%, 50%)';
+        const t = Math.max(0, Math.min(1, (value - min) / (max - min)));
+        let h, s, l;
+        if (t < 0.5) {
+            const p = t / 0.5;
+            h = 0 + p * 40;
+            s = 78 + p * 17;
+            l = 66 - p * 8;
+        } else {
+            const p = (t - 0.5) / 0.5;
+            h = 40 + p * 112;
+            s = 95 - p * 27;
+            l = 58 - p * 8;
+        }
+        return `hsl(${h}, ${s}%, ${l}%)`;
     }
+
+    function nwFormatNumber(n) {
+        if (n >= 10000000) return (n / 10000000).toFixed(1) + 'Cr';
+        if (n >= 100000) return (n / 100000).toFixed(1) + 'L';
+        if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+        return n.toLocaleString();
+    }
+
+    function nwAnimateValue(el, target) {
+        const start = parseInt(el.textContent.replace(/[^0-9]/g, '')) || 0;
+        const diff = target - start;
+        const duration = 600;
+        const startTime = performance.now();
+        function step(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = nwFormatNumber(Math.round(start + diff * eased));
+            if (progress < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }
+
+    function nwUpdateStats(data) {
+        let totExp = 0, totSess = 0;
+        let topRegion = '', topVal = 0;
+        data.forEach(r => {
+            totExp += nwGetValue(r, 'students_reached');
+            totSess += nwGetValue(r, 'sessions');
+            const val = nwGetValue(r, 'students_reached');
+            if (val > topVal) { topVal = val; topRegion = r.region_name; }
+        });
+        nwAnimateValue(document.getElementById('nwStatExposures'), totExp);
+        nwAnimateValue(document.getElementById('nwStatSessions'), totSess);
+        nwAnimateValue(document.getElementById('nwStatRegions'), data.length);
+        const topEl = document.getElementById('nwStatTop');
+        topEl.textContent = (topRegion.length > 14 ? topRegion.substring(0, 14) + '...' : topRegion) + ' (' + nwFormatNumber(topVal) + ')';
+    }
+
+    function nwRenderBubbles(data) {
+        if (!nwMapInstance) return;
+        if (nwMapMarkers) { nwMapMarkers.clearLayers(); }
+
+        const metric = nwCurrentMetric;
+        const cfg = METRIC_CONFIG[metric];
+        const values = data.map(r => nwGetValue(r, metric));
+        const maxVal = Math.max(...values, 1);
+        const minVal = Math.min(...values, 0);
+        const totalExposure = data.reduce((s, r) => s + nwGetValue(r, 'students_reached'), 0);
+
+        const sorted = data.slice().sort((a, b) => nwGetValue(b, metric) - nwGetValue(a, metric));
+        const bounds = [];
+
+        // Update gradient legend
+        const legendMin = document.getElementById('nwLegendMin');
+        const legendMax = document.getElementById('nwLegendMax');
+        if (legendMin) legendMin.textContent = nwFormatNumber(minVal);
+        if (legendMax) legendMax.textContent = nwFormatNumber(maxVal);
+
+        sorted.forEach((r, i) => {
+            const regionName = r.region_name || r.region || 'Unknown';
+            const coords = getRegionCoords(regionName);
+            const val = nwGetValue(r, metric);
+            const exposure = nwGetValue(r, 'students_reached');
+            const sessions = nwGetValue(r, 'sessions');
+            const schools = nwGetValue(r, 'schools_visited');
+            const instructors = nwGetValue(r, 'instructors');
+            const programs = nwGetValue(r, 'programs');
+            const drivers = nwGetValue(r, 'drivers');
+
+            const radius = maxVal > 0 ? Math.max(10, Math.sqrt(val / maxVal) * 38) : 10;
+            const fillColor = nwGetGradientColor(val, minVal, maxVal);
+            const borderColor = nwGetGradientColor(Math.min(val * 1.15, maxVal), minVal, maxVal);
+            const pct = totalExposure > 0 ? ((exposure / totalExposure) * 100).toFixed(1) : '0.0';
+            const rank = i + 1;
+            const isTop3 = rank <= 3;
+
+            const marker = L.circleMarker([coords.lat, coords.lng], {
+                radius: radius,
+                fillColor: fillColor,
+                color: borderColor,
+                weight: isTop3 ? 3 : 2,
+                opacity: 0.95,
+                fillOpacity: isTop3 ? 0.7 : 0.55,
+                className: isTop3 ? 'nw-bubble-glow' : ''
+            });
+
+            const rankBadge = rank <= 3
+                ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:800;color:#fff;background:${rank===1?'#f59e0b':rank===2?'#94a3b8':'#cd7f32'};margin-right:6px;">${rank}</span>`
+                : `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:700;color:#64748b;background:#f1f5f9;margin-right:6px;">${rank}</span>`;
+
+            const miniBar = (label, value, max, clr) => {
+                const pctBar = max > 0 ? Math.round((value / max) * 100) : 0;
+                return `<div style="margin-top:4px;">
+                    <div style="display:flex;justify-content:space-between;font-size:10px;color:#64748b;margin-bottom:2px;">
+                        <span>${label}</span><span style="font-weight:700;color:#1e293b;">${value.toLocaleString()}</span>
+                    </div>
+                    <div style="width:100%;height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden;">
+                        <div style="width:${pctBar}%;height:100%;background:${clr};border-radius:2px;transition:width 0.3s;"></div>
+                    </div>
+                </div>`;
+            };
+
+            const popupHtml = `
+                <div style="font-family:Inter,Arial,sans-serif;padding:4px 0;">
+                    <div style="display:flex;align-items:center;padding:0 16px 12px;border-bottom:1px solid #e2e8f0;margin-bottom:12px;">
+                        ${rankBadge}
+                        <div>
+                            <div style="font-weight:800;font-size:15px;color:#0f172a;">${regionName}</div>
+                            <div style="font-size:11px;color:#64748b;">${coords.state || ''} &middot; Rank #${rank}</div>
+                        </div>
+                    </div>
+                    <div style="padding:0 16px;">
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+                            <div style="text-align:center;padding:10px 4px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:10px;">
+                                <div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Exposures</div>
+                                <div style="font-weight:800;font-size:17px;color:#2563eb;margin-top:2px;">${nwFormatNumber(exposure)}</div>
+                                <div style="font-size:10px;color:#94a3b8;">${pct}% share</div>
+                            </div>
+                            <div style="text-align:center;padding:10px 4px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-radius:10px;">
+                                <div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Sessions</div>
+                                <div style="font-weight:800;font-size:17px;color:#16a34a;margin-top:2px;">${nwFormatNumber(sessions)}</div>
+                            </div>
+                            <div style="text-align:center;padding:10px 4px;background:linear-gradient(135deg,#fefce8,#fef9c3);border-radius:10px;">
+                                <div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Schools</div>
+                                <div style="font-weight:800;font-size:17px;color:#ca8a04;margin-top:2px;">${nwFormatNumber(schools)}</div>
+                            </div>
+                        </div>
+                        ${miniBar('Instructors', instructors, Math.max(...data.map(d=>nwGetValue(d,'instructors')),1), '#9333ea')}
+                        ${miniBar('Programs', programs, Math.max(...data.map(d=>nwGetValue(d,'programs')),1), '#ea580c')}
+                        ${miniBar('Drivers', drivers, Math.max(...data.map(d=>nwGetValue(d,'drivers')),1), '#0891b2')}
+                    </div>
+                    <div style="padding:10px 16px 4px;margin-top:8px;border-top:1px solid #e2e8f0;">
+                        <div style="display:flex;align-items:center;gap:6px;color:#3b82f6;font-size:11px;font-weight:600;cursor:pointer;" onclick="setNwDrilldown('${regionName}')">
+                            <i class="fas fa-arrow-right"></i> Click to drilldown into ${regionName}
+                        </div>
+                    </div>
+                </div>`;
+
+            marker.bindPopup(popupHtml, { maxWidth: 340, minWidth: 300, className: 'nw-map-popup' });
+
+            marker.on('mouseover', function() { this.openPopup(); });
+
+            // Region label
+            const labelName = regionName.length > 16 ? regionName.substring(0, 14) + '..' : regionName;
+            marker.bindTooltip(labelName, {
+                permanent: true,
+                direction: 'top',
+                offset: [0, -radius - 4],
+                className: 'nw-region-label'
+            });
+
+            nwMapMarkers.addLayer(marker);
+            bounds.push([coords.lat, coords.lng]);
+        });
+
+        if (bounds.length > 1) {
+            nwMapInstance.fitBounds(bounds, { padding: [50, 50] });
+        } else if (bounds.length === 1) {
+            nwMapInstance.setView(bounds[0], 8);
+        }
+
+        setTimeout(() => nwMapInstance.invalidateSize(), 150);
+    }
+
+    function renderNationwideMap(tableData) {
+        if (!document.getElementById('nationwideMap')) return;
+        nwMapData = tableData || [];
+
+        if (!nwMapInstance) {
+            nwMapInstance = L.map('nationwideMap', {
+                zoomControl: false,
+                scrollWheelZoom: true,
+                attributionControl: false
+            }).setView([20.59, 78.96], 5);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                subdomains: 'abcd', maxZoom: 19
+            }).addTo(nwMapInstance);
+
+            L.control.zoom({ position: 'bottomleft' }).addTo(nwMapInstance);
+
+            L.control.attribution({ position: 'bottomleft', prefix: false })
+                .addAttribution('&copy; <a href="https://carto.com/">CARTO</a>')
+                .addTo(nwMapInstance);
+        }
+
+        if (!nwMapData.length) return;
+
+        nwMapMarkers = L.layerGroup().addTo(nwMapInstance);
+        nwUpdateStats(nwMapData);
+        nwRenderBubbles(nwMapData);
+    }
+
+    // ── Metric Toggle ──
+    $(document).on('click', '.nw-metric-btn', function() {
+        $('.nw-metric-btn').removeClass('active');
+        $(this).addClass('active');
+        nwCurrentMetric = $(this).data('metric');
+        if (nwMapData.length) nwRenderBubbles(nwMapData);
+    });
 
     window.setNwDrilldown = function(region) {
         nwDrilldownRegion = region;
@@ -583,106 +921,26 @@ $(function(){
         $('#nwDrilldownPanel').slideDown(200);
         loadNationwideData();
         $('html, body').animate({ scrollTop: $("#nwDrilldownPanel").offset().top - 100 }, 500);
+        if (nwMapInstance) {
+            const coords = getRegionCoords(region);
+            nwMapInstance.setView([coords.lat, coords.lng], 7, { animate: true });
+        }
     };
     window.clearNwDrilldown = function() {
         nwDrilldownRegion = null;
         $('#nwDrilldownPanel').slideUp(200);
         loadNationwideData();
-    };
-
-    // ── Nationwide Table (Custom Pagination) ──
-    let nwFullData = [], nwSearchText = '', nwCurrentPage = 1, nwPageSize = 10;
-
-    function renderNwTable(data) {
-        nwFullData = data || [];
-        nwCurrentPage = 1;
-        nwPageSize = parseInt($('#nwPageSize').val()) || 10;
-        nwSearchText = '';
-        $('#nwSearchInput').val('');
-        drawNwPage();
-    }
-
-    function drawNwPage() {
-        const tbody = $('#nationwideTable tbody').empty();
-        const tfoot = $('#nwSummaryFooter').empty();
-        if (!nwFullData.length) { tbody.html('<tr><td colspan="7" class="text-center text-muted py-3">No data available</td></tr>'); return; }
-
-        let filtered = nwFullData;
-        if (nwSearchText) {
-            const q = nwSearchText.toLowerCase();
-            filtered = nwFullData.filter(row => Object.values(row).some(v => String(v).toLowerCase().includes(q)));
+        if (nwMapInstance) {
+            nwMapInstance.setView([20.59, 78.96], 5, { animate: true });
         }
-
-        const sorted = filtered.slice().sort((a, b) => (b.sessions||0) - (a.sessions||0));
-
-        const total = sorted.length;
-        const totalPages = nwPageSize === -1 ? 1 : Math.ceil(total / nwPageSize);
-        if (nwCurrentPage > totalPages) nwCurrentPage = totalPages;
-        const startIdx = nwPageSize === -1 ? 0 : (nwCurrentPage - 1) * nwPageSize;
-        const endIdx = nwPageSize === -1 ? total : Math.min(startIdx + nwPageSize, total);
-        const pageData = sorted.slice(startIdx, endIdx);
-
-        let tot = { sessions:0, schools:0, students:0, instructors:0, drivers:0, programs:0 };
-        nwFullData.forEach(r => { tot.sessions+=Number(r.sessions)||0; tot.schools+=Number(r.schools_visited)||0; tot.students+=Number(r.students_reached)||0; tot.instructors+=Number(r.instructors)||0; tot.drivers+=Number(r.drivers)||0; tot.programs+=Number(r.programs)||0; });
-
-        pageData.forEach(r => {
-            tbody.append(`<tr>
-                <td class="font-weight-600">${r.region_name}</td>
-                <td class="text-center font-weight-bold">${Number(r.sessions||0).toLocaleString()}</td>
-                <td class="text-center">${Number(r.schools_visited||0).toLocaleString()}</td>
-                <td class="text-center"><span class="badge badge-success px-2 py-1">${Number(r.students_reached||0).toLocaleString()}</span></td>
-                <td class="text-center">${Number(r.instructors||0).toLocaleString()}</td>
-                <td class="text-center">${Number(r.drivers||0).toLocaleString()}</td>
-                <td class="text-center">${Number(r.programs||0).toLocaleString()}</td>
-            </tr>`);
-        });
-
-        tfoot.html(`<tr style="background:#f0f4f8;font-weight:700;">
-            <td>Grand Total</td>
-            <td class="text-center">${tot.sessions.toLocaleString()}</td>
-            <td class="text-center">${tot.schools.toLocaleString()}</td>
-            <td class="text-center"><span class="badge badge-success px-2 py-1">${tot.students.toLocaleString()}</span></td>
-            <td class="text-center">${tot.instructors.toLocaleString()}</td>
-            <td class="text-center">${tot.drivers.toLocaleString()}</td>
-            <td class="text-center">${tot.programs.toLocaleString()}</td>
-        </tr>`);
-
-        $('#nwPaginationInfo').text(`Showing ${total > 0 ? startIdx + 1 : 0} to ${endIdx} of ${total} entries`);
-        $('#nwPageInfo').text(`Page ${nwCurrentPage} of ${totalPages}`);
-        $('#nwPrevPage').prop('disabled', nwCurrentPage <= 1);
-        $('#nwNextPage').prop('disabled', nwCurrentPage >= totalPages);
-    }
-
-    $('#nwPageSize').on('change', function() { nwPageSize = parseInt($(this).val()) || 10; nwCurrentPage = 1; drawNwPage(); });
-    $('#nwPrevPage').on('click', function() { if (nwCurrentPage > 1) { nwCurrentPage--; drawNwPage(); } });
-    $('#nwNextPage').on('click', function() { const tp = nwPageSize === -1 ? 1 : Math.ceil(nwFullData.length / nwPageSize); if (nwCurrentPage < tp) { nwCurrentPage++; drawNwPage(); } });
-    $('#nwSearchInput').on('input', function() { nwSearchText = $(this).val(); nwCurrentPage = 1; drawNwPage(); });
-    $('#nationwideTable thead').on('click', 'th', function() {
-        const cols = ['region_name','sessions','schools_visited','students_reached','instructors','drivers','programs'];
-        const col = cols[$(this).index()];
-        if (!col) return;
-        const asc = $(this).hasClass('sort-asc');
-        $('#nationwideTable thead th').removeClass('sort-asc sort-desc');
-        $(this).addClass(asc ? 'sort-desc' : 'sort-asc');
-        nwFullData.sort((a, b) => {
-            let va = a[col], vb = b[col];
-            if (typeof va === 'string') return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
-            return asc ? (va||0)-(vb||0) : (vb||0)-(va||0);
-        });
-        drawNwPage();
-    });
+    };
 
     function loadNationwideData() {
         window.loadReportData = loadNationwideData;
         const q = $.param(collectFilters(), true);
         fetch(`/nationwide/data?${q}`).then(r=>r.json()).then(data=>{
             const tableData = data.table || data.data || [];
-            renderNwTable(tableData);
-            if (data.charts && !nwDrilldownRegion) {
-                regionMapping = {};
-                renderNwLineChart('sessionsTrendChart', data.charts.sessions_trend_monthly || []);
-                renderNwPieChart('studentsRegionChart', data.charts.students_by_region || []);
-            }
+            renderNationwideMap(tableData);
         });
     }
 

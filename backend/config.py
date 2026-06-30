@@ -14,14 +14,14 @@ SQL_DIR = BASE_DIR / "sql"
 # Database Configuration
 # Set these environment variables or use the defaults for local development
 DB_USER = os.getenv("PRAMANA_DB_USER", "postgres")
-DB_PASSWORD = os.getenv("PRAMANA_DB_PASSWORD", "postgres")
+DB_PASSWORD = os.getenv("PRAMANA_DB_PASSWORD", "1234")
 DB_HOST = os.getenv("PRAMANA_DB_HOST", "127.0.0.1")
 DB_PORT = os.getenv("PRAMANA_DB_PORT", "5432")
 DB_SSL_MODE = os.getenv("PRAMANA_DB_SSL_MODE", "disable")
 
-ADMIN_DB_NAME = os.getenv("PRAMANA_ADMIN_DB_NAME", "pramana")
-SOURCE_DB_NAME = os.getenv("PRAMANA_SOURCE_DB_NAME", "pramana")
-DATAMART_DB_NAME = os.getenv("PRAMANA_DATAMART_DB_NAME", "pramana")
+ADMIN_DB_NAME = os.getenv("PRAMANA_ADMIN_DB_NAME", "Pramana")
+SOURCE_DB_NAME = os.getenv("PRAMANA_SOURCE_DB_NAME", "Pramana")
+DATAMART_DB_NAME = os.getenv("PRAMANA_DATAMART_DB_NAME", "Pramana")
 
 
 # Default schema names

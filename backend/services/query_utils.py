@@ -742,7 +742,7 @@ def get_time_grouping_expressions(
     else:  # month (default)
         label_expr = f"TO_CHAR({date_col}, 'YYYY-MM')"
         sort_expr = f"MIN({date_col})"
-        grp_expr = f"DATE_TRUNC('month', {date_col})"
+        grp_expr = f"TO_CHAR({date_col}, 'YYYY-MM')"
         
     return label_expr, sort_expr, grp_expr
 
