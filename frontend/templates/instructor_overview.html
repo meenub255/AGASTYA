@@ -368,16 +368,28 @@
     }
     body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_filter {
         text-align: right !important;
-        margin-left: auto !important;
         padding-right: 0 !important;
     }
     body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_filter input {
         margin-left: 12px !important;
     }
-    body[data-page="instructor-overview"] .dataTables_wrapper > .row {
+    body[data-page="instructor-overview"] .dataTables_wrapper .row {
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
+    }
+    body[data-page="instructor-overview"] .dataTables_wrapper .row > .col-md-6:first-child,
+    body[data-page="instructor-overview"] .dataTables_wrapper .row > .col-sm-12.col-md-6:first-child {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        max-width: none !important;
+    }
+    body[data-page="instructor-overview"] .dataTables_wrapper .row > .col-md-6:last-child,
+    body[data-page="instructor-overview"] .dataTables_wrapper .row > .col-sm-12.col-md-6:last-child {
+        flex: 1 1 auto !important;
+        width: auto !important;
+        max-width: none !important;
+        text-align: right !important;
     }
     body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_length label,
     body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_filter label {
