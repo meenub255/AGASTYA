@@ -367,8 +367,17 @@
         color: #111827 !important;
     }
     body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_filter {
-        margin-left: auto !important;
         text-align: right !important;
+        margin-left: auto !important;
+        padding-right: 0 !important;
+    }
+    body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_filter input {
+        margin-left: 12px !important;
+    }
+    body[data-page="instructor-overview"] .dataTables_wrapper > .row {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
     }
     body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_length label,
     body[data-page="instructor-overview"] .dataTables_wrapper .dataTables_filter label {
