@@ -2337,44 +2337,45 @@ body[data-page="programs"] .exposure-empty {
 .dataTables_wrapper .dataTables_info,
 .dataTables_wrapper .dataTables_processing,
 .dataTables_wrapper .dataTables_paginate {
-    color: var(--text-soft) !important;
+    color: #475569 !important;
     font-size: 0.85rem;
     margin-bottom: 0.75rem;
     margin-top: 0.75rem;
 }
 
 .dataTables_wrapper .dataTables_filter input {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #fff;
+    border: 1px solid #d1d5db;
     border-radius: var(--radius-md);
-    color: #fff;
+    color: #1e293b;
     padding: 0.25rem 0.75rem;
     margin-left: 0.5rem;
 }
 
 .dataTables_wrapper .dataTables_length select {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #fff;
+    border: 1px solid #d1d5db;
     border-radius: var(--radius-md);
-    color: #fff;
+    color: #1e293b;
     padding: 0.2rem 0.5rem;
 }
 
 .dataTables_wrapper .dataTables_paginate .page-link {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    background: #fff;
+    border-color: #e2e8f0;
+    color: #334155;
 }
 
 .dataTables_wrapper .dataTables_paginate .page-item.active .page-link {
-    background: var(--brand-blue);
-    border-color: var(--brand-blue);
+    background: var(--brand-blue, #3b82f6);
+    border-color: var(--brand-blue, #3b82f6);
+    color: #fff;
 }
 
 .dataTables_wrapper .dataTables_paginate .page-item.disabled .page-link {
-    background: transparent !important;
-    color: var(--text-faint) !important;
-    border-color: rgba(255, 255, 255, 0.05);
+    background: #f8fafc !important;
+    color: #94a3b8 !important;
+    border-color: #e2e8f0;
 }
 
 /* Light mode overrides for dashboard page */
