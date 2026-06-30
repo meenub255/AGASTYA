@@ -3466,4 +3466,28 @@ table.dataTable thead th {
 .dataTables_wrapper .dataTables_filter input {
     margin-left: 0.5rem;
 }
+/* Override Bootstrap col widths for overview table */
+#overviewTable_wrapper .row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+#overviewTable_wrapper .row > div {
+    flex-basis: auto !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    max-width: none !important;
+}
+#overviewTable_wrapper .row > div:last-child {
+    flex-grow: 1 !important;
+    text-align: right !important;
+}
+#overviewTable_wrapper .row > div:last-child .dataTables_filter {
+    text-align: right !important;
+}
+#overviewTable_wrapper .row > div:last-child .dataTables_filter label {
+    display: flex !important;
+    justify-content: flex-end !important;
+    width: 100% !important;
+}
 
