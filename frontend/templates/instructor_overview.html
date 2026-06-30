@@ -634,7 +634,9 @@ $(function(){
             (data.table||[]).forEach(r=>{
                 tb.append(`<tr><td class="font-weight-600">${r.name}</td><td>${r.region}</td><td class="text-right">${Number(r.sessions||0).toLocaleString()}</td><td class="text-right">${Number(r.students||0).toLocaleString()}</td><td class="text-right">${Number(r.schools||0).toLocaleString()}</td></tr>`);
             });
-            dt=PramanaDashboard.initDataTable('#overviewTable',{paging:true,searching:true,pageLength:15,order:[[2,'desc']],dom:'tp'});
+            dt=PramanaDashboard.initDataTable('#overviewTable',{paging:true,searching:true,pageLength:15,order:[[2,'desc']]});
+            $('#overviewTable_wrapper .dataTables_length').hide();
+            $('#overviewTable_wrapper .dataTables_filter').hide();
             $('#overviewSearch').off('input').on('input',function(){dt.search(this.value).draw();});
             $('#overviewPageSize').off('change').on('change',function(){var v=parseInt(this.value);dt.page.len(v).draw();});
         });
