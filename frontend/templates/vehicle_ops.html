@@ -321,7 +321,7 @@ $(function () {
         if (!ctx) return;
         if (ctx._chart) ctx._chart.destroy();
         const sorted = rows.filter(r => r.efficiency > 0).sort((a, b) => b.efficiency - a.efficiency);
-        ctx._chart = new Chart(ctx, { type: 'bar', data: { labels: sorted.map(r => r.label.replace(/_/g, ' ')), datasets: [{ label: 'km/L', data: sorted.map(r => r.efficiency), backgroundColor: sorted.map(r => r.efficiency >= 50 ? '#10b981cc' : r.efficiency >= 15 ? '#f59e0bcc' : '#ef4444cc'), borderWidth: 0, borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(t) { return t.raw + ' km/L'; } } } }, scales: { x: { grid: { display: false }, title: { display: true, text: 'km per Litre', font: { size: 11 } } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
+        ctx._chart = new Chart(ctx, { type: 'bar', data: { labels: sorted.map(r => r.label.replace(/_/g, ' ')), datasets: [{ label: 'km/L', data: sorted.map(r => r.efficiency),         backgroundColor: sorted.map(r => r.efficiency >= 50 ? '#6ee7b7' : r.efficiency >= 15 ? '#fcd34d' : '#fca5a5'), borderWidth: 0, borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(t) { return t.raw + ' km/L'; } } } }, scales: { x: { grid: { display: false }, title: { display: true, text: 'km per Litre', font: { size: 11 } } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
     }
 
     function renderFleetCost(rows) {
@@ -329,7 +329,7 @@ $(function () {
         if (!ctx) return;
         if (ctx._chart) ctx._chart.destroy();
         const sorted = rows.filter(r => r.cost_per_km > 0).sort((a, b) => a.cost_per_km - b.cost_per_km);
-        ctx._chart = new Chart(ctx, { type: 'bar', data: { labels: sorted.map(r => r.label.replace(/_/g, ' ')), datasets: [{ label: '\u20B9/km', data: sorted.map(r => r.cost_per_km), backgroundColor: sorted.map(r => r.cost_per_km <= 20 ? '#10b981cc' : r.cost_per_km <= 80 ? '#f59e0bcc' : '#ef4444cc'), borderWidth: 0, borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(t) { return '\u20B9' + t.raw + ' per km'; } } } }, scales: { x: { grid: { display: false }, title: { display: true, text: 'Cost per KM (\u20B9)', font: { size: 11 } } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
+        ctx._chart = new Chart(ctx, { type: 'bar', data: { labels: sorted.map(r => r.label.replace(/_/g, ' ')), datasets: [{ label: '\u20B9/km', data: sorted.map(r => r.cost_per_km),         backgroundColor: sorted.map(r => r.cost_per_km <= 20 ? '#6ee7b7' : r.cost_per_km <= 80 ? '#fcd34d' : '#fca5a5'), borderWidth: 0, borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(t) { return '\u20B9' + t.raw + ' per km'; } } } }, scales: { x: { grid: { display: false }, title: { display: true, text: 'Cost per KM (\u20B9)', font: { size: 11 } } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
     }
 
     function renderFleetProductivity(rows) {
@@ -337,14 +337,14 @@ $(function () {
         if (!ctx) return;
         if (ctx._chart) ctx._chart.destroy();
         const sorted = rows.filter(r => r.kms_per_driver > 0).sort((a, b) => b.kms_per_driver - a.kms_per_driver);
-        ctx._chart = new Chart(ctx, { type: 'bar', data: { labels: sorted.map(r => r.label.replace(/_/g, ' ')), datasets: [{ label: 'KMs/Driver', data: sorted.map(r => r.kms_per_driver), backgroundColor: '#8b5e3ccc', borderWidth: 0, borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(t) { return t.raw.toLocaleString() + ' KMs per driver'; } } } }, scales: { x: { grid: { display: false }, title: { display: true, text: 'Total KMs / Active Drivers', font: { size: 11 } } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
+        ctx._chart = new Chart(ctx, { type: 'bar', data: { labels: sorted.map(r => r.label.replace(/_/g, ' ')), datasets: [{ label: 'KMs/Driver', data: sorted.map(r => r.kms_per_driver),         backgroundColor: '#93c5fd', borderWidth: 0, borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(t) { return t.raw.toLocaleString() + ' KMs per driver'; } } } }, scales: { x: { grid: { display: false }, title: { display: true, text: 'Total KMs / Active Drivers', font: { size: 11 } } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
     }
 
     function renderFleetMonthly(rows) {
         const ctx = document.getElementById('fleetMonthlyChart');
         if (!ctx) return;
         if (ctx._chart) ctx._chart.destroy();
-        ctx._chart = new Chart(ctx, { type: 'line', data: { labels: rows.map(r => r.label), datasets: [{ label: 'KMs', data: rows.map(r => r.kms), borderColor: '#8b5cf6', backgroundColor: '#8b5cf622', fill: true, tension: 0.3, pointRadius: 4, borderWidth: 2 }, { label: 'Cost (\u20B9)', data: rows.map(r => r.cost), borderColor: '#f59e0b', backgroundColor: '#f59e0b22', fill: true, tension: 0.3, pointRadius: 4, borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 11 }, maxRotation: 45 } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
+        ctx._chart = new Chart(ctx, { type: 'line', data: { labels: rows.map(r => r.label),         datasets: [{ label: 'KMs', data: rows.map(r => r.kms), borderColor: '#a78bfa', backgroundColor: '#a78bfa22', fill: true, tension: 0.3, pointRadius: 4, borderWidth: 2 }, { label: 'Cost (\u20B9)', data: rows.map(r => r.cost), borderColor: '#fbbf24', backgroundColor: '#fbbf2422', fill: true, tension: 0.3, pointRadius: 4, borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 11 }, maxRotation: 45 } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
     }
 
     function loadTripLogsData() {
