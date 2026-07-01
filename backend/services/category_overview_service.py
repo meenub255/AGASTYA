@@ -1101,13 +1101,19 @@ def get_operations_overview(region=None, years=None, program=None, limit=15, off
             WHERE {where_sql} GROUP BY TO_CHAR(d.full_date, 'Mon YYYY') ORDER BY sort_key"""
 
         SQL_VEH_USAGE = f"""
-            SELECT COALESCE(g.region_name,'Unknown') AS label,
-                   COUNT(DISTINCT v.sk_driver_id) AS value
-            FROM {DW}.fact_vehicle_operations v
-            LEFT JOIN {DW}.dim_geography g ON v.sk_geography_id = g.sk_geography_id
-            LEFT JOIN {DW}.dim_date d ON v.date_id = d.date_id
-            WHERE {veh_where_sql} AND g.region_name IS NOT NULL
-            GROUP BY g.region_name ORDER BY value DESC LIMIT 8"""
+            SELECT region_name AS label,
+                   ROUND(CASE WHEN drivers > 0 THEN total_kms::numeric / drivers ELSE 0 END, 0)::int AS value
+            FROM (
+                SELECT COALESCE(g.region_name,'Unknown') AS region_name,
+                       COUNT(DISTINCT v.sk_driver_id) AS drivers,
+                       COALESCE(SUM(v.distance_travelled),0) AS total_kms
+                FROM {DW}.fact_vehicle_operations v
+                LEFT JOIN {DW}.dim_geography g ON v.sk_geography_id = g.sk_geography_id
+                LEFT JOIN {DW}.dim_date d ON v.date_id = d.date_id
+                WHERE {veh_where_sql} AND g.region_name IS NOT NULL
+                GROUP BY g.region_name
+            ) sub WHERE drivers > 0
+            ORDER BY value DESC LIMIT 8"""
 
         SQL_COUNT = f"""
             SELECT COUNT(*) FROM (
