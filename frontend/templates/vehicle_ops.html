@@ -315,12 +315,8 @@ $(function () {
     }
 
     function loadFleetSummaryData() {
-        const params = new URLSearchParams(collectFilters());
-        params.set('years', (collectFilters().years || []).join(','));
-        params.set('region', (collectFilters().region || []).join(','));
-        params.set('month', (collectFilters().month || []).join(','));
-        params.set('quarter', (collectFilters().quarter || []).join(','));
-        fetch('/manpower-vehicle/insights?' + params.toString())
+        var params = $.param(collectFilters(), true);
+        fetch('/manpower-vehicle/insights?' + params)
             .then(r => r.json())
             .then(data => {
                 if (data.kpis) {
@@ -370,13 +366,8 @@ $(function () {
     }
 
     function loadTripLogsData() {
-        const params = new URLSearchParams(collectFilters());
-        params.set('years', (collectFilters().years || []).join(','));
-        params.set('region', (collectFilters().region || []).join(','));
-        params.set('area', (collectFilters().area || []).join(','));
-        params.set('month', (collectFilters().month || []).join(','));
-        params.set('quarter', (collectFilters().quarter || []).join(','));
-        fetch('/vehicle-report/insights?' + params.toString())
+        var params = $.param(collectFilters(), true);
+        fetch('/vehicle-report/insights?' + params)
             .then(r => r.json())
             .then(data => {
                 renderTripRegion(data.region_kms || []);
