@@ -171,18 +171,42 @@
                 </div>
             </div>
 
-            <!-- Ignator Utilization Table -->
-            <div class="card premium-card white-chart-card shadow-sm" style="border-radius:15px; overflow:hidden;">
-                <div class="card-header card-header-premium d-flex align-items-center">
-                    <i class="fas fa-calendar-alt mr-2" style="color: #3b82f6;"></i>
-                    <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Ignator Utilization Log</h3>
+            <!-- Row 2: Days Distribution + Region Efficiency -->
+            <div class="row mb-3">
+                <div class="col-xl-6 col-lg-6 mb-3">
+                    <div class="card h-100 white-chart-card shadow-sm" style="border-radius:15px;">
+                        <div class="card-header border-0 pb-1" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                            <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;"><i class="fas fa-chart-pie mr-1" style="color:#10b981;"></i>Working Days Distribution</h3>
+                        </div>
+                        <div class="card-body d-flex align-items-center justify-content-center"><div style="height:300px; width:100%; max-width:320px;"><canvas id="igChartDist"></canvas></div></div>
+                    </div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table id="workDayTable" class="table table-hover mb-0" style="width:100%">
-                            <thead><tr><th>Ignator</th><th>Region / Area</th><th class="text-center">Work Days</th><th>Dates Active (DD)</th></tr></thead>
-                            <tbody></tbody>
-                        </table>
+                <div class="col-xl-6 col-lg-6 mb-3">
+                    <div class="card h-100 white-chart-card shadow-sm" style="border-radius:15px;">
+                        <div class="card-header border-0 pb-1" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                            <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;"><i class="fas fa-balance-scale mr-1" style="color:#3b82f6;"></i>Region Efficiency: Ignators vs Total Days</h3>
+                        </div>
+                        <div class="card-body"><div style="height:300px;"><canvas id="igChartEfficiency"></canvas></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Underutilized Ignators -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="card white-chart-card shadow-sm" style="border-radius:15px; overflow:hidden;">
+                        <div class="card-header border-0 d-flex align-items-center" style="background:#f1f5f9; border-bottom:1px solid #e2e8f0!important;">
+                            <h3 class="card-title text-sm text-uppercase font-weight-bold" style="color:#334155;"><i class="fas fa-exclamation-triangle mr-1" style="color:#f59e0b;"></i>Underutilized Ignators (5 or fewer working days)</h3>
+                            <span id="underCount" class="ml-auto badge badge-warning px-2 py-1" style="font-size:11px;">0 ignators</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table id="igUnderTable" class="table table-hover mb-0" style="width:100%">
+                                    <thead><tr><th>Ignator</th><th>Region</th><th>Area</th><th class="text-center">Working Days</th><th class="text-center">Utilization</th></tr></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -257,12 +281,11 @@ $(function(){
     if(typeof Chart !== 'undefined') { Chart.defaults.font.family = 'Arial, Helvetica, sans-serif'; }
     const PALETTE = ['#6366f1','#10b981','#3b82f6','#f59e0b','#ec4899','#8b5cf6','#14b8a6','#f97316'];
     let activeTab = 'regional';
-    let workDayDt = null;
 
     // Tab switching
     $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
         activeTab = $(e.target).attr('href') === '#tabIgnator' ? 'ignator' : 'regional';
-        if (activeTab === 'ignator') { loadWorkDayTable(); loadIgnatorInsights(); }
+        if (activeTab === 'ignator') loadIgnatorInsights();
     });
 
     // Drawer
@@ -363,16 +386,6 @@ $(function(){
         });
     }
 
-    function loadWorkDayTable(){
-        if(workDayDt){workDayDt.destroy();workDayDt=null;}
-        workDayDt=PramanaDashboard.initDataTable('#workDayTable',{ajaxUrl:'/work-day/data',getFilters:function(){return window.PramanaDashboard.collectFilters();},columns:[
-            {data:'instructor_name',render:d=>`<span class="font-weight-600 text-navy">${d}</span>`},
-            {data:'region',render:(d,t,r)=>`<div class="small"><span class="text-muted"><i class="fas fa-globe mr-1"></i> ${r.region}</span> / <span class="font-weight-bold">${r.area}</span></div>`},
-            {data:'days_worked',className:'text-center',render:d=>`<span class="badge badge-info px-2 py-1">${d}</span>`},
-            {data:'dates_active',render:d=>`<div class="text-primary small font-weight-bold" style="word-break: break-all; opacity:0.8;">${d}</div>`}
-        ]});
-    }
-
     let ignatorLoaded = false;
     function loadIgnatorInsights(){
         if(ignatorLoaded) return;
@@ -383,12 +396,30 @@ $(function(){
             const ch = d.charts || {};
             renderIgnHBar('igChartRegion', ch.region_distribution || [], 'Ignators');
             renderIgnTopBar('igChartTop', ch.top_ignators || [], 'Working Days');
+            renderIgnDoughnut('igChartDist', ch.days_distribution || []);
+            renderIgnEfficiency('igChartEfficiency', ch.region_efficiency || []);
+            renderIgnUnderTable(ch.underutilized || []);
         }).catch(e=>{ ignatorLoaded = false; console.error('Ignator insights error:', e); });
     }
 
     function renderIgnHBar(id, points, label){ destroyChart(id); const c=document.getElementById(id); if(!c) return; chartInstances[id]=new Chart(c,{type:'bar',data:{labels:points.map(p=>p.label),datasets:[{label:label,data:points.map(p=>p.value),backgroundColor:points.map((_,i)=>PALETTE[i%PALETTE.length]),borderRadius:6,barThickness:20}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},datalabels:{display:true,anchor:'end',align:'end',color:'#334155',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString()},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},scales:{x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}},y:{grid:{display:false},ticks:{color:'#334155',font:{weight:'600'},maxRotation:0}}}}}); }
 
     function renderIgnTopBar(id, points, label){ destroyChart(id); const c=document.getElementById(id); if(!c) return; chartInstances[id]=new Chart(c,{type:'bar',data:{labels:points.map(p=>p.label),datasets:[{label:label,data:points.map(p=>p.value),backgroundColor:points.map((_,i)=>PALETTE[i%PALETTE.length]),borderRadius:6,barThickness:20}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{display:true,anchor:'end',align:'end',color:'#334155',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString()},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},scales:{x:{grid:{display:false},ticks:{color:'#334155',maxRotation:45,font:{size:10}}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}}}}}); }
+
+    function renderIgnDoughnut(id, points){ destroyChart(id); const c=document.getElementById(id); if(!c) return; const total=points.reduce((s,p)=>s+p.value,0); chartInstances[id]=new Chart(c,{type:'doughnut',data:{labels:points.map(p=>p.label),datasets:[{data:points.map(p=>p.value),backgroundColor:['#6366f1','#10b981','#3b82f6','#f59e0b','#ec4899','#8b5cf6'],borderWidth:2,borderColor:'#fff',hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom',labels:{padding:12,usePointStyle:true,font:{size:11}}},datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]/total>0.04},color:'#fff',font:{weight:'bold',size:11},formatter:function(v){return v.toLocaleString()}},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8,callbacks:{label:function(ctx){return ctx.label+': '+ctx.parsed.toLocaleString()+' ignators ('+Math.round(ctx.parsed/total*100)+'%)'}}}}}}); }
+
+    function renderIgnEfficiency(id, points){ destroyChart(id); const c=document.getElementById(id); if(!c) return; chartInstances[id]=new Chart(c,{type:'bar',data:{labels:points.map(p=>p.label),datasets:[{label:'Ignators',data:points.map(p=>p.ignators),backgroundColor:'rgba(99,102,241,.8)',borderRadius:4,barThickness:16,yAxisID:'y'},{label:'Total Days Worked',data:points.map(p=>p.total_days),backgroundColor:'rgba(16,185,129,.8)',borderRadius:4,barThickness:16,yAxisID:'y1'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,font:{size:11}}},datalabels:{display:false},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8,callbacks:{label:function(ctx){return ctx.dataset.label+': '+ctx.parsed.y.toLocaleString()}}}},scales:{x:{grid:{display:false},ticks:{color:'#334155',maxRotation:45,font:{size:10}}},y:{beginAtZero:true,position:'left',grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#6366f1'},title:{display:true,text:'Ignators',color:'#6366f1',font:{size:11}}},y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},ticks:{color:'#10b981'},title:{display:true,text:'Days Worked',color:'#10b981',font:{size:11}}}}}}); }
+
+    function renderIgnUnderTable(items){
+        $('#underCount').text(items.length+' ignators');
+        const tb=$('#igUnderTable tbody').empty();
+        if(!items.length){tb.append('<tr><td colspan="5" class="text-center text-muted py-4">No underutilized ignators found</td></tr>');return;}
+        items.forEach(function(r){
+            var pct=Math.round(r.value/31*100);
+            var cls=pct<=15?'danger':pct<=30?'warning':'info';
+            tb.append('<tr><td class="font-weight-600">'+r.label+'</td><td><span class="text-muted"><i class="fas fa-globe mr-1"></i>'+r.region+'</span></td><td>'+r.area+'</td><td class="text-center"><span class="badge badge-'+cls+' px-2 py-1">'+r.value+'</span></td><td class="text-center"><div class="d-flex align-items-center justify-content-center" style="gap:8px;"><div style="width:80px;height:6px;background:#e2e8f0;border-radius:3px;"><div style="width:'+pct+'%;height:100%;background:'+(pct<=15?'#ef4444':pct<=30?'#f59e0b':'#10b981')+';border-radius:3px;"></div></div><span class="small font-weight-bold" style="color:'+(pct<=15?'#ef4444':pct<=30?'#f59e0b':'#10b981')+'">'+pct+'%</span></div></td></tr>');
+        });
+    }
 
     // Drilldown
     window.loadDrilldown = function(regionName){
@@ -419,7 +450,7 @@ $(function(){
         $('#kpiInsightModal').modal('show');
     });
 
-    function applyAll(){ $('#drilldownPanel').hide(); loadData(); if(activeTab==='ignator'){ loadWorkDayTable(); loadIgnatorInsights(); } }
+    function applyAll(){ $('#drilldownPanel').hide(); loadData(); if(activeTab==='ignator') loadIgnatorInsights(); }
     setTimeout(applyAll, 300);
 });
 </script>

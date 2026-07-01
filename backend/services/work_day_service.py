@@ -246,6 +246,45 @@ def get_work_day_insights(region=None, area=None, years=None, month=None, quarte
         GROUP BY label
         ORDER BY MIN(days)"""
 
+    SQL_UNDERUTILIZED = f"""
+        WITH ignator_days AS (
+            SELECT u.user_name AS ignator,
+                   COALESCE(g.region_name,'Unknown') AS region,
+                   COALESCE(g.area_name,'N/A') AS area,
+                   COUNT(DISTINCT d.full_date) AS days
+            FROM {DW}.fact_session f
+            JOIN {DW}.dim_user u ON f.sk_user_id = u.sk_user_id
+            JOIN {DW}.dim_date d ON f.date_id = d.date_id
+            JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            WHERE {where_sql}
+            GROUP BY u.user_name, g.region_name, g.area_name
+        )
+        SELECT ignator AS label, days AS value,
+               region AS extra1, area AS extra2
+        FROM ignator_days
+        WHERE days <= 5
+        ORDER BY days ASC LIMIT 15"""
+
+    SQL_REGION_EFFICIENCY = f"""
+        WITH region_stats AS (
+            SELECT g.region_name,
+                   COUNT(DISTINCT f.sk_user_id) AS ignators,
+                   COUNT(DISTINCT d.full_date) AS total_sessions,
+                   COUNT(DISTINCT CONCAT(f.sk_user_id,'_',f.date_id)) AS ignator_days
+            FROM {DW}.fact_session f
+            JOIN {DW}.dim_date d ON f.date_id = d.date_id
+            JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            WHERE {where_sql} AND g.region_name IS NOT NULL
+            GROUP BY g.region_name
+        )
+        SELECT region_name AS label,
+               ignators AS value,
+               total_sessions AS extra1,
+               ignator_days AS extra2
+        FROM region_stats
+        WHERE ignators > 0
+        ORDER BY ignators DESC"""
+
     SQL_KPI = f"""
         SELECT COUNT(DISTINCT f.sk_user_id) AS total_ignators,
                COUNT(DISTINCT CONCAT(f.sk_user_id,'_',f.date_id)) AS total_working_days,
@@ -255,12 +294,13 @@ def get_work_day_insights(region=None, area=None, years=None, month=None, quarte
         JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
         WHERE {where_sql}"""
 
-    with ThreadPoolExecutor(max_workers=6) as ex:
+    with ThreadPoolExecutor(max_workers=8) as ex:
         f_region   = ex.submit(fetch_all,  SQL_REGION_DIST,  params)
         f_top      = ex.submit(fetch_all,  SQL_TOP_IGNATORS, params)
-        f_monthly  = ex.submit(fetch_all,  SQL_MONTHLY_TREND, params)
         f_area     = ex.submit(fetch_all,  SQL_AREA_DIST,    params)
         f_dist     = ex.submit(fetch_all,  SQL_DAYS_DISTRIBUTION, params)
+        f_under    = ex.submit(fetch_all,  SQL_UNDERUTILIZED, params)
+        f_eff      = ex.submit(fetch_all,  SQL_REGION_EFFICIENCY, params)
         f_kpi      = ex.submit(fetch_one,  SQL_KPI,          params)
 
     kpi = f_kpi.result() or {}
@@ -279,8 +319,9 @@ def get_work_day_insights(region=None, area=None, years=None, month=None, quarte
         "charts": {
             "region_distribution": [{"label": r["label"], "value": int(r["value"])} for r in f_region.result()],
             "top_ignators": [{"label": r["label"], "value": int(r["value"])} for r in f_top.result()],
-            "monthly_trend": [{"label": r["label"], "active_ignators": int(r["active_ignators"] or 0), "working_days": int(r["working_days"] or 0)} for r in f_monthly.result()],
             "area_distribution": [{"label": r["label"], "value": int(r["value"])} for r in f_area.result()],
-            "days_distribution": [{"label": r["label"], "value": int(r["value"])} for r in f_dist.result()]
+            "days_distribution": [{"label": r["label"], "value": int(r["value"])} for r in f_dist.result()],
+            "underutilized": [{"label": r["label"], "value": int(r["value"]), "region": r.get("extra1",""), "area": r.get("extra2","")} for r in f_under.result()],
+            "region_efficiency": [{"label": r["label"], "ignators": int(r["value"]), "sessions": int(r["extra1"] or 0), "total_days": int(r["extra2"] or 0)} for r in f_eff.result()]
         }
     }
