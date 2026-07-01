@@ -245,3 +245,84 @@ def get_vehicle_report_data(region=None, area=None, years=None, month=None, quar
         import traceback
         traceback.print_exc()
         return {"kpis": [], "sparklines": {}, "table": [], "total_count": 0, "error": str(e)}
+
+
+def get_vehicle_report_insights(region=None, area=None, years=None, month=None, quarter=None):
+    from backend.services.query_utils import get_list_filter_clause
+    from concurrent.futures import ThreadPoolExecutor
+    try:
+        clauses, params = [], []
+        c, p = get_list_filter_clause("r.NAME", region); clauses.append(c); params.extend(p)
+        c, p = get_list_filter_clause("a.NAME", area); clauses.append(c); params.extend(p)
+        c, p = get_list_filter_clause("EXTRACT(YEAR FROM log.DATE::TIMESTAMP)", years, cast_type="int"); clauses.append(c); params.extend(p)
+        if month:
+            c, p = get_list_filter_clause("EXTRACT(MONTH FROM log.DATE::TIMESTAMP)", month, cast_type="int", use_default_year=False); clauses.append(c); params.extend(p)
+        if quarter:
+            fq = "CASE WHEN EXTRACT(MONTH FROM log.DATE::TIMESTAMP) IN (4,5,6) THEN 1 WHEN EXTRACT(MONTH FROM log.DATE::TIMESTAMP) IN (7,8,9) THEN 2 WHEN EXTRACT(MONTH FROM log.DATE::TIMESTAMP) IN (10,11,12) THEN 3 ELSE 4 END"
+            c, p = get_list_filter_clause(fq, quarter, cast_type="int"); clauses.append(c); params.extend(p)
+        where_sql = " AND ".join(clauses) + " AND log.DATE != '0000-00-00' AND log.is_deleted = '0'"
+
+        SQL_REGION_KMS = f"""
+            SELECT COALESCE(r.name,'Unknown') AS label,
+                   ROUND(SUM(COALESCE(log.closed_reading::numeric,0)-COALESCE(log.open_reading::numeric,0))::numeric,0)::int AS kms,
+                   COUNT(DISTINCT log.driver_id) AS drivers,
+                   COUNT(DISTINCT v.mst_vehicle_id) AS vehicles
+            FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON log.vehicle_id = v.mst_vehicle_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON v.area_id = a.mst_area_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON a.region_id = r.mst_region_id
+            WHERE {where_sql}
+            GROUP BY r.name ORDER BY kms DESC"""
+
+        SQL_TOP_DRIVERS = f"""
+            SELECT COALESCE(dr.name,'Unknown') AS label,
+                   ROUND(SUM(COALESCE(log.closed_reading::numeric,0)-COALESCE(log.open_reading::numeric,0))::numeric,0)::int AS kms,
+                   COUNT(*) AS trips
+            FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_user dr ON log.driver_id = dr.mst_user_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON log.vehicle_id = v.mst_vehicle_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON v.area_id = a.mst_area_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON a.region_id = r.mst_region_id
+            WHERE {where_sql} AND dr.name IS NOT NULL
+            GROUP BY dr.name ORDER BY kms DESC LIMIT 10"""
+
+        SQL_TOP_VEHICLES = f"""
+            SELECT COALESCE(v.vehicle_name,'Unknown') AS label,
+                   ROUND(SUM(COALESCE(log.closed_reading::numeric,0)-COALESCE(log.open_reading::numeric,0))::numeric,0)::int AS kms,
+                   COUNT(*) AS trips
+            FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON log.vehicle_id = v.mst_vehicle_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON v.area_id = a.mst_area_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON a.region_id = r.mst_region_id
+            WHERE {where_sql}
+            GROUP BY v.vehicle_name ORDER BY kms DESC LIMIT 10"""
+
+        SQL_MONTHLY = f"""
+            SELECT TO_CHAR(log.DATE::TIMESTAMP, 'Mon YYYY') AS label,
+                   ROUND(SUM(COALESCE(log.closed_reading::numeric,0)-COALESCE(log.open_reading::numeric,0))::numeric,0)::int AS kms,
+                   ROUND(SUM(COALESCE(log.fuel_quantity::numeric,0))::numeric,0)::int AS fuel,
+                   MIN(log.DATE::TIMESTAMP) AS sort_key
+            FROM {SOURCE_SCHEMA_NAME}.txn_vehicle_log log
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_vehicle v ON log.vehicle_id = v.mst_vehicle_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_area a ON v.area_id = a.mst_area_id
+            LEFT JOIN {SOURCE_SCHEMA_NAME}.mst_region r ON a.region_id = r.mst_region_id
+            WHERE {where_sql}
+            GROUP BY TO_CHAR(log.DATE::TIMESTAMP, 'Mon YYYY')
+            ORDER BY sort_key"""
+
+        with ThreadPoolExecutor(max_workers=4) as ex:
+            f_reg = ex.submit(fetch_all, SQL_REGION_KMS, params)
+            f_drv = ex.submit(fetch_all, SQL_TOP_DRIVERS, params)
+            f_veh = ex.submit(fetch_all, SQL_TOP_VEHICLES, params)
+            f_mon = ex.submit(fetch_all, SQL_MONTHLY, params)
+
+        return {
+            'region_kms': [dict(r) for r in f_reg.result()],
+            'top_drivers': [dict(r) for r in f_drv.result()],
+            'top_vehicles': [dict(r) for r in f_veh.result()],
+            'monthly_trend': [dict(r) for r in f_mon.result()]
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {'region_kms': [], 'top_drivers': [], 'top_vehicles': [], 'monthly_trend': []}

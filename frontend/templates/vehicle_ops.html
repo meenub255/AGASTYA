@@ -157,29 +157,51 @@
 
         <!-- Trip Logs Tab -->
         <div class="tab-pane fade" id="tripLogs" role="tabpanel">
-            <div class="card premium-card white-chart-card shadow-sm">
-                <div class="card-header card-header-premium d-flex align-items-center">
-                    <i class="fas fa-truck-moving mr-2" style="color: #3b82f6;"></i>
-                    <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Detailed Trip Logs</h3>
+            <div class="row mb-3">
+                <div class="col-xl-6 col-lg-6">
+                    <div class="card premium-card white-chart-card shadow-sm">
+                        <div class="card-header card-header-premium d-flex align-items-center">
+                            <i class="fas fa-map-marker-alt mr-2" style="color:#60a5fa;"></i>
+                            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;">KMs Travelled by Region</h3>
+                        </div>
+                        <div class="card-body" style="height:340px;">
+                            <canvas id="tripRegionChart"></canvas>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table id="tripLogsTable" class="table table-hover mb-0" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>Vehicle Name</th>
-                                    <th>Date</th>
-                                    <th>Registration</th>
-                                    <th>Center</th>
-                                    <th>Region</th>
-                                    <th>Driver</th>
-                                    <th class="text-center">Initial</th>
-                                    <th class="text-center">End</th>
-                                    <th class="text-center">Total KMs</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                <div class="col-xl-6 col-lg-6">
+                    <div class="card premium-card white-chart-card shadow-sm">
+                        <div class="card-header card-header-premium d-flex align-items-center">
+                            <i class="fas fa-user-clock mr-2" style="color:#a78bfa;"></i>
+                            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;">Top Drivers by KMs</h3>
+                        </div>
+                        <div class="card-body" style="height:340px;">
+                            <canvas id="tripDriverChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-xl-6 col-lg-6">
+                    <div class="card premium-card white-chart-card shadow-sm">
+                        <div class="card-header card-header-premium d-flex align-items-center">
+                            <i class="fas fa-car mr-2" style="color:#34d399;"></i>
+                            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;">Top Vehicles by KMs</h3>
+                        </div>
+                        <div class="card-body" style="height:340px;">
+                            <canvas id="tripVehicleChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-6 col-lg-6">
+                    <div class="card premium-card white-chart-card shadow-sm">
+                        <div class="card-header card-header-premium d-flex align-items-center">
+                            <i class="fas fa-chart-area mr-2" style="color:#fbbf24;"></i>
+                            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;">Monthly Trip Trend</h3>
+                        </div>
+                        <div class="card-body" style="height:340px;">
+                            <canvas id="tripMonthlyChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -348,21 +370,50 @@ $(function () {
     }
 
     function loadTripLogsData() {
-        window.PramanaDashboard.initDataTable('#tripLogsTable', {
-            ajaxUrl: '/vehicle-report/data',
-            getFilters: collectFilters,
-            columns: [
-                { data: 'vehicle_name', render: d => `<span class="font-weight-600 text-navy">${d || 'N/A'}</span>` },
-                { data: 'date', className: 'small' },
-                { data: 'registration_no', render: d => `<span class="badge badge-secondary" style="font-size:10px;">${d || 'N/A'}</span>` },
-                { data: 'center_name', className: 'small' },
-                { data: 'region_name', className: 'small' },
-                { data: 'driver_name', className: 'small font-weight-bold' },
-                { data: 'initial_km', className: 'text-center small', render: d => (d || 0).toLocaleString() },
-                { data: 'end_km', className: 'text-center small', render: d => (d || 0).toLocaleString() },
-                { data: 'total_kms', className: 'text-center font-weight-bold text-info small', render: d => (d || 0).toLocaleString() }
-            ]
-        });
+        const params = new URLSearchParams(collectFilters());
+        params.set('years', (collectFilters().years || []).join(','));
+        params.set('region', (collectFilters().region || []).join(','));
+        params.set('area', (collectFilters().area || []).join(','));
+        params.set('month', (collectFilters().month || []).join(','));
+        params.set('quarter', (collectFilters().quarter || []).join(','));
+        fetch('/vehicle-report/insights?' + params.toString())
+            .then(r => r.json())
+            .then(data => {
+                renderTripRegion(data.region_kms || []);
+                renderTripDriver(data.top_drivers || []);
+                renderTripVehicle(data.top_vehicles || []);
+                renderTripMonthly(data.monthly_trend || []);
+            })
+            .catch(err => console.error('Trip insights error:', err));
+    }
+
+    function renderTripRegion(rows) {
+        const ctx = document.getElementById('tripRegionChart');
+        if (!ctx) return;
+        if (ctx._chart) ctx._chart.destroy();
+        const sorted = rows.filter(r => r.kms > 0).sort((a, b) => b.kms - a.kms);
+        ctx._chart = new Chart(ctx, { type: 'bar', data: { labels: sorted.map(r => r.label.replace(/_/g, ' ')), datasets: [{ label: 'KMs', data: sorted.map(r => r.kms), backgroundColor: '#93c5fd', borderWidth: 0, borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(t) { return t.raw.toLocaleString() + ' KMs'; } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 11 } } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
+    }
+
+    function renderTripDriver(rows) {
+        const ctx = document.getElementById('tripDriverChart');
+        if (!ctx) return;
+        if (ctx._chart) ctx._chart.destroy();
+        ctx._chart = new Chart(ctx, { type: 'bar', data: { labels: rows.map(r => r.label.length > 18 ? r.label.substring(0, 18) + '...' : r.label), datasets: [{ label: 'KMs', data: rows.map(r => r.kms), backgroundColor: '#c4b5fd', borderWidth: 0, borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(t) { return t.raw.toLocaleString() + ' KMs (' + rows[t.dataIndex].trips + ' trips)'; } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 11 } } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
+    }
+
+    function renderTripVehicle(rows) {
+        const ctx = document.getElementById('tripVehicleChart');
+        if (!ctx) return;
+        if (ctx._chart) ctx._chart.destroy();
+        ctx._chart = new Chart(ctx, { type: 'bar', data: { labels: rows.map(r => r.label.length > 18 ? r.label.substring(0, 18) + '...' : r.label), datasets: [{ label: 'KMs', data: rows.map(r => r.kms), backgroundColor: '#86efac', borderWidth: 0, borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(t) { return t.raw.toLocaleString() + ' KMs (' + rows[t.dataIndex].trips + ' trips)'; } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 11 } } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
+    }
+
+    function renderTripMonthly(rows) {
+        const ctx = document.getElementById('tripMonthlyChart');
+        if (!ctx) return;
+        if (ctx._chart) ctx._chart.destroy();
+        ctx._chart = new Chart(ctx, { type: 'line', data: { labels: rows.map(r => r.label), datasets: [{ label: 'KMs', data: rows.map(r => r.kms), borderColor: '#fde68a', backgroundColor: '#fde68a33', fill: true, tension: 0.3, pointRadius: 4, borderWidth: 2 }, { label: 'Fuel (L)', data: rows.map(r => r.fuel), borderColor: '#86efac', backgroundColor: '#86efac33', fill: true, tension: 0.3, pointRadius: 4, borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 11 }, maxRotation: 45 } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
     }
 
     // Tab change handling

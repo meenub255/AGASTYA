@@ -1,11 +1,21 @@
 from fastapi import APIRouter, Query, HTTPException, Request
-from backend.services.vehicle_report_service import get_vehicle_report_data, get_vehicle_report_filters
+from backend.services.vehicle_report_service import get_vehicle_report_data, get_vehicle_report_filters, get_vehicle_report_insights
 
 router = APIRouter(prefix="/vehicle-report", tags=["Vehicle Report"])
 
 @router.get("/filters")
 def vehicle_filters(region_name: list[str] | None = Query(None)):
     return get_vehicle_report_filters(region_name)
+
+@router.get("/insights")
+def vehicle_insights(
+    region: list[str] | None = Query(None),
+    area: list[str] | None = Query(None),
+    years: list[str] | None = Query(None),
+    month: list[str] | None = Query(None),
+    quarter: list[str] | None = Query(None),
+):
+    return get_vehicle_report_insights(region, area, years, month, quarter)
 
 @router.get("/data")
 def vehicle_data(
