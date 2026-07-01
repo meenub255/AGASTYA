@@ -27,6 +27,16 @@ def get_data(
 
     return work_day_service.get_work_day_data(region, area, years, month, quarter, limit, offset, dt_params)
 
+@router.get("/insights")
+def get_insights(
+    region: list[str] | None = Query(None),
+    area:   list[str] | None = Query(None),
+    years:  list[str] | None = Query(None),
+    month:  list[str] | None = Query(None),
+    quarter: list[str] | None = Query(None),
+):
+    return work_day_service.get_work_day_insights(region, area, years, month, quarter)
+
 @router.get("/export")
 def export_data(
     region: list[str] | None = Query(None),

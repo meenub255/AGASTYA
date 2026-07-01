@@ -169,3 +169,118 @@ def get_work_day_data(region=None, area=None, years=None, month=None, quarter=No
         "table": rows, 
         "total_count": total_count
     }
+
+
+def get_work_day_insights(region=None, area=None, years=None, month=None, quarter=None):
+    from backend.services.query_utils import build_standard_filters
+    from backend.config import DEFAULT_YEAR
+    from concurrent.futures import ThreadPoolExecutor
+
+    where_sql, params, max_month = build_standard_filters(
+        years=years, region=region, area=area, month=month, quarter=quarter
+    )
+
+    DW = DATAMART_SCHEMA_NAME
+
+    SQL_REGION_DIST = f"""
+        SELECT COALESCE(g.region_name,'Unknown') AS label,
+               COUNT(DISTINCT f.sk_user_id) AS value
+        FROM {DW}.fact_session f
+        JOIN {DW}.dim_date d ON f.date_id = d.date_id
+        JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        WHERE {where_sql} AND g.region_name IS NOT NULL
+        GROUP BY g.region_name ORDER BY value DESC"""
+
+    SQL_TOP_IGNATORS = f"""
+        SELECT u.user_name AS label,
+               COUNT(DISTINCT d.full_date) AS value
+        FROM {DW}.fact_session f
+        JOIN {DW}.dim_user u ON f.sk_user_id = u.sk_user_id
+        JOIN {DW}.dim_date d ON f.date_id = d.date_id
+        JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        WHERE {where_sql}
+        GROUP BY u.user_name ORDER BY value DESC LIMIT 10"""
+
+    SQL_MONTHLY_TREND = f"""
+        SELECT TO_CHAR(d.full_date, 'Mon YYYY') AS label,
+               COUNT(DISTINCT f.sk_user_id) AS active_ignators,
+               COUNT(DISTINCT CONCAT(f.sk_user_id,'_',f.date_id)) AS working_days,
+               MIN(d.full_date) AS sort_key
+        FROM {DW}.fact_session f
+        JOIN {DW}.dim_date d ON f.date_id = d.date_id
+        JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        WHERE {where_sql}
+        GROUP BY TO_CHAR(d.full_date, 'Mon YYYY')
+        ORDER BY sort_key"""
+
+    SQL_AREA_DIST = f"""
+        SELECT COALESCE(g.area_name,'Unknown') AS label,
+               COUNT(DISTINCT f.sk_user_id) AS value
+        FROM {DW}.fact_session f
+        JOIN {DW}.dim_date d ON f.date_id = d.date_id
+        JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        WHERE {where_sql} AND g.area_name IS NOT NULL
+        GROUP BY g.area_name ORDER BY value DESC LIMIT 10"""
+
+    SQL_DAYS_DISTRIBUTION = f"""
+        WITH ignator_days AS (
+            SELECT u.user_name, COUNT(DISTINCT d.full_date) AS days
+            FROM {DW}.fact_session f
+            JOIN {DW}.dim_user u ON f.sk_user_id = u.sk_user_id
+            JOIN {DW}.dim_date d ON f.date_id = d.date_id
+            JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+            WHERE {where_sql}
+            GROUP BY u.user_name
+        )
+        SELECT
+            CASE
+                WHEN days <= 5 THEN '1-5 days'
+                WHEN days <= 10 THEN '6-10 days'
+                WHEN days <= 15 THEN '11-15 days'
+                WHEN days <= 20 THEN '16-20 days'
+                WHEN days <= 25 THEN '21-25 days'
+                ELSE '26-31 days'
+            END AS label,
+            COUNT(*) AS value
+        FROM ignator_days
+        GROUP BY label
+        ORDER BY MIN(days)"""
+
+    SQL_KPI = f"""
+        SELECT COUNT(DISTINCT f.sk_user_id) AS total_ignators,
+               COUNT(DISTINCT CONCAT(f.sk_user_id,'_',f.date_id)) AS total_working_days,
+               COUNT(DISTINCT f.sk_geography_id) AS active_centers
+        FROM {DW}.fact_session f
+        JOIN {DW}.dim_date d ON f.date_id = d.date_id
+        JOIN {DW}.dim_geography g ON f.sk_geography_id = g.sk_geography_id
+        WHERE {where_sql}"""
+
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        f_region   = ex.submit(fetch_all,  SQL_REGION_DIST,  params)
+        f_top      = ex.submit(fetch_all,  SQL_TOP_IGNATORS, params)
+        f_monthly  = ex.submit(fetch_all,  SQL_MONTHLY_TREND, params)
+        f_area     = ex.submit(fetch_all,  SQL_AREA_DIST,    params)
+        f_dist     = ex.submit(fetch_all,  SQL_DAYS_DISTRIBUTION, params)
+        f_kpi      = ex.submit(fetch_one,  SQL_KPI,          params)
+
+    kpi = f_kpi.result() or {}
+    total_ignators   = int(kpi.get("total_ignators", 0) or 0)
+    total_work_days  = int(kpi.get("total_working_days", 0) or 0)
+    active_centers   = int(kpi.get("active_centers", 0) or 0)
+    avg_days = round(total_work_days / total_ignators, 1) if total_ignators > 0 else 0
+
+    return {
+        "kpis": {
+            "total_ignators": total_ignators,
+            "total_working_days": total_work_days,
+            "active_centers": active_centers,
+            "avg_days_per_ignator": avg_days
+        },
+        "charts": {
+            "region_distribution": [{"label": r["label"], "value": int(r["value"])} for r in f_region.result()],
+            "top_ignators": [{"label": r["label"], "value": int(r["value"])} for r in f_top.result()],
+            "monthly_trend": [{"label": r["label"], "active_ignators": int(r["active_ignators"] or 0), "working_days": int(r["working_days"] or 0)} for r in f_monthly.result()],
+            "area_distribution": [{"label": r["label"], "value": int(r["value"])} for r in f_area.result()],
+            "days_distribution": [{"label": r["label"], "value": int(r["value"])} for r in f_dist.result()]
+        }
+    }
