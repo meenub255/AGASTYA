@@ -1102,7 +1102,7 @@ def get_operations_overview(region=None, years=None, program=None, limit=15, off
 
         SQL_VEH_USAGE = f"""
             SELECT COALESCE(g.region_name,'Unknown') AS label,
-                   COUNT(CASE WHEN v.was_vehicle_used THEN 1 END) AS value
+                   COUNT(DISTINCT v.sk_driver_id) AS value
             FROM {DW}.fact_vehicle_operations v
             LEFT JOIN {DW}.dim_geography g ON v.sk_geography_id = g.sk_geography_id
             LEFT JOIN {DW}.dim_date d ON v.date_id = d.date_id
