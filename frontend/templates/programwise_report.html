@@ -696,7 +696,7 @@ $(function () {
                     regionMapping = {};
                     donorMapping = {};
                     window.PramanaDashboard.renderChart('schoolsRegionBar', 'bar', data.charts.schools_by_region || [], 'Schools', {
-                        borderRadius: 4, useAcronyms: true, legendSelector: '.region-legend-trigger', palette: BAR_PALETTE
+                        borderRadius: 4, useAcronyms: true, legendSelector: '.region-legend-trigger', palette: BAR_PALETTE, xTitle: 'Region', yTitle: 'Schools Visited'
                     });
                     window.PramanaDashboard.renderChart('sessionsDonorPie', 'pie', data.charts.sessions_by_donor || [], 'Sessions', {
                         showLegend: true, legendPosition: 'bottom', useAcronyms: true, usePieConnectors: true, showPercentages: true, legendSelector: '.donor-legend-trigger', palette: PIE_PALETTE
