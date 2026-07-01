@@ -123,3 +123,103 @@ def get_manpower_vehicle_data(region=None, years=None, month=None, quarter=None,
     except Exception as e:
         logger.error(f"manpower vehicle data error: {e}", exc_info=True)
         return {"kpis": [], "table": [], "total_count": 0}
+
+
+def get_manpower_vehicle_insights(region=None, years=None, month=None, quarter=None):
+    from backend.services.query_utils import build_standard_filters
+    from concurrent.futures import ThreadPoolExecutor
+
+    where_sql, params, max_month = build_standard_filters(
+        years=years, region=region, month=month, quarter=quarter
+    )
+
+    SQL_EFFICIENCY = f"""
+        SELECT COALESCE(g.region_name,'Unknown') AS label,
+               ROUND(COALESCE(SUM(v.distance_travelled),0)::numeric,0)::int AS kms,
+               ROUND(COALESCE(SUM(v.fuel_quantity),0)::numeric,1)::float AS fuel,
+               ROUND(COALESCE(SUM(v.fuel_cost),0)::numeric,0)::int AS cost,
+               COUNT(DISTINCT v.sk_driver_id) AS drivers,
+               COUNT(CASE WHEN v.was_vehicle_used THEN 1 END) AS vehicles
+        FROM {DW}.fact_vehicle_operations v
+        LEFT JOIN {DW}.dim_geography g ON v.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DW}.dim_date d ON v.date_id = d.date_id
+        WHERE {where_sql} AND g.region_name IS NOT NULL
+        GROUP BY g.region_name"""
+
+    SQL_PROGRAM_FLEET = f"""
+        SELECT COALESCE(p.program_name,'Unknown') AS label,
+               COALESCE(g.region_name,'Unknown') AS region,
+               ROUND(COALESCE(SUM(v.distance_travelled),0)::numeric,0)::int AS kms,
+               ROUND(COALESCE(SUM(v.fuel_cost),0)::numeric,0)::int AS cost,
+               COUNT(DISTINCT v.sk_driver_id) AS drivers
+        FROM {DW}.fact_vehicle_operations v
+        LEFT JOIN {DW}.dim_geography g ON v.sk_geography_id = g.sk_geography_id
+        LEFT JOIN {DW}.dim_program p ON v.sk_program_id = p.sk_program_id
+        LEFT JOIN {DW}.dim_date d ON v.date_id = d.date_id
+        WHERE {where_sql} AND p.program_name IS NOT NULL
+        GROUP BY p.program_name, g.region_name
+        HAVING SUM(v.distance_travelled) > 0
+        ORDER BY kms DESC LIMIT 15"""
+
+    SQL_MONTHLY_FUEL = f"""
+        SELECT TO_CHAR(d.full_date, 'Mon YYYY') AS label,
+               ROUND(COALESCE(SUM(v.distance_travelled),0)::numeric,0)::int AS kms,
+               ROUND(COALESCE(SUM(v.fuel_quantity),0)::numeric,0)::int AS fuel,
+               ROUND(COALESCE(SUM(v.fuel_cost),0)::numeric,0)::int AS cost,
+               MIN(d.full_date) AS sort_key
+        FROM {DW}.fact_vehicle_operations v
+        LEFT JOIN {DW}.dim_date d ON v.date_id = d.date_id
+        LEFT JOIN {DW}.dim_geography g ON v.sk_geography_id = g.sk_geography_id
+        WHERE {where_sql}
+        GROUP BY TO_CHAR(d.full_date, 'Mon YYYY')
+        ORDER BY sort_key"""
+
+    SQL_KPI = f"""
+        SELECT ROUND(COALESCE(SUM(v.distance_travelled),0)::numeric,0)::int AS total_kms,
+               ROUND(COALESCE(SUM(v.fuel_cost),0)::numeric,0)::int AS total_cost,
+               ROUND(COALESCE(SUM(v.fuel_quantity),0)::numeric,0)::int AS total_fuel,
+               COUNT(DISTINCT v.sk_driver_id) AS active_drivers
+        FROM {DW}.fact_vehicle_operations v
+        LEFT JOIN {DW}.dim_date d ON v.date_id = d.date_id
+        LEFT JOIN {DW}.dim_geography g ON v.sk_geography_id = g.sk_geography_id
+        WHERE {where_sql}"""
+
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        f_eff = ex.submit(fetch_all, SQL_EFFICIENCY, params)
+        f_prog = ex.submit(fetch_all, SQL_PROGRAM_FLEET, params)
+        f_monthly = ex.submit(fetch_all, SQL_MONTHLY_FUEL, params)
+        f_kpi = ex.submit(fetch_one, SQL_KPI, params)
+
+    kpi = f_kpi.result() or {}
+    eff_rows = f_eff.result()
+
+    region_data = []
+    for r in eff_rows:
+        kms = r['kms'] or 0
+        fuel = r['fuel'] or 0
+        cost = r['cost'] or 0
+        drivers = r['drivers'] or 0
+        vehicles = r['vehicles'] or 0
+        eff = round(kms / fuel, 1) if fuel > 0 else 0
+        cpk = round(cost / kms, 1) if kms > 0 else 0
+        kpd = round(kms / drivers) if drivers > 0 else 0
+        region_data.append({
+            'label': r['label'], 'kms': kms, 'fuel': fuel, 'cost': cost,
+            'drivers': drivers, 'vehicles': vehicles,
+            'efficiency': eff, 'cost_per_km': cpk, 'kms_per_driver': kpd
+        })
+
+    return {
+        'kpis': {
+            'total_kms': kpi.get('total_kms', 0),
+            'total_cost': kpi.get('total_cost', 0),
+            'total_fuel': kpi.get('total_fuel', 0),
+            'active_drivers': kpi.get('active_drivers', 0)
+        },
+        'charts': {
+            'region_scatter': [{'label': r['label'], 'x': r['efficiency'], 'y': r['cost_per_km'], 'r': max(5, min(40, r['kms'] // 2000)), 'kms': r['kms'], 'drivers': r['drivers']} for r in region_data if r['kms'] > 0],
+            'region_bubble': [{'label': r['label'], 'kms': r['kms'], 'drivers': r['drivers'], 'vehicles': r['vehicles'], 'efficiency': r['efficiency'], 'cost_per_km': r['cost_per_km'], 'kms_per_driver': r['kms_per_driver']} for r in region_data if r['kms'] > 0],
+            'program_fleet': [{'label': r['label'], 'region': r['region'], 'kms': r['kms'], 'cost': r['cost'], 'drivers': r['drivers']} for r in f_prog.result()],
+            'monthly_trend': [{'label': r['label'], 'kms': r['kms'], 'fuel': r['fuel'], 'cost': r['cost']} for r in f_monthly.result()]
+        }
+    }

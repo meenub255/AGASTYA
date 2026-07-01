@@ -103,27 +103,53 @@
     <div class="tab-content" id="vehicleOpsTabContent">
         <!-- Fleet Summary Tab -->
         <div class="tab-pane fade show active" id="fleetSummary" role="tabpanel">
-            <div class="card premium-card white-chart-card shadow-sm">
-                <div class="card-header card-header-premium d-flex align-items-center">
-                    <i class="fas fa-table mr-2" style="color: #3b82f6;"></i>
-                    <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color: #334155;">Operations Summary</h3>
+            <!-- Row 1: Efficiency Matrix + Regional Radar -->
+            <div class="row mb-3">
+                <div class="col-xl-6 col-lg-6">
+                    <div class="card premium-card white-chart-card shadow-sm">
+                        <div class="card-header card-header-premium d-flex align-items-center">
+                            <i class="fas fa-crosshairs mr-2" style="color:#8b5cf6;"></i>
+                            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;">Fleet Efficiency Matrix</h3>
+                        </div>
+                        <div class="card-body" style="height:340px;">
+                            <canvas id="fleetScatterChart"></canvas>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table id="fleetSummaryTable" class="table table-hover mb-0" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>Region</th>
-                                    <th>Program</th>
-                                    <th class="text-center">Drivers</th>
-                                    <th class="text-center">Total KMs</th>
-                                    <th class="text-center">Fuel (L)</th>
-                                    <th class="text-center">Cost (₹)</th>
-                                    <th class="text-center">Vehicles</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                <div class="col-xl-6 col-lg-6">
+                    <div class="card premium-card white-chart-card shadow-sm">
+                        <div class="card-header card-header-premium d-flex align-items-center">
+                            <i class="fas fa-spider mr-2" style="color:#06b6d4;"></i>
+                            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;">Regional Performance Radar</h3>
+                        </div>
+                        <div class="card-body" style="height:340px;">
+                            <canvas id="fleetRadarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Row 2: Program Cost Waterfall + Monthly Trend -->
+            <div class="row mb-3">
+                <div class="col-xl-6 col-lg-6">
+                    <div class="card premium-card white-chart-card shadow-sm">
+                        <div class="card-header card-header-premium d-flex align-items-center">
+                            <i class="fas fa-layer-group mr-2" style="color:#f59e0b;"></i>
+                            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;">Top Programs by Fleet Cost</h3>
+                        </div>
+                        <div class="card-body" style="height:340px;">
+                            <canvas id="fleetProgramChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-6 col-lg-6">
+                    <div class="card premium-card white-chart-card shadow-sm">
+                        <div class="card-header card-header-premium d-flex align-items-center">
+                            <i class="fas fa-chart-area mr-2" style="color:#10b981;"></i>
+                            <h3 class="card-title text-sm uppercase font-weight-bold mb-0" style="color:#334155;">Monthly Operations Trend</h3>
+                        </div>
+                        <div class="card-body" style="height:340px;">
+                            <canvas id="fleetMonthlyChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -267,31 +293,58 @@ $(function () {
     }
 
     function loadFleetSummaryData() {
-        window.PramanaDashboard.initDataTable('#fleetSummaryTable', {
-            ajaxUrl: '/manpower-vehicle/data',
-            getFilters: collectFilters,
-            onDataLoad: function(data) {
-                if (data.kpis && data.kpis.length >= 4) {
-                    $('#kpiKms').text(data.kpis[0].value.toLocaleString());
-                    $('#kpiFuelCost').text(data.kpis[1].value.toLocaleString());
-                    $('#kpiFuelQty').text(data.kpis[2].value.toLocaleString());
-                    $('#kpiDrivers').text(data.kpis[3].value.toLocaleString());
+        const params = new URLSearchParams(collectFilters());
+        params.set('years', (collectFilters().years || []).join(','));
+        params.set('region', (collectFilters().region || []).join(','));
+        params.set('month', (collectFilters().month || []).join(','));
+        params.set('quarter', (collectFilters().quarter || []).join(','));
+        fetch('/manpower-vehicle/insights?' + params.toString())
+            .then(r => r.json())
+            .then(data => {
+                const c = data.charts || {};
+                renderFleetScatter(c.region_scatter || []);
+                renderFleetRadar(c.region_bubble || []);
+                renderFleetProgram(c.program_fleet || []);
+                renderFleetMonthly(c.monthly_trend || []);
+            })
+            .catch(err => console.error('Fleet insights load error:', err));
+    }
 
-                    if (window.PramanaInsights && typeof window.PramanaInsights.enhanceAllKpiCards === 'function') {
-                        window.PramanaInsights.enhanceAllKpiCards(data.kpis);
-                    }
-                }
-            },
-            columns: [
-                { data: 'region_name', render: d => `<span class="font-weight-600 text-navy">${d}</span>` },
-                { data: 'program_name', className: 'small font-weight-bold' },
-                { data: 'drivers', className: 'text-center small', render: d => (d||0).toLocaleString() },
-                { data: 'total_kms', className: 'text-center font-weight-bold small', render: d => (d||0).toLocaleString() },
-                { data: 'total_fuel_l', className: 'text-center small', render: d => (d||0).toLocaleString() },
-                { data: 'total_cost', className: 'text-center small font-weight-bold text-danger', render: d => '₹' + (d||0).toLocaleString() },
-                { data: 'vehicles_used', className: 'text-center', render: d => `<span class="badge badge-info px-2 py-1">${d||0}</span>` }
-            ]
-        });
+    function renderFleetScatter(rows) {
+        const ctx = document.getElementById('fleetScatterChart');
+        if (!ctx) return;
+        if (ctx._chart) ctx._chart.destroy();
+        const points = rows.map(r => ({ x: r.x, y: r.y, r: Math.min(r.r || 5, 30) }));
+        ctx._chart = new Chart(ctx, { type: 'bubble', data: { datasets: [{ label: 'Regions', data: points, backgroundColor: 'rgba(139,92,246,0.55)', borderColor: '#8b5cf6', borderWidth: 1.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(t) { const d = t.raw; const src = rows[t.dataIndex]; return (src ? src.label : '') + ' | Eff: ' + d.x + ' km/L | Cost: ₹' + d.y + '/km'; } } } }, scales: { x: { title: { display: true, text: 'Fuel Efficiency (km/L)', font: { size: 11 } }, grid: { display: false } }, y: { title: { display: true, text: 'Cost per KM (₹)', font: { size: 11 } }, grid: { display: false } } } } });
+    }
+
+    function renderFleetRadar(rows) {
+        const ctx = document.getElementById('fleetRadarChart');
+        if (!ctx) return;
+        if (ctx._chart) ctx._chart.destroy();
+        const top = rows.filter(r => r.kms > 1000).slice(0, 5);
+        if (!top.length) { ctx._chart = null; return; }
+        const maxKms = Math.max(...top.map(r => r.kms));
+        const maxKpd = Math.max(...top.map(r => r.kms_per_driver || 0));
+        const maxEff = Math.max(...top.map(r => r.efficiency || 0));
+        const colors = ['#8b5cf6','#06b6d4','#f59e0b','#10b981','#ef4444'];
+        const datasets = top.map((r, i) => ({ label: r.label, data: [Math.round(r.kms / maxKms * 100), Math.round((r.kms_per_driver || 0) / maxKpd * 100), Math.round((r.efficiency || 0) / maxEff * 100), Math.round(100 - (r.cost_per_km || 0))], borderColor: colors[i], backgroundColor: colors[i] + '22', borderWidth: 2, pointRadius: 3 }));
+        ctx._chart = new Chart(ctx, { type: 'radar', data: { labels: ['Total KMs', 'Driver Productivity', 'Fuel Efficiency', 'Cost Efficiency'], datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }, scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: { color: 'rgba(0,0,0,0.05)' }, pointLabels: { font: { size: 10 } } } } } });
+    }
+
+    function renderFleetProgram(rows) {
+        const ctx = document.getElementById('fleetProgramChart');
+        if (!ctx) return;
+        if (ctx._chart) ctx._chart.destroy();
+        const top = rows.slice(0, 10);
+        ctx._chart = new Chart(ctx, { type: 'bar', data: { labels: top.map(r => r.label.length > 20 ? r.label.substring(0, 20) + '...' : r.label), datasets: [{ label: 'Cost (₹)', data: top.map(r => r.cost), backgroundColor: '#f59e0bcc', borderColor: '#f59e0b', borderWidth: 1 }, { label: 'KMs', data: top.map(r => r.kms), backgroundColor: '#06b6d4cc', borderColor: '#06b6d4', borderWidth: 1 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0 } } } } });
+    }
+
+    function renderFleetMonthly(rows) {
+        const ctx = document.getElementById('fleetMonthlyChart');
+        if (!ctx) return;
+        if (ctx._chart) ctx._chart.destroy();
+        ctx._chart = new Chart(ctx, { type: 'line', data: { labels: rows.map(r => r.label), datasets: [{ label: 'KMs', data: rows.map(r => r.kms), borderColor: '#8b5cf6', backgroundColor: '#8b5cf622', fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2 }, { label: 'Cost (₹)', data: rows.map(r => r.cost), borderColor: '#f59e0b', backgroundColor: '#f59e0b22', fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } } } });
     }
 
     function loadTripLogsData() {

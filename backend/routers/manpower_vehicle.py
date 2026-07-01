@@ -26,6 +26,15 @@ def get_data(
 
     return manpower_vehicle_service.get_manpower_vehicle_data(region, years, month, quarter, limit, offset, dt_params)
 
+@router.get("/insights")
+def get_insights(
+    region: list[str] | None = Query(None),
+    years:   list[str] | None = Query(None),
+    month:  list[str] | None = Query(None),
+    quarter: list[str] | None = Query(None),
+):
+    return manpower_vehicle_service.get_manpower_vehicle_insights(region, years, month, quarter)
+
 @router.get("/export")
 def export_data(
     region: list[str] | None = Query(None),
