@@ -997,9 +997,15 @@
                             }
                         },
                         datalabels: {
-                            display: function() {
+                            display: function(context) {
                                 const toggle = document.getElementById('toggleDataLabels');
-                                return toggle ? toggle.checked : (datasetOptions && datasetOptions.showLabels !== false);
+                                if (toggle && !toggle.checked) return false;
+                                if (type === 'pie' || type === 'doughnut') {
+                                    const total = context.dataset.data.reduce((s, v) => s + v, 0);
+                                    const val = context.dataset.data[context.dataIndex];
+                                    return total && (val / total) > 0.03;
+                                }
+                                return datasetOptions && datasetOptions.showLabels !== false;
                             },
                             anchor: 'center',
                             align: 'center',
@@ -1025,7 +1031,7 @@
                 chartConfig.options.scales = {
                     x: {
                         grid: { color: COLORS.grid },
-                        ticks: { color: COLORS.tick },
+                        ticks: { color: COLORS.tick, maxRotation: 45, font: { size: 11 } },
                         border: { display: false },
                     },
                     y: {
