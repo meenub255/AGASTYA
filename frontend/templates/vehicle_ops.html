@@ -301,6 +301,12 @@ $(function () {
         fetch('/manpower-vehicle/insights?' + params.toString())
             .then(r => r.json())
             .then(data => {
+                if (data.kpis) {
+                    $('#kpiKms').text((data.kpis.total_kms || 0).toLocaleString());
+                    $('#kpiFuelCost').text('₹' + (data.kpis.total_cost || 0).toLocaleString());
+                    $('#kpiFuelQty').text((data.kpis.total_fuel || 0).toLocaleString());
+                    $('#kpiDrivers').text((data.kpis.active_drivers || 0).toLocaleString());
+                }
                 const c = data.charts || {};
                 renderFleetScatter(c.region_scatter || []);
                 renderFleetRadar(c.region_bubble || []);
