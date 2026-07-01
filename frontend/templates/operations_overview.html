@@ -317,7 +317,7 @@ $(function(){
 
     // Tab switching
     $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
-        activeTab = $(e.target).attr('id') === 'tabIgnator' ? 'ignator' : 'regional';
+        activeTab = $(e.target).attr('href') === '#tabIgnator' ? 'ignator' : 'regional';
         if (activeTab === 'ignator') { loadWorkDayTable(); loadIgnatorInsights(); }
     });
 
@@ -432,8 +432,9 @@ $(function(){
     let ignatorLoaded = false;
     function loadIgnatorInsights(){
         if(ignatorLoaded) return;
-        const q = getParams();
-        fetch(`/work-day/insights?${q}`).then(r=>r.json()).then(d=>{
+        const filters = window.PramanaDashboard ? window.PramanaDashboard.collectFilters() : {};
+        const q = $.param(filters, true);
+        fetch('/work-day/insights' + (q ? '?' + q : '')).then(r=>r.json()).then(d=>{
             ignatorLoaded = true;
             const k = d.kpis || {};
             animateNum($('#igKpiIgnators'), k.total_ignators);
@@ -445,7 +446,7 @@ $(function(){
             renderIgnTopBar('igChartTop', ch.top_ignators || [], 'Working Days');
             renderIgnDoughnut('igChartDist', ch.days_distribution || []);
             renderIgnAreaTrend('igChartTrend', ch.monthly_trend || []);
-        }).catch(()=>{ ignatorLoaded = false; });
+        }).catch(e=>{ ignatorLoaded = false; console.error('Ignator insights error:', e); });
     }
 
     function renderIgnHBar(id, points, label){ destroyChart(id); const c=document.getElementById(id); if(!c) return; chartInstances[id]=new Chart(c,{type:'bar',data:{labels:points.map(p=>p.label),datasets:[{label:label,data:points.map(p=>p.value),backgroundColor:points.map((_,i)=>PALETTE[i%PALETTE.length]),borderRadius:6,barThickness:20}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},datalabels:{display:true,anchor:'end',align:'end',color:'#334155',font:{weight:'bold',size:11},formatter:v=>v.toLocaleString()},tooltip:{backgroundColor:'rgba(15,23,42,.9)',padding:12,cornerRadius:8}},scales:{x:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b'}},y:{grid:{display:false},ticks:{color:'#334155',font:{weight:'600'},maxRotation:0}}}}}); }
